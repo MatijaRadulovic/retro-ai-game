@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="sr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#08131a" />
+    <title>RETRO SNAKE</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="game-header">
+        <div>
+          <p class="eyebrow">ARCADE / 001</p>
+          <h1>RETRO SNAKE</h1>
+        </div>
+        <div class="score-cluster" aria-live="polite">
+          <div class="score-panel">
+            <span>SCORE</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="best-panel">
+            <span>BEST</span>
+            <strong id="best-score">0</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="game-card" aria-label="Snake igra">
+        <div class="status-row">
+          <span id="status" aria-live="polite" data-state="ready">READY</span>
+          <span id="pace">PACE 1.0×</span>
+          <span>20 × 20 GRID</span>
+        </div>
+        <div class="board-frame">
+          <div id="board" class="board" role="grid" aria-label="Tabla za Snake igru"></div>
+          <section id="game-overlay" class="game-overlay" aria-live="polite">
+            <p id="overlay-title" class="overlay-title">READY?</p>
+            <p id="overlay-message" class="overlay-message">Press any arrow to start</p>
+            <button id="overlay-action" class="overlay-button" type="button" hidden>PLAY AGAIN</button>
+          </section>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Kontrole igre">
+        <p><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd><kbd>←</kbd> smer · <kbd>P</kbd> pauza · <kbd>R</kbd> nova partija.</p>
+        <div class="control-actions">
+          <button id="pause" type="button">PAUSE</button>
+          <button id="restart" type="button">NEW GAME</button>
+        </div>
+      </section>
+      <section class="hint-panel" aria-label="AI Hint">
+        <div>
+          <p class="hint-title">AI HINT / LOCAL DEMO</p>
+          <p id="hint-output" class="hint-output" aria-live="polite">START A GAME TO ASK FOR A READ-ONLY HINT.</p>
+        </div>
+        <button id="hint" type="button" disabled>ASK AI FOR HINT</button>
+      </section>
+      <nav class="touch-controls" aria-label="Kontrole dodirom">
+        <button data-direction="up" type="button" aria-label="Gore">↑</button>
+        <button data-direction="left" type="button" aria-label="Levo">←</button>
+        <button data-direction="down" type="button" aria-label="Dole">↓</button>
+        <button data-direction="right" type="button" aria-label="Desno">→</button>
+      </nav>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
