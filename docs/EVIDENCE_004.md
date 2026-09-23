@@ -29,6 +29,6 @@ fail 0
 
 Ovo je kontrolisana lokalna fake/mock putanja, ne evaluacija stvarnog providera ili kvaliteta generisanog saveta. To je namerno: svi negative i failure testovi ostaju ponovljivi i bez tajni.
 
-## Doprinos para
+## Doprinos
 
-Članovi para su **Uroš** i **Matija**. Tehnički rad je vođen kao zajednički doprinos na implementaciji, testiranju i pregledu dokaza. Pre usmene prezentacije treba samo da potvrde tačnu individualnu podelu uloga ako predavač to posebno zatraži.
+Zvanično sam prijavljen u paru sa Matijom, ali smo se dogovorili da radimo odvojeno, svako na svojoj samostalnoj verziji zadatka. Ovaj repozitorijum, implementacija, testovi i dokumentacija su samostalan rad **Uroša**.
