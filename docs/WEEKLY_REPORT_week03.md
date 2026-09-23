@@ -19,7 +19,7 @@ Pošalji popunjen izveštaj odgovornom tutoru mejlom pre druge sesije. Ne uklju�
 
 **Status:** Završeno
 
-Core deo igre (Sesija 003) i kontrolisan AI Hint tok (Sesija 004) su implementirani, dokumentovani i lokalno provereni — svi testovi prolaze. Ono što formalno nedostaje nije u samom radu nego u predaji: repo još nije pušovan na GitHub, a moje ime/tim se ne pojavljuje u trenutnom spisku predavača na Discord-u (tabela od 23.9. sadrži 6 drugih projekata).
+Core deo igre (Sesija 003) i kontrolisan AI Hint tok (Sesija 004) su implementirani, dokumentovani i lokalno provereni — svi testovi prolaze. Repo je pušovan na GitHub (javan). Jedino što formalno nedostaje je da se moje ime/tim pojavi u zvaničnom spisku predavača na Discord-u (tabela od 23.9. sadrži 6 drugih projekata, ne i moj).
 
 ## 3. Rad ove nedelje
 
