@@ -55,8 +55,25 @@ h1 { margin: 0; color: var(--snake); font-size: clamp(2rem, 8vw, 3.3rem); line-h
 .score-bump { animation: score-bump 320ms ease-out; }
 .best-bump { animation: best-bump 420ms ease-out; }
 
-.game-card { padding: 18px; border: 2px solid var(--grid-line); background: rgba(16, 37, 43, 0.9); box-shadow: 8px 8px 0 rgba(43, 156, 103, 0.18); }
+.game-card { position: relative; padding: 18px; border: 2px solid var(--grid-line); background: rgba(16, 37, 43, 0.9); box-shadow: 8px 8px 0 rgba(43, 156, 103, 0.18); }
+.game-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(216, 243, 220, 0.05) 0px,
+    rgba(216, 243, 220, 0.05) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+  animation: crt-flicker 6s ease-in-out infinite;
+}
 .food-flash { animation: food-flash 260ms ease-out; }
+.shake { animation: shake 420ms ease-in-out; }
 .status-row { margin-bottom: 13px; color: var(--text-muted); font-size: 0.68rem; letter-spacing: 0.08em; }
 .status-row span:first-child { color: var(--snake); }
 .status-row [data-state="game_over"] { color: var(--food); }
@@ -75,11 +92,31 @@ h1 { margin: 0; color: var(--snake); font-size: clamp(2rem, 8vw, 3.3rem); line-h
   background: var(--grid);
 }
 
-.cell { min-width: 0; border: 1px solid rgba(35, 73, 74, 0.72); background: rgba(8, 19, 26, 0.28); }
+.cell { position: relative; min-width: 0; border: 1px solid rgba(35, 73, 74, 0.72); background: rgba(8, 19, 26, 0.28); }
 .snake-body, .snake-head, .food { margin: 2px; border: 0; }
 .snake-body { background: var(--snake-dark); box-shadow: inset 0 0 0 1px rgba(216, 243, 220, 0.2); }
 .snake-head { background: var(--snake); box-shadow: inset -3px -3px 0 var(--snake-dark), 0 0 8px rgba(125, 226, 168, 0.5); }
 .food { background: var(--food); box-shadow: 0 0 11px rgba(255, 107, 107, 0.72); }
+
+.particle-burst { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.particle-burst span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px;
+  border-radius: 50%;
+  background: var(--food);
+  box-shadow: 0 0 5px var(--food);
+  animation: particle-fly 480ms ease-out forwards;
+}
+.particle-burst span:nth-child(1) { --dx: 15px; --dy: -15px; }
+.particle-burst span:nth-child(2) { --dx: 18px; --dy: 2px; }
+.particle-burst span:nth-child(3) { --dx: 9px; --dy: 16px; }
+.particle-burst span:nth-child(4) { --dx: -9px; --dy: 16px; }
+.particle-burst span:nth-child(5) { --dx: -18px; --dy: 2px; }
+.particle-burst span:nth-child(6) { --dx: -15px; --dy: -15px; }
 
 .game-overlay {
   position: absolute;
@@ -154,6 +191,23 @@ kbd { display: inline-grid; min-width: 1.45em; place-items: center; border: 1px 
 
 @keyframes food-flash {
   45% { border-color: var(--food); box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.22), 8px 8px 0 rgba(43, 156, 103, 0.18); }
+}
+
+@keyframes particle-fly {
+  from { transform: translate(0, 0) scale(1); opacity: 1; }
+  to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+}
+
+@keyframes crt-flicker {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-5px); }
+  40%, 60% { transform: translateX(5px); }
 }
 
 @media (max-height: 800px) and (min-width: 481px) {

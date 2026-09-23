@@ -82,11 +82,22 @@ function replayAnimation(element: HTMLElement, className: string): void {
 
 let state: GameState = createInitialState(config);
 let displayedScore = state.score;
+let previousStatus = state.status;
 let best = readBestScore();
 let tickTimer: number | undefined;
 
 function cellIndex(x: number, y: number): number {
   return y * config.gridSize + x;
+}
+
+function spawnParticleBurst(x: number, y: number): void {
+  const cell = cells[cellIndex(x, y)];
+  if (!cell) return;
+  const burst = document.createElement("div");
+  burst.className = "particle-burst";
+  for (let i = 0; i < 6; i += 1) burst.appendChild(document.createElement("span"));
+  cell.append(burst);
+  window.setTimeout(() => burst.remove(), 500);
 }
 
 function clearScheduledTick(): void {
@@ -114,6 +125,7 @@ function render(nextState: GameState): void {
   if (nextState.score !== displayedScore) {
     replayAnimation(score, "score-bump");
     replayAnimation(card, "food-flash");
+    spawnParticleBurst(nextState.snake[0].x, nextState.snake[0].y);
     displayedScore = nextState.score;
   }
   score.textContent = String(nextState.score);
@@ -124,6 +136,11 @@ function render(nextState: GameState): void {
     replayAnimation(bestScore, "best-bump");
   }
   bestScore.textContent = String(best);
+
+  if (nextState.status === "game_over" && previousStatus !== "game_over") {
+    replayAnimation(card, "shake");
+  }
+  previousStatus = nextState.status;
 
   const tickMs = getTickMs(config, nextState.score);
   const speedMultiplier = (config.startingSpeedMs / tickMs).toFixed(1);
