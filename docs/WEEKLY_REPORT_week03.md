@@ -13,7 +13,7 @@ Pošalji popunjen izveštaj odgovornom tutoru mejlom pre druge sesije. Ne uklju�
 | Par / tim | Zvanično prijavljen u paru sa Matijom (tim_1), ali smo se dogovorili da radimo odvojeno, svako na svojoj samostalnoj verziji zadatka. |
 | Moj konkretan doprinos / uloga | Kompletna samostalna implementacija: Snake engine, runtime validacija konfiguracije, read-only AI Hint tok, testovi i sva prateća dokumentacija. |
 | Datum predaje | 2026-09-23 |
-| Reference na rad i dokaze | Lokalni Git repozitorijum (2 commit-a). Stvarni rezultati provere: `npm run typecheck` prolazi, `npm test` → 16/16 PASS, `npm run build` uspešan. GitHub link šaljem naknadno, čim završim push (**NEDOSTAJE:** GitHub URL). |
+| Reference na rad i dokaze | https://github.com/umilutinovic25-hash/retro-ai-game (javan repo). Stvarni rezultati provere: `npm run typecheck` prolazi, `npm test` → 16/16 PASS, `npm run build` uspešan. |
 
 ## 2. Moj status
 
@@ -35,11 +35,13 @@ Jedan konkretan problem koji sam pronašao i ispravio danas: `AGENTS.md` (projek
 
 AI (coding agent, Claude Code) je korišćen tokom cele nedelje za izgradnju — pisanje igre, validacione logike, AI Hint toka, testova i cele prateće dokumentacije (`GAME_SPEC.md`, `BUILD_PROMPT_V1.md`, `BUILD_PROMPT_FINAL.md`, `CONTEXT_MANIFEST.md`, `EVALS.md`, `TOOL_CONTRACT.md`, `EVIDENCE_003.md`, `EVIDENCE_004.md`, `AI_USAGE_LOG.md`), po fazama zabeleženim u `AI_USAGE_LOG.md` (Build, Review, Controlled AI, Verify). Svaki AI predlog je proveren pokretanjem stvarnih komandi, a ne prihvaćen na reč; danas je AI dodatno korišćen da uporedi ceo repo sa zvaničnim PDF zahtevima zadatka stavku po stavku, pronađe gorepomenutu neusklađenost, i da inicijalizuje lokalni git repo i napravi commit-e.
 
+Pre predaje sam tražio i dodatni pregled: da se prekontroliše da li igra ima funkcionalne nedostatke i da se po potrebi poboljša. Pregled koda (engine, config, UI, AI Hint) i uživo odigrana partija u browseru nisu pokazali funkcionalne bagove — kretanje, sudar, restart, pauza i AI Hint rade ispravno. Pronađen je jedan sitan propust (`<html lang="sr">` dok je ceo UI tekst na engleskom) koji je ispravljen. Dodao sam i tri vizuelna "polish" efekta koji ne diraju game logiku: CRT scanline preko table, particle burst kad zmija pojede hranu, i kratak screen shake na game over. Posle svake izmene ponovo sam pokrenuo `npm test` i `npm run build` da potvrdim da ništa nije pokvareno (i dalje 16/16 PASS).
+
 Pomoć koja mi je potrebna od tutora: potvrda da li je prihvatljivo što smo Matija i ja, iako zvanično u paru, radili potpuno odvojene, samostalne verzije zadatka — i ispravka mog imena/tima u zvaničnom spisku predatih projekata na Discord-u, pošto se trenutno tamo ne pojavljujem.
 
 ## 4. Sledeći korak
 
-Do kraja dana (2026-09-23, pre roka 17:00) push-ovaću repozitorijum na GitHub, poslaću link tutoru (uz eventualno dodavanje kao kolaboratora ako repo ostane privatan) i javiću tačno ime tima/para na Discord-u radi ispravke spiska.
+Do kraja dana (2026-09-23, pre roka 17:00) pošaljem ovaj izveštaj i GitHub link tutoru i javiću tačno ime tima/para na Discord-u radi ispravke spiska.
 
 ## 5. Poverljiva napomena za tutora
 
