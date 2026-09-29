@@ -4,7 +4,7 @@ This document summarizes the supplied Week 3 Session 1 material and weekly assig
 
 ## Authority and adaptation
 
-- `AGENTS.md`, `docs/specs/GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and the historical Hint prompt at `docs/prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` define the project boundary for that milestone.
+- `AGENTS.md`, `docs/specs/BASE_GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and the historical Hint prompt at `docs/prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` define the project boundary for that milestone.
 - The Week 3 course documents are exercise guidance. They do not override the project specifications or authorize adding a new product feature.
 - The exercise's `Ticket` classification examples (`category`, `matchId`, replay messages) are instructional examples from the course package. RETRO SNAKE currently specifies a Snake game, runtime-validated `GameConfig`, and local read-only AI Hint. Do not add replay lookup, ticket classification, or a replay AI feature just to copy those examples.
 - The general learning goals still apply: explicit scope, curated context, a runtime-checked structured contract, baseline/evaluation, a controlled change, and evidence.
@@ -75,7 +75,7 @@ Use this checklist in a future implementation review. Start with every item mark
 
 ### A. Scope and specification
 
-- [ ] **Pending** — Current behavior agrees with `AGENTS.md` and `docs/specs/GAME_SPEC.md`.
+- [ ] **Pending** — Current behavior agrees with `AGENTS.md` and `docs/specs/BASE_GAME_SPEC.md`.
 - [ ] **Pending** — The game remains within the 20 × 20 Snake scope and the explicitly permitted local AI Hint flow.
 - [ ] **Pending** — No ticket/replay classifier, external provider, network request, backend, extra tool, write capability, autonomous loop, unrelated framework, or broad refactor has been introduced.
 - [ ] **Pending** — The current Definition of Done and out-of-scope boundaries are clear and testable.

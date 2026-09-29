@@ -16,7 +16,7 @@ Move the existing Snake game to a TypeScript client/server architecture while pr
 ### 1. Project contract and documentation
 
 - [x] Record the accepted architecture and scope in this plan.
-- [x] Update `AGENTS.md`, architecture guidance, and `GAME_SPEC.md` to permit the requested backend and define the new authority boundary.
+- [x] Update `AGENTS.md`, architecture guidance, and the base game spec to permit the requested backend and define the new authority boundary.
 - [x] Save the implementation prompt and link the plan from the docs index and README.
 - [x] Start the work log, AI usage record, and task evidence before code changes.
 

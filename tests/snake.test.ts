@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_CONFIG, getTickMs, parseGameConfig, validateGameConfig } from "../src/game/snakeConfig.ts";
-import { createInitialState, pauseGame, resumeGame, setDirection, startGame, step } from "../src/game/snakeEngine.ts";
+import { awardXp, createInitialState, getLuckySpawnChance, pauseGame, purchasePerk, resumeGame, setDirection, startGame, step, type GameState } from "../src/game/snakeEngine.ts";
 
 test("runtime config accepts the default and explicitly falls back when invalid", () => {
   assert.deepEqual(validateGameConfig(DEFAULT_CONFIG), DEFAULT_CONFIG);
@@ -51,9 +51,177 @@ test("eating food increases score and snake length", () => {
   });
   const next = step(state, DEFAULT_CONFIG, () => 0);
   assert.equal(next.score, 1);
+  assert.equal(next.xp, 10);
+  assert.equal(next.level, 1);
   assert.equal(next.snake.length, 4);
   assert.ok(next.food);
   assert.equal(next.snake.some((segment) => segment.x === next.food?.x && segment.y === next.food?.y), false);
+});
+
+test("XP awards derive levels and points at thresholds, including multiple levels", () => {
+  const initial = createInitialState(DEFAULT_CONFIG, () => 0);
+  const atLevelTwo = awardXp({ ...initial, xp: 40 }, 10);
+  assert.equal(atLevelTwo.xp, 50);
+  assert.equal(atLevelTwo.level, 2);
+  assert.equal(atLevelTwo.perkPoints, 1);
+
+  const multiple = awardXp(initial, 300);
+  assert.equal(multiple.level, 4);
+  assert.equal(multiple.perkPoints, 3);
+  assert.equal(awardXp({ ...initial, extraXpLevel: 3 }, 16).xp, 16);
+});
+
+test("Extra XP changes food awards and a charged life safely recovers a wall collision", () => {
+  const boosted = step(startGame({
+    ...createInitialState(DEFAULT_CONFIG, () => 0),
+    extraXpLevel: 2,
+    food: { x: 11, y: 10 },
+  }), DEFAULT_CONFIG, () => 0);
+  assert.equal(boosted.xp, 14);
+
+  const state = startGame({
+    ...createInitialState(DEFAULT_CONFIG, () => 0),
+    snake: [{ x: 19, y: 10 }, { x: 18, y: 10 }, { x: 17, y: 10 }],
+    direction: "right",
+    queuedDirection: "right",
+    food: { x: 10, y: 10 },
+    score: 4,
+    xp: 145,
+    level: 2,
+    perkPoints: 3,
+    extraXpLevel: 2,
+    luckLevel: 3,
+    extraLives: 1,
+    luckyPickup: { x: 0, y: 0 },
+  });
+  const recovered = step(state, DEFAULT_CONFIG, () => 0);
+  assert.equal(recovered.status, "playing");
+  assert.equal(recovered.extraLives, 0);
+  assert.equal(recovered.score, 4);
+  assert.equal(recovered.xp, 145);
+  assert.equal(recovered.level, 2);
+  assert.equal(recovered.perkPoints, 3);
+  assert.equal(recovered.extraXpLevel, 2);
+  assert.equal(recovered.luckLevel, 3);
+  assert.deepEqual(recovered.luckyPickup, { x: 0, y: 0 });
+  assert.equal(recovered.direction, "right");
+  assert.equal(recovered.queuedDirection, "right");
+  assert.equal(recovered.snake.length, 3);
+  assert.equal(recovered.snake[0].x, Math.floor(DEFAULT_CONFIG.gridSize / 2));
+  assert.ok(recovered.food);
+  assert.equal(recovered.snake.some((segment) => segment.x === recovered.food?.x && segment.y === recovered.food?.y), false);
+
+  const conflictingItems = step(startGame({ ...state, luckyPickup: { x: 10, y: 10 } }), DEFAULT_CONFIG, () => 0);
+  assert.ok(conflictingItems.luckyPickup);
+  assert.notDeepEqual(conflictingItems.luckyPickup, conflictingItems.food);
+  assert.equal(conflictingItems.snake.some((segment) => segment.x === conflictingItems.luckyPickup?.x && segment.y === conflictingItems.luckyPickup?.y), false);
+
+  const selfCollision = startGame({
+    ...createInitialState(DEFAULT_CONFIG, () => 0),
+    snake: [{ x: 5, y: 5 }, { x: 5, y: 6 }, { x: 4, y: 6 }, { x: 4, y: 5 }],
+    direction: "down",
+    queuedDirection: "down",
+    food: { x: 10, y: 10 },
+    extraLives: 2,
+  });
+  const selfRecovered = step(selfCollision, DEFAULT_CONFIG, () => 0);
+  assert.equal(selfRecovered.status, "playing");
+  assert.equal(selfRecovered.extraLives, 1);
+  assert.equal(selfRecovered.snake.length, 3);
+});
+
+test("perk purchases are paused-only, deduct exact costs, and reject atomically", () => {
+  const paused = { ...createInitialState(DEFAULT_CONFIG, () => 0), status: "paused" as const, perkPoints: 20 };
+  const extraXp = purchasePerk(paused, "extra_xp");
+  assert.equal(extraXp.ok, true);
+  if (extraXp.ok) {
+    assert.equal(extraXp.state.extraXpLevel, 1);
+    assert.equal(extraXp.state.perkPoints, 19);
+    const extraLife = purchasePerk(extraXp.state, "extra_life");
+    assert.equal(extraLife.ok, true);
+    if (extraLife.ok) {
+      assert.equal(extraLife.state.extraLives, 1);
+      assert.equal(extraLife.state.perkPoints, 14);
+      const secondLife = purchasePerk(extraLife.state, "extra_life");
+      assert.equal(secondLife.ok, true);
+      if (secondLife.ok) assert.equal(secondLife.state.perkPoints, 6);
+    }
+  }
+  assert.deepEqual(purchasePerk({ ...paused, status: "playing" }, "extra_xp"), { ok: false, error: "invalid_status" });
+  assert.deepEqual(purchasePerk({ ...paused, perkPoints: 0 }, "extra_xp"), { ok: false, error: "insufficient_perk_points" });
+  assert.deepEqual(purchasePerk({ ...paused, extraXpLevel: 5 }, "extra_xp"), { ok: false, error: "perk_at_cap" });
+  assert.deepEqual(purchasePerk({ ...paused, extraLives: 2 }, "extra_life"), { ok: false, error: "perk_at_cap" });
+
+  let luckState: GameState = { ...paused, perkPoints: 15 };
+  for (let level = 0; level < 5; level += 1) {
+    const result = purchasePerk(luckState, "luck");
+    assert.equal(result.ok, true);
+    if (!result.ok) break;
+    assert.equal(result.state.luckLevel, level + 1);
+    assert.equal(result.state.perkPoints, 15 - ((level + 1) * (level + 2)) / 2);
+    luckState = result.state;
+  }
+  assert.deepEqual(purchasePerk(luckState, "luck"), { ok: false, error: "perk_at_cap" });
+  assert.deepEqual(purchasePerk({ ...paused, perkPoints: 0 }, "luck"), { ok: false, error: "insufficient_perk_points" });
+});
+
+test("Luck spawn chance scales from 5% to 30% and the orange pickup is placed separately", () => {
+  const chances = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3];
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map(getLuckySpawnChance), chances);
+  const state = startGame({
+    ...createInitialState(DEFAULT_CONFIG, () => 0),
+    food: { x: 11, y: 10 },
+    luckyPickup: null,
+  });
+  const draws = [0, 0.049, 0];
+  let index = 0;
+  const spawned = step(state, DEFAULT_CONFIG, () => draws[index++] ?? 0.99);
+  assert.deepEqual(spawned.luckyPickup, { x: 1, y: 0 });
+  assert.notDeepEqual(spawned.luckyPickup, spawned.food);
+  assert.equal(spawned.snake.some((part) => part.x === spawned.luckyPickup?.x && part.y === spawned.luckyPickup?.y), false);
+
+  const failedRoll = step(state, DEFAULT_CONFIG, (() => {
+    const results = [0, 0.05];
+    let roll = 0;
+    return () => results[roll++] ?? 0.99;
+  })());
+  assert.equal(failedRoll.luckyPickup, null);
+
+  chances.forEach((chance, luckLevel) => {
+    const leveled = { ...state, luckLevel };
+    const successDraws = [0, chance - 0.001, 0];
+    let successIndex = 0;
+    assert.ok(step(leveled, DEFAULT_CONFIG, () => successDraws[successIndex++] ?? 0.99).luckyPickup);
+    const boundaryDraws = [0, chance];
+    let boundaryIndex = 0;
+    assert.equal(step(leveled, DEFAULT_CONFIG, () => boundaryDraws[boundaryIndex++] ?? 0.99).luckyPickup, null);
+  });
+});
+
+test("collecting a Lucky pickup grants one point only, and an active pickup blocks new rolls", () => {
+  const initial = startGame({
+    ...createInitialState(DEFAULT_CONFIG, () => 0),
+    snake: [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }],
+    food: { x: 0, y: 0 },
+    luckyPickup: { x: 11, y: 10 },
+    score: 7,
+    xp: 40,
+    level: 1,
+    perkPoints: 0,
+    luckLevel: 2,
+  });
+  const collected = step(initial, DEFAULT_CONFIG, () => 0.99);
+  assert.equal(collected.luckyPickup, null);
+  assert.equal(collected.perkPoints, 1);
+  assert.equal(collected.score, 7);
+  assert.equal(collected.xp, 40);
+  assert.equal(collected.snake.length, 3);
+
+  const redFood = startGame({ ...initial, luckyPickup: { x: 3, y: 0 }, food: { x: 11, y: 10 } });
+  let draws = 0;
+  const kept = step(redFood, DEFAULT_CONFIG, () => { draws += 1; return 0; });
+  assert.deepEqual(kept.luckyPickup, redFood.luckyPickup);
+  assert.equal(draws, 1); // Only the next red-food position consumes randomness; no Lucky roll occurs.
 });
 
 test("wall collision ends the game", () => {

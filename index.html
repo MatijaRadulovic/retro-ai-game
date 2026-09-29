@@ -25,6 +25,19 @@
         </div>
       </header>
 
+      <section class="progression-hud" aria-label="Run progression" aria-live="polite">
+        <div class="progression-row progression-stats">
+          <div><span>RUN XP</span><strong id="xp-value">0</strong></div>
+          <div><span>LEVEL</span><strong id="level-value">1</strong></div>
+          <div><span>PERK POINTS</span><strong id="perk-points-value">0</strong></div>
+        </div>
+        <div class="progression-row progression-perks" aria-label="Perks">
+          <div class="perk-meter"><span>EXTRA XP</span><strong id="extra-xp-value">0 / 5</strong><span id="extra-xp-cubes" class="perk-cubes" aria-hidden="true"></span></div>
+          <div class="perk-meter"><span>LUCK</span><strong id="luck-value">0 / 5</strong><span id="luck-cubes" class="perk-cubes" aria-hidden="true"></span></div>
+          <div class="perk-meter"><span>LIVES</span><strong id="life-value">0 / 2</strong><span id="life-cubes" class="perk-cubes" aria-hidden="true"></span></div>
+        </div>
+      </section>
+
       <section class="game-card" aria-label="Snake igra">
         <div class="status-row">
           <span id="status" aria-live="polite" data-state="ready">READY</span>
@@ -39,6 +52,27 @@
             <p id="overlay-message" class="overlay-message">Press any arrow to start</p>
             <button id="overlay-action" class="overlay-button" type="button" hidden>PLAY AGAIN</button>
           </section>
+          <section id="perk-shop" class="perk-shop" aria-label="Perk shop" aria-live="polite" hidden>
+            <div class="shop-heading">
+              <div><p class="hint-title">RUN PERKS</p><p class="shop-points">XP: <strong id="shop-xp">0</strong> · LEVEL: <strong id="shop-level">1</strong> · POINTS: <strong id="shop-points">0</strong></p></div>
+              <button id="shop-close" type="button">CLOSE SHOP</button>
+            </div>
+            <div class="shop-perks">
+              <article class="shop-perk">
+                <div><h2>LUCK</h2><p>LEVEL <strong id="shop-luck-value">0 / 5</strong> · +5% LUCKY FOOD CHANCE / LEVEL</p><span id="shop-luck-cubes" class="perk-cubes" aria-hidden="true"></span></div>
+                <button id="buy-luck" type="button" disabled>BUY · 1 PT</button>
+              </article>
+              <article class="shop-perk">
+                <div><h2>EXTRA XP</h2><p>LEVEL <strong id="shop-extra-xp-value">0 / 5</strong> · +2 XP / FOOD / LEVEL</p><span id="shop-extra-xp-cubes" class="perk-cubes" aria-hidden="true"></span></div>
+                <button id="buy-extra-xp" type="button" disabled>BUY · 1 PT</button>
+              </article>
+              <article class="shop-perk">
+                <div><h2>+1 LIFE</h2><p>CHARGES <strong id="shop-life-value">0 / 2</strong> · SURVIVE ONE COLLISION</p><span id="shop-life-cubes" class="perk-cubes" aria-hidden="true"></span></div>
+                <button id="buy-extra-life" type="button" disabled>BUY · 5 PT</button>
+              </article>
+            </div>
+            <p id="shop-message" class="shop-message" role="status" aria-live="polite"></p>
+          </section>
         </div>
       </section>
 
@@ -46,6 +80,7 @@
         <p><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd><kbd>←</kbd> smer · <kbd>P</kbd> pauza · <kbd>R</kbd> nova partija.</p>
         <div class="control-actions">
           <button id="pause" type="button">PAUSE</button>
+          <button id="shop-toggle" type="button" disabled>SHOP</button>
           <button id="restart" type="button">NEW GAME</button>
         </div>
       </section>

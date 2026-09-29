@@ -49,6 +49,7 @@ export const gameClient = {
   pause: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}/pause`, "POST", {}),
   resume: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}/resume`, "POST", {}),
   restart: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}/restart`, "POST", {}),
+  purchasePerk: (gameId: string, perk: "extra_xp" | "extra_life" | "luck") => request(`/api/games/${encodeURIComponent(gameId)}/perks`, "POST", { perk }),
 };
 
 export function connectGameEvents(gameId: string, onSnapshot: (snapshot: GameSnapshot) => void, onConnection: (connected: boolean) => void): () => void {

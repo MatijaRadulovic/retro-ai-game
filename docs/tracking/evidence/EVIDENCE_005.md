@@ -3,7 +3,7 @@
 ## Record and task context
 
 - **Purpose:** record the server-authority refactor as a bounded project change, including baseline, evals, actual verification, and limits.
-- **Governing specs:** [Refactor plan](../../specs/REFACTOR_PLAN.md) owns architecture decisions, task checklist, Definition of Done, and planned verification. [Game specification](../../specs/GAME_SPEC.md) owns enduring game behavior and product-level DoD. [Tool contract](../../specs/TOOL_CONTRACT.md) owns the Hint boundary.
+- **Governing specs:** [Refactor plan](../../specs/REFACTOR_PLAN.md) owns architecture decisions, task checklist, Definition of Done, and planned verification. [Base game specification](../../specs/BASE_GAME_SPEC.md) owns enduring core-game behavior and product-level DoD. [Tool contract](../../specs/TOOL_CONTRACT.md) owns the Hint boundary.
 - **Prompt artifact:** [Week 4 server refactor prompt](../../prompts/week4/BUILD_PROMPT_SERVER_REFACTOR.md).
 - **Prompt version limitation:** the archived prompt is linked exactly as used, but it has no explicit version header; do not imply that the current template existed when it was authored.
 - **Sources used:** current user request and clarification; project instructions; listed specs/prompt; current source and tests; earlier [core evidence](EVIDENCE_003.md) and [Hint evidence](EVIDENCE_004.md).

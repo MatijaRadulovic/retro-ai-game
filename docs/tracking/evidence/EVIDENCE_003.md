@@ -3,7 +3,7 @@
 ## Record
 
 - **Purpose:** preserve the last recorded browser-only Snake core baseline before the local AI Hint work, and define the core regression scenarios reused for the Hint change.
-- **Related spec/instructions:** [Game specification](../../specs/GAME_SPEC.md), [project instruction index](../../INSTRUCTIONS.md), and [verification guidance](../../instructions/04-testing-and-verification.md).
+- **Related spec/instructions:** [Base game specification](../../specs/BASE_GAME_SPEC.md), [project instruction index](../../INSTRUCTIONS.md), and [verification guidance](../../instructions/04-testing-and-verification.md).
 - **Prompt artifacts:** [Week 3 initial build prompt](../../prompts/week3/BUILD_PROMPT_V1.md); the later Hint change is specified in [Week 3 final prompt](../../prompts/week3/BUILD_PROMPT_FINAL_VERSION.md) and evaluated in [Evidence 004](EVIDENCE_004.md).
 - **Baseline date and scope:** 2026-09-20; `src/game/snakeConfig.ts`, `src/game/snakeEngine.ts`, and `tests/snake.test.ts`, immediately before the Hint layer was added.
 - **Source/context selection:** see the task-specific context matrix below. The repository-wide [context manifest](../CONTEXT_MANIFEST.md) is only a source map and does not imply every file was used.
@@ -45,7 +45,7 @@ The historical record reports the same four core scenarios as passing before and
 | Source | Used | Priority / purpose | Risk or handling |
 |---|---|---|---|
 | `AGENTS.md` and project instructions | Yes | Project scope and security rules | Higher priority than implementation choices |
-| `docs/specs/GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md` | Yes | Game and read-only tool contracts | Normative for product behavior |
+| `docs/specs/BASE_GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md` | Yes | Base game and read-only tool contracts | Normative for core product behavior |
 | Week 3 initial and final prompt artifacts | Yes | Build and Hint task constraints | Task-scoped; subordinate to project contract |
 | `README.md` | Yes | Setup and command orientation | Could be stale; verify against package/config |
 | Game/Hint implementation and tests | Yes | Existing state and executable behavior | Evidence, not permission to change requirements |

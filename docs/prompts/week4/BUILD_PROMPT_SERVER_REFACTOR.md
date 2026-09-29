@@ -1,6 +1,6 @@
 # BUILD PROMPT — Server-authoritative RETRO SNAKE refactor
 
-Refactor the existing RETRO SNAKE app into a TypeScript/Vite browser client and a TypeScript Node backend. Follow [`REFACTOR_PLAN.md`](../../specs/REFACTOR_PLAN.md) and the current game rules in [`GAME_SPEC.md`](../../specs/GAME_SPEC.md).
+Refactor the existing RETRO SNAKE app into a TypeScript/Vite browser client and a TypeScript Node backend. Follow [`REFACTOR_PLAN.md`](../../specs/REFACTOR_PLAN.md) and the current game rules in [`BASE_GAME_SPEC.md`](../../specs/BASE_GAME_SPEC.md).
 
 The server is the sole authority for validated game configuration, session/player state, game transitions, and tick timing. Model a container with shared game state and a `players` collection; each player owns its snake, direction, and score. Use Node's built-in HTTP server plus `ws`: provide endpoints to create and fetch a game, submit a direction, pause, resume, and restart; broadcast authoritative snapshots to connected clients. Keep multiple independent in-memory game containers, each with one player. Do not add room creation/join endpoints or multiplayer participation. Validate all runtime inputs and return safe, consistent API errors.
 

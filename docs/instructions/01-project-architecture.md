@@ -1,6 +1,6 @@
 # Project Architecture and Game Rules
 
-Read this module for changes to game behavior, state transitions, rendering, or configuration. The authoritative numerical and acceptance requirements are in [`../specs/GAME_SPEC.md`](../specs/GAME_SPEC.md).
+Read this module for changes to game behavior, state transitions, rendering, or configuration. The base game's authoritative numerical and acceptance requirements are in [`../specs/BASE_GAME_SPEC.md`](../specs/BASE_GAME_SPEC.md), supplemented by any accepted feature specification.
 
 ## Product boundary
 
@@ -20,7 +20,7 @@ Read this module for changes to game behavior, state transitions, rendering, or 
 
 - `GameConfig` is runtime input. Validate its actual values; TypeScript types alone are not runtime validation.
 - Reject invalid or unsupported values with the specified explicit safe fallback and a clear error. Never silently proceed with unknown values.
-- Keep defaults and constraints synchronized with `specs/GAME_SPEC.md` and the tests.
+- Keep defaults and base-game constraints synchronized with `specs/BASE_GAME_SPEC.md` and the tests.
 
 ## Change checklist
 

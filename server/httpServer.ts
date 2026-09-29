@@ -89,6 +89,15 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
         sendJson(response, 200, { game: manager.move(gameId, body.direction) });
         return;
       }
+      if (action === "perks") {
+        const body = await readJson(request);
+        if (!isRecord(body) || Object.keys(body).length !== 1
+          || (body.perk !== "extra_xp" && body.perk !== "extra_life" && body.perk !== "luck")) {
+          throw new HttpError(400, "invalid_purchase", "Expected exactly one perk: extra_xp, extra_life, or luck.");
+        }
+        sendJson(response, 200, { game: manager.purchasePerk(gameId, body.perk) });
+        return;
+      }
       if (["pause", "resume", "restart"].includes(action)) {
         const body = await readJson(request);
         if (!isRecord(body) || Object.keys(body).length !== 0) {

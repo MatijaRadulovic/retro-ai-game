@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { DEFAULT_CONFIG } from "../src/game/snakeConfig.ts";
 import { GameSessionManager, SessionError } from "../server/gameSession.ts";
 
-function managerFixture() {
+function managerFixture(random: () => number = () => 0) {
   let id = 0;
-  return new GameSessionManager(() => 0, () => `session-${++id}`);
+  return new GameSessionManager(random, () => `session-${++id}`);
 }
 
 test("manager creates isolated one-player game containers", () => {
@@ -17,6 +17,8 @@ test("manager creates isolated one-player game containers", () => {
   assert.notEqual(first.players[0].id, second.players[0].id);
   assert.equal(first.state.status, "ready");
   assert.equal(first.revision, 0);
+  assert.deepEqual(first.players[0].progression, { xp: 0, level: 1, perkPoints: 0 });
+  assert.deepEqual(first.players[0].perks, { extraXp: { level: 0, nextCost: 1 }, luck: { level: 0, nextCost: 1 }, extraLife: { charges: 0, nextCost: 5 } });
   assert.deepEqual(first.config, second.config);
   assert.notDeepEqual(first.players[0].snake, []);
   manager.close();
@@ -36,6 +38,27 @@ test("valid move starts server state and advances; reverse moves are ignored", (
   const advanced = manager.advance(created.id);
   assert.deepEqual(advanced.players[0].snake[0], { x: 10, y: 9 });
   assert.ok(advanced.revision > started.revision);
+  manager.close();
+});
+
+test("manager awards food XP and publishes a successful paused perk purchase", () => {
+  const draws = [190 / 397, 170 / 396, 0.99, 150 / 395, 0.99, 130 / 394, 0.99, 110 / 393, 0.99, 90 / 392, 0.99];
+  let draw = 0;
+  const manager = managerFixture(() => draws[draw++] ?? 0);
+  const created = manager.create();
+  manager.move(created.id, "up");
+  for (let index = 0; index < 5; index += 1) manager.advance(created.id);
+  const earned = manager.get(created.id);
+  assert.equal(earned.players[0].progression.xp, 50);
+  assert.equal(earned.players[0].progression.level, 2);
+  assert.equal(earned.players[0].progression.perkPoints, 1);
+
+  manager.pause(created.id);
+  const purchased = manager.purchasePerk(created.id, "extra_xp");
+  assert.equal(purchased.players[0].perks.extraXp.level, 1);
+  assert.equal(purchased.players[0].perks.extraXp.nextCost, 2);
+  assert.equal(purchased.players[0].progression.perkPoints, 0);
+  assert.equal(purchased.revision, earned.revision + 2);
   manager.close();
 });
 
@@ -69,6 +92,9 @@ test("pause, resume, and restart preserve the session while resetting game state
   assert.equal(restarted.players[0].id, created.players[0].id);
   assert.equal(restarted.state.status, "ready");
   assert.equal(restarted.players[0].score, 0);
+  assert.deepEqual(restarted.players[0].progression, { xp: 0, level: 1, perkPoints: 0 });
+  assert.deepEqual(restarted.players[0].perks, { extraXp: { level: 0, nextCost: 1 }, luck: { level: 0, nextCost: 1 }, extraLife: { charges: 0, nextCost: 5 } });
+  assert.equal(restarted.state.luckyPickup, null);
   manager.close();
 });
 

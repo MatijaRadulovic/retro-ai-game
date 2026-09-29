@@ -3,7 +3,7 @@
 ## Record
 
 - **Purpose:** evaluate the local AI Hint as one bounded change and preserve its positive, negative, read-only, and failure results.
-- **Related spec/instructions:** [Game specification](../../specs/GAME_SPEC.md), [tool contract](../../specs/TOOL_CONTRACT.md), and [verification guidance](../../instructions/04-testing-and-verification.md).
+- **Related spec/instructions:** [Base game specification](../../specs/BASE_GAME_SPEC.md), [tool contract](../../specs/TOOL_CONTRACT.md), and [verification guidance](../../instructions/04-testing-and-verification.md).
 - **Prompt artifact:** [Week 3 final Hint prompt](../../prompts/week3/BUILD_PROMPT_FINAL_VERSION.md). This is the recorded task prompt; its historical text does not have a separate version-history/changelog section.
 - **Baseline:** [Evidence 003](EVIDENCE_003.md) records the pre-Hint core baseline, commands, and frozen regression scenarios C1–C4.
 - **Changed files in scope:** `src/ai/hint.ts`, Hint UI in `src/main.ts` / `src/styles.css`, and `tests/hint.test.ts`; core Snake engine was not intended to change.

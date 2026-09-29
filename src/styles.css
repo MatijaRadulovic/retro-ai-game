@@ -10,6 +10,7 @@
   --snake: #7de2a8;
   --snake-dark: #2b9c67;
   --food: #ff6b6b;
+  --lucky: #ff9f1c;
   --text-muted: #82a8a5;
 }
 
@@ -52,6 +53,19 @@ h1 { margin: 0; color: var(--snake); font-size: clamp(2rem, 8vw, 3.3rem); line-h
 .score-panel strong, .best-panel strong { display: inline-block; font-size: 2rem; line-height: 1; }
 .score-panel strong { color: var(--food); }
 .best-panel strong { color: #ffd166; }
+.progression-hud {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+.progression-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.progression-row > div { min-width: 0; padding: 8px 9px; border: 1px solid var(--grid-line); background: rgba(16, 37, 43, 0.72); }
+.progression-hud span:first-child { display: block; color: var(--text-muted); font-size: 0.58rem; letter-spacing: 0.08em; }
+.progression-hud strong { display: block; margin-top: 4px; color: var(--snake); font-size: 0.95rem; }
+.progression-hud .perk-meter strong { display: inline-block; margin-right: 6px; }
+.perk-cubes { display: inline-flex; gap: 4px; vertical-align: middle; }
+.perk-cube { display: inline-block; width: 9px; height: 9px; border: 1px solid var(--snake-dark); background: transparent; }
+.perk-cube.filled { border-color: var(--snake); background: var(--snake); box-shadow: 0 0 5px rgba(125, 226, 168, 0.35); }
 .score-bump { animation: score-bump 320ms ease-out; }
 .best-bump { animation: best-bump 420ms ease-out; }
 
@@ -99,6 +113,7 @@ h1 { margin: 0; color: var(--snake); font-size: clamp(2rem, 8vw, 3.3rem); line-h
 .snake-body { background: var(--snake-dark); box-shadow: inset 0 0 0 1px rgba(216, 243, 220, 0.2); }
 .snake-head { background: var(--snake); box-shadow: inset -3px -3px 0 var(--snake-dark), 0 0 8px rgba(125, 226, 168, 0.5); }
 .food { background: var(--food); box-shadow: 0 0 11px rgba(255, 107, 107, 0.72); }
+.lucky-food { margin: 2px; border: 0; background: var(--lucky); box-shadow: 0 0 11px rgba(255, 159, 28, 0.8), inset 0 0 0 2px rgba(255, 235, 180, 0.55); }
 
 .particle-burst { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
 .particle-burst span {
@@ -123,6 +138,7 @@ h1 { margin: 0; color: var(--snake); font-size: clamp(2rem, 8vw, 3.3rem); line-h
 .game-overlay {
   position: absolute;
   inset: 0;
+  z-index: 4;
   display: grid;
   place-content: center;
   gap: 11px;
@@ -143,6 +159,33 @@ h1 { margin: 0; color: var(--snake); font-size: clamp(2rem, 8vw, 3.3rem); line-h
 .controls button { border: 2px solid var(--snake); padding: 11px 14px; color: var(--background); background: var(--snake); font-weight: 700; letter-spacing: 0.08em; }
 .controls button:hover:not(:disabled) { color: var(--snake); background: transparent; }
 .controls button:disabled { cursor: not-allowed; opacity: 0.4; }
+.perk-shop {
+  position: absolute;
+  inset: clamp(7px, 2vw, 16px);
+  z-index: 6;
+  display: grid;
+  align-content: center;
+  gap: 9px;
+  overflow-y: auto;
+  padding: clamp(9px, 2vw, 14px);
+  border: 2px solid #ffd166;
+  background: rgba(16, 37, 43, 0.97);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.55);
+}
+.perk-shop[hidden] { display: none; }
+.shop-heading, .shop-perk { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.shop-heading { margin-bottom: 2px; }
+.shop-heading .hint-title { margin-bottom: 5px; }
+.shop-points, .shop-perk p, .shop-message { margin: 0; color: var(--text-muted); font-size: 0.65rem; line-height: 1.5; letter-spacing: 0.06em; }
+.shop-points strong, .shop-perk strong { color: #ffd166; }
+.shop-heading button, .shop-perk button { flex: 0 0 auto; border: 2px solid #ffd166; padding: 9px 11px; color: var(--background); background: #ffd166; font-weight: 700; font-size: 0.67rem; letter-spacing: 0.06em; }
+.shop-heading button:hover, .shop-perk button:hover:not(:disabled) { color: #ffd166; background: transparent; }
+.shop-perk button:disabled { cursor: not-allowed; opacity: 0.4; }
+.shop-perks { display: grid; gap: 8px; }
+.shop-perk { padding: 10px; border: 1px solid var(--grid-line); background: rgba(8, 19, 26, 0.45); }
+.shop-perk h2 { margin: 0 0 4px; color: var(--snake); font-size: 0.76rem; letter-spacing: 0.08em; }
+.shop-perk .perk-cubes { margin-top: 6px; }
+.shop-message { min-height: 1em; margin-top: 8px; color: #ffd166; }
 kbd { display: inline-grid; min-width: 1.45em; place-items: center; border: 1px solid var(--grid-line); color: #d8f3dc; font: inherit; font-size: 0.7rem; }
 
 .hint-panel {
@@ -225,7 +268,10 @@ kbd { display: inline-grid; min-width: 1.45em; place-items: center; border: 1px 
   .game-card { padding: 11px; }
   .controls { align-items: stretch; flex-direction: column; }
   .control-actions { justify-content: stretch; }
-  .controls button { flex: 1; }
+  .controls button { flex: 1; padding: 10px 8px; font-size: 0.75rem; }
+  .progression-row > div { padding: 7px; }
+  .shop-perk { align-items: stretch; flex-direction: column; }
+  .shop-perk button { width: 100%; }
   .hint-panel { align-items: stretch; flex-direction: column; }
   .hint-panel button { width: 100%; }
   .touch-controls { display: grid; }

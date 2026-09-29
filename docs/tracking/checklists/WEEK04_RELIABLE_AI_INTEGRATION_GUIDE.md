@@ -102,7 +102,7 @@ Do not implement new behavior until the review checklist has been completed agai
 ### Step 1 — Confirm the existing state
 
 - Inspect `git status --short` and preserve unrelated changes.
-- Read `AGENTS.md`, `docs/INSTRUCTIONS.md`, `docs/specs/GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and the relevant build prompt.
+- Read `AGENTS.md`, `docs/INSTRUCTIONS.md`, `docs/specs/BASE_GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and the relevant build prompt.
 - Inspect `src/ai/hint.ts`, the Hint UI, the game state transition/config files, and `tests/hint.test.ts` / `tests/snake.test.ts`.
 - Run the current required checks before making changes, and record actual output. If a check already fails, document it before attempting a fix.
 
@@ -163,7 +163,7 @@ The assignment suggests separate `AI_FEATURE_SPEC.md`, `AI_FEATURE_PROMPT.md`, `
 
 | Course artifact/content | RETRO SNAKE location | Applicability |
 |---|---|---|
-| Feature scenario/spec, acceptance, out of scope | `docs/specs/GAME_SPEC.md` plus the AI Hint section in `docs/specs/TOOL_CONTRACT.md` | Applicable; update only if approved behavior changes |
+| Feature scenario/spec, acceptance, out of scope | `docs/specs/BASE_GAME_SPEC.md` plus the AI Hint section in `docs/specs/TOOL_CONTRACT.md` | Applicable for core rules; accepted feature specs own approved additions |
 | Prompt for the bounded flow | `docs/prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` | Applicable; fake/mock scope only |
 | Provider contract | `docs/specs/TOOL_CONTRACT.md` | Its tool and response contract applies; external provider fields (key, model, provider timeout) do not |
 | AI eval cases | Hint-specific table inside `docs/tracking/evidence/EVIDENCE_004.md` | Applicable and task-specific |

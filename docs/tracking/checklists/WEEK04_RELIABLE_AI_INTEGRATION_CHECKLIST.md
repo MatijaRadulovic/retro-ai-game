@@ -4,7 +4,7 @@ Use this checklist to assess the Week 4 assignment against RETRO SNAKE. Each ite
 
 ## Project authority and status key
 
-- `AGENTS.md`, `docs/specs/GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and `docs/prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` define the current project boundary for the existing mock Hint.
+- `AGENTS.md`, `docs/specs/BASE_GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and `docs/prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` define the current project boundary for the existing mock Hint.
 - The course assignment is broader and describes live-provider/backend integration. Those instructions are course requirements, not authority to override this repo.
 - **Status key:** Pending = not checked in this review; Verified = inspected or tested with evidence; N/A — project scope = intentionally excluded by the current project contract.
 - Existing `EVIDENCE_004.md` contains historical test claims. Reconfirm them before describing them as current results.

@@ -8,7 +8,7 @@ When sources disagree, apply this order:
 
 1. The user's current request and acceptance criteria, within the project contract.
 2. [`AGENTS.md`](../../AGENTS.md), the always-on project scope and guardrails.
-3. The relevant product contract: [`GAME_SPEC.md`](../specs/GAME_SPEC.md) for game behavior and [`TOOL_CONTRACT.md`](../specs/TOOL_CONTRACT.md) for the AI Hint tool boundary.
+3. The relevant product contract: [`BASE_GAME_SPEC.md`](../specs/BASE_GAME_SPEC.md) for core game behavior, the accepted feature spec for approved additions, and [`TOOL_CONTRACT.md`](../specs/TOOL_CONTRACT.md) for the AI Hint boundary.
 4. The applicable topic instructions in [`docs/instructions/`](../instructions/) and task prompt, interpreted within the higher-priority project contract.
 5. Current implementation and tests as evidence of what exists and is checked; they do not silently amend the intended specification.
 6. README, tracking records, course materials, and other examples as orientation or historical evidence, not permission to expand project scope.
@@ -25,7 +25,8 @@ When sources disagree, apply this order:
 | [`03-ai-hint-and-security.md`](../instructions/03-ai-hint-and-security.md) | AI Hint, tools, trust, or privacy tasks | Allowed local read-only flow and security boundaries. Must agree with the tool contract. |
 | [`04-testing-and-verification.md`](../instructions/04-testing-and-verification.md) | Implementation, test, or verification tasks | Applicable checks and honest evidence requirements. |
 | [`05-workflow-tracking-and-reporting.md`](../instructions/05-workflow-tracking-and-reporting.md) | Substantive tasks and handoffs | Work log, evidence, AI usage, and report workflow. |
-| [`GAME_SPEC.md`](../specs/GAME_SPEC.md) | Game behavior or acceptance review | Product specification and intended game scope. Authoritative for game behavior below `AGENTS.md`. |
+| [`BASE_GAME_SPEC.md`](../specs/BASE_GAME_SPEC.md) | Core game behavior or acceptance review | Unchanged base-game rules and scope below `AGENTS.md`; accepted feature specs may add behavior without rewriting this base document. |
+| [XP and perks feature](../../specs/001-powerups-perks/) | XP/perk specification, planning, or implementation | Phase 1 run progression and two perk additions; no collectible powerups. |
 | [`TOOL_CONTRACT.md`](../specs/TOOL_CONTRACT.md) | Hint/tool implementation or review | Allowlisted tool, input/output, validation, and failure requirements. Authoritative within its scope. |
 | [`week3/BUILD_PROMPT_V1.md`](../prompts/week3/BUILD_PROMPT_V1.md) | Historical build task or its review | Original build brief. Task-scoped; cannot override current project rules. |
 | [`week3/BUILD_PROMPT_FINAL_VERSION.md`](../prompts/week3/BUILD_PROMPT_FINAL_VERSION.md) | Hint task or its review | Historical local mock Hint brief. Task-scoped and subordinate to specs and `AGENTS.md`. |
@@ -40,7 +41,7 @@ When sources disagree, apply this order:
 | [`BUILD_PROMPT*`](../prompts/) beyond the applicable prompt | Usually exclude | Other prompts may describe a different milestone. Include only when history or comparison requires them. |
 | [`WORK_LOG.md`](WORK_LOG.md) | Relevant history or handoff | Chronological project activity. Historical facts; verify before treating as current state. |
 | [`AI_USAGE_LOG.md`](AI_USAGE_LOG.md) | AI-use reporting or relevant decision history | Factual record of meaningful AI assistance, not a source of product requirements. |
-| [`EVIDENCE_003.md`](evidence/EVIDENCE_003.md), [`EVIDENCE_004.md`](evidence/EVIDENCE_004.md), [`EVIDENCE_005.md`](evidence/EVIDENCE_005.md) | Related milestone or regression review | Historical baseline, task context, evals, outputs, and limitations. Results establish only what was actually run at that time. |
+| [`EVIDENCE_003.md`](evidence/EVIDENCE_003.md), [`EVIDENCE_004.md`](evidence/EVIDENCE_004.md), [`EVIDENCE_005.md`](evidence/EVIDENCE_005.md), [`EVIDENCE_006.md`](evidence/EVIDENCE_006.md) | Related milestone or regression review | Historical/pre-implementation baseline, task context, evals, outputs, and limitations. Results establish only what was actually run at that time. |
 | [`EVIDENCE_TEMPLATE.md`](evidence/EVIDENCE_TEMPLATE.md) | Creating a new substantive task evidence record | Common structure; fill with actual task-specific facts and do not treat the blank template as evidence. |
 | [`checklists/`](checklists/) | Matching course-exercise audit or planning | Review aids and task guidance. Pending items are not proof of a pass; project specs and scope take precedence. |
 | [`reports/`](reports/) | Weekly report preparation | Report template and prior report. Derive claims from verified work/evidence; do not treat a prior report as current implementation state. |

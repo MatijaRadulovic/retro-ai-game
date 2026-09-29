@@ -4,6 +4,7 @@ import type { GameSnapshot } from "../src/game/gameProtocol.ts";
 import {
   createInitialState,
   pauseGame,
+  purchasePerk as applyPerkPurchase,
   resumeGame,
   setDirection,
   startGame,
@@ -25,7 +26,7 @@ type Session = {
   listeners: Set<(snapshot: GameSnapshot) => void>;
 };
 
-export type SessionErrorCode = "game_not_found" | "invalid_status";
+export type SessionErrorCode = "game_not_found" | "invalid_status" | "insufficient_perk_points" | "perk_at_cap";
 
 export class SessionError extends Error {
   readonly code: SessionErrorCode;
@@ -124,6 +125,20 @@ export class GameSessionManager {
     return this.toSnapshot(session);
   }
 
+  purchasePerk(id: string, perk: "extra_xp" | "extra_life" | "luck"): GameSnapshot {
+    const session = this.requireSession(id);
+    const result = applyPerkPurchase(session.gameState, perk);
+    if (!result.ok) {
+      const message = result.error === "invalid_status" ? "Perks can only be purchased while the game is paused."
+        : result.error === "perk_at_cap" ? "This perk is already at its maximum level."
+          : "Not enough perk points for this purchase.";
+      throw new SessionError(result.error, message);
+    }
+    session.gameState = result.state;
+    this.publish(session);
+    return this.toSnapshot(session);
+  }
+
   /** Exposed for deterministic service tests; normal ticking is scheduled by the manager. */
   advance(id: string): GameSnapshot {
     const session = this.requireSession(id);
@@ -146,14 +161,26 @@ export class GameSessionManager {
   }
 
   private toSnapshot(session: Session): GameSnapshot {
-    const { snake, direction, queuedDirection, score, food, status } = session.gameState;
+    const { snake, direction, queuedDirection, score, xp, level, perkPoints, extraXpLevel, luckLevel, extraLives, food, luckyPickup, status } = session.gameState;
     return cloneSnapshot({
       id: session.id,
       revision: session.revision,
       config: session.config,
       configError: session.configError,
-      players: [{ id: session.playerId, snake, direction, queuedDirection, score }],
-      state: { food, status },
+      players: [{
+        id: session.playerId,
+        snake,
+        direction,
+        queuedDirection,
+        score,
+        progression: { xp, level, perkPoints },
+        perks: {
+          extraXp: { level: extraXpLevel, nextCost: extraXpLevel < 5 ? extraXpLevel + 1 : null },
+          luck: { level: luckLevel, nextCost: luckLevel < 5 ? luckLevel + 1 : null },
+          extraLife: { charges: extraLives, nextCost: extraLives === 0 ? 5 : extraLives === 1 ? 8 : null },
+        },
+      }],
+      state: { food, luckyPickup, status },
     });
   }
 

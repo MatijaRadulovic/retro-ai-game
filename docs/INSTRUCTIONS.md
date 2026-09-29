@@ -14,7 +14,7 @@ Use this index to load only the project guidance relevant to the task. `AGENTS.m
 
 | Task | Read |
 |---|---|
-| Game rules, state transitions, rendering, configuration | 01, 02, 04; `specs/GAME_SPEC.md` |
+| Game rules, state transitions, rendering, configuration | 01, 02, 04; `specs/BASE_GAME_SPEC.md` and the relevant accepted feature spec |
 | AI Hint, tool contract, model-simulator behavior | 03, 04; `specs/TOOL_CONTRACT.md`, `prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` |
 | Tests, evals, failure investigation | 04, 05; relevant files under `tracking/` |
 | Documentation, project instructions, task handoff | 05 and the relevant source/spec |
@@ -22,13 +22,14 @@ Use this index to load only the project guidance relevant to the task. `AGENTS.m
 
 ## Project source of truth
 
-The precedence for product behavior is: current user request → `AGENTS.md` project contract → `specs/GAME_SPEC.md` → `specs/TOOL_CONTRACT.md` and accepted prompt → implementation and tests → runtime input. Course handouts and review notes are references; they do not expand project scope.
+The precedence for product behavior is: current user request → `AGENTS.md` project contract → `specs/BASE_GAME_SPEC.md` plus any accepted feature spec → `specs/TOOL_CONTRACT.md` and accepted prompt → implementation and tests → runtime input. Course handouts and review notes are references; they do not expand project scope.
 
 ## Repository documentation map
 
 | Area | Location | Purpose |
 |---|---|---|
-| Game specification | [`specs/GAME_SPEC.md`](specs/GAME_SPEC.md) | Rules, configuration, Definition of Done, and scope |
+| Base game specification | [`specs/BASE_GAME_SPEC.md`](specs/BASE_GAME_SPEC.md) | Existing core rules, configuration, Definition of Done, and base-game scope |
+| XP, perks, and Lucky pickup feature | [`../specs/001-powerups-perks/`](../specs/001-powerups-perks/) | Phase 1 requirements, plan, data model, API contract, quickstart, and tasks; see Evidence 006–007 for implementation status |
 | Server refactor plan | [`specs/REFACTOR_PLAN.md`](specs/REFACTOR_PLAN.md) | Accepted client/server architecture, task checklist, and validation record |
 | AI tool contract | [`specs/TOOL_CONTRACT.md`](specs/TOOL_CONTRACT.md) | Allowed `get_game_state` tool, data shape, and failure policy |
 | Build prompts and template | [`prompts/`](prompts/) | Versioned task prompts; use [`prompts/PROMPT_TEMPLATE.md`](prompts/PROMPT_TEMPLATE.md) for new artifacts |
@@ -38,6 +39,8 @@ The precedence for product behavior is: current user request → `AGENTS.md` pro
 | Core baseline and regression evals | [`tracking/evidence/EVIDENCE_003.md`](tracking/evidence/EVIDENCE_003.md) | Session 003 baseline and frozen core scenarios reused by the Hint change |
 | Hint controlled-change evidence | [`tracking/evidence/EVIDENCE_004.md`](tracking/evidence/EVIDENCE_004.md) | Hint baseline status, core regressions, positive/negative/failure evals, and limitations |
 | Server refactor evidence | [`tracking/evidence/EVIDENCE_005.md`](tracking/evidence/EVIDENCE_005.md) | Server refactor scenarios, after results, and explicit missing pre-run limitation |
+| XP/perks planning evidence | [`tracking/evidence/EVIDENCE_006.md`](tracking/evidence/EVIDENCE_006.md) | Phase 1 scope, frozen scenarios, documentation checks, and implementation status |
+| Luck/Lucky pickup evidence | [`tracking/evidence/EVIDENCE_007.md`](tracking/evidence/EVIDENCE_007.md) | Luck perk, orange pickup, deterministic spawn/reward cases, and implementation checks |
 | Evidence template | [`tracking/evidence/EVIDENCE_TEMPLATE.md`](tracking/evidence/EVIDENCE_TEMPLATE.md) | Reusable record format for baseline, frozen evals, controlled iterations, actual checks, and limitations |
 | Future task evidence | [`tracking/evidence/`](tracking/evidence/) | Use the common baseline → frozen evals → controlled iteration → same before/after evals → limitations structure |
 | Exercise review | [`tracking/checklists/WEEK03_EXERCISE_REVIEW.md`](tracking/checklists/WEEK03_EXERCISE_REVIEW.md) | Week 3 audit checklist; items remain pending until checked |
