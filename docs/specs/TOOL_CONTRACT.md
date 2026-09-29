@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Vraća mali, sanitizovan snapshot tekuće Snake partije isključivo za lokalni AI Hint tok.
+Vraća mali, sanitizovan snapshot tekuće Snake partije isključivo za server-side Gemini Hint tok.
 
 ## Read/write i caller
 
 - **Read/write:** strogo READ ONLY.
-- **Dozvoljeni caller:** samo `runHintFlow` u AI Hint UI toku.
+- **Dozvoljeni caller:** samo backend Hint service za zahtev koji je pokrenuo korisnik.
 - **Allowlist:** jedino ime `get_game_state`.
 
 ## Input
@@ -36,11 +36,20 @@ type GameStateSnapshot = {
 
 ## Must not return / do
 
-Alat nikada ne vraća secrets, environment promenljive, source code, `localStorage`, kompletno telo zmije, druge aplikacione podatke ili privatne podatke. Ne sme menjati score, smer, zmiju, hranu, konfiguraciju, timer ili restartovati partiju.
+Alat nikada ne vraća secrets, environment promenljive, source code, `localStorage`, kompletno telo zmije, druge aplikacione podatke ili privatne podatke. Samo sanitizovani snapshot sme biti poslat Gemini-ju. Ne sme menjati score, smer, zmiju, hranu, konfiguraciju, timer ili restartovati partiju. Gemini ključ se ne prosleđuje ovoj funkciji niti bilo kom browser DTO-u.
 
 ## Failure policy
 
-Ako predlog nije validan, alat se ne poziva. Ako output alata ili `HintResponse` nije validan, UI prikazuje definisanu bezbednu grešku i ne prikazuje savet. Provider failure se takođe prikazuje kao bezbedna lokalna poruka.
+Ako ulaz nije validan ili game session ne postoji, Gemini se ne poziva. Ako output snapshot-a ili `HintResponse` nije validan, UI prikazuje bezbednu lokalnu poruku i ne prikazuje odgovor kao uspešan savet. Timeout, provider failure ili nedostajuća konfiguracija poštuju bounded retry politiku i zatim prikazuju lokalni fallback.
+
+## Gemini request lifecycle
+
+- Poziv je asinhron i van game tick loop-a. UI prikazuje čekanje i ostaje upotrebljiv.
+- Jedna logička interakcija ima najviše dva Gemini pokušaja ukupno (početni pokušaj i jedan retry) i ukupan rok od 8 sekundi. Predloženi rok po pokušaju je do 3.5 sekunde; backoff je kratak i sa jitter-om. Svi rokovi su server-side konfiguracija sa bezbednim granicama.
+- Retry je dozvoljen samo za timeout/transport, 429 ili transient 5xx, i samo ako ukupni deadline dozvoljava pokušaj. Poštuj `Retry-After` samo ako staje u preostali budžet.
+- Ne retry-uj auth/config, 400/invalid request, refusal/safety, cancellation, prazan odgovor, schema-invalid ili semantički neispravan output. Nema drugog providera kao fallback-a.
+- Po iscrpljenju dozvoljenih pokušaja vrati jasno označen lokalni fallback/unavailable rezultat; nikad ne predstavljaj ga kao Gemini uspeh.
+- Javni odgovor je normalizovan i ne uključuje provider raw error, prompt, tajnu, stack trace ili privatni telemetry.
 
 ## Final response contract
 

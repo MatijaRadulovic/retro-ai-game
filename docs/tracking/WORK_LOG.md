@@ -2,6 +2,36 @@
 
 Append one concise entry for each substantive implementation, review, or documentation task. Every entry links the prompt/specification that guided the work and the evidence used or created. If there was no standalone prompt artifact, say so. Keep results factual and do not rewrite history.
 
+## 2026-09-29 — Plan Gemini Hint security and reliability
+
+- **Goal:** replace the mock-only Hint scope with an explicitly bounded server-side Gemini design; document secret-handling rules and install a push-time leak/exposure guard.
+- **Prompt/spec references:** [Gemini Hint build prompt v1](../prompts/week4/BUILD_PROMPT_GEMINI_HINT_V1.md) and [Gemini integration plan](../specs/GEMINI_HINT_INTEGRATION.md). Read both supplied Week 4 API/reliability addenda as reference; their multi-provider, OpenAI, Gemma, and unrelated replay examples remain out of scope.
+- **Starting state:** HEAD `091fe25`; existing user changes to powerups/Spec Kit records were preserved. The browser used the local fake Hint; Vite had no `define` injection; source search found no Gemini or Vite secret references. Secret files were not opened.
+- **Outcome:** revised `AGENTS.md`, AI security rules, game/tool specs, and Week 4 guide/checklist scope note; set one Gemini-only design with an 8-second total budget, two attempts maximum, transient-only retry, and a local fallback; added the build prompt and Evidence 007. Added a dependency-free pre-push scanner and configured `.githooks/pre-push` in this checkout.
+- **Verification:** `npm run security:scan` passed; simulated push scan passed across 8 locally reachable commits; synthetic credential and committed `.env` fixtures were rejected without printing/reading their values; `git diff --check` passed. Typecheck/tests/build skipped because no game code changed.
+- **Limitations/next step:** no Gemini endpoint, SDK, live request, or actual credential exists yet. The scanner detects known formats and explicit client references; it cannot prove absence of unknown credential formats or compare an unknown key. Implement the approved prompt next; a fresh checkout must enable hooks with `git config core.hooksPath .githooks`.
+
+## 2026-09-29 — Specify powerups and perks with Spec Kit
+
+- **Goal:** clarify the Week 4 powerups/perks prompt and create an implementation-ready Spec Kit artifact set without changing game behavior.
+- **Prompt/spec references:** [Powerups and perks prompt v1](../prompts/week4/BUILD_PROMPT_POWERUPS_PERKS_V1.md), [clarified feature spec](../../specs/001-powerups-perks/spec.md), and [implementation plan](../../specs/001-powerups-perks/plan.md).
+- **Task context:** current user request, `AGENTS.md`, project instructions, game/tool specifications, server-authoritative source, tests, and tracking templates. Existing modified and untracked user files were preserved; later concurrent Gemini Hint guidance changes were also preserved and only the new constitution wording was reconciled to them.
+- **Evidence:** [Evidence 006](evidence/EVIDENCE_006.md) owns the pre-implementation baseline, frozen Q1–Q5 scenarios, artifact checks, and limitations.
+- **Starting state:** Spec Kit CLI 1.0.10 is installed, but this repository has no `.specify/` project scaffold or numbered feature directory. The prompt exists as an untracked file and contains suggested values and underspecified edge cases that require explicit decisions before implementation.
+- **Outcome:** initialized Spec Kit with the Codex integration; created constitution v1.0.0 and the complete `specs/001-powerups-perks/` package: clarified spec, built-in and reviewer-owned checklists, research, implementation plan, data model, game API contract, quickstart acceptance guide, and 43 dependency-ordered tasks. Clarification resolved progression math, spawn/timing/stacking, life pricing, collision precedence, respawn, food priority, shop/touch behavior, and safe failures. Read-only analysis found 38/38 requirements/outcomes covered with no findings.
+- **Verification:** `npm run typecheck` passed; `npm test` passed 26/26; `npm run build` passed; `git diff --check` passed. Spec Kit prerequisite discovery, task format/count, placeholder/trailing-whitespace, and Markdown-link checks are recorded in Evidence 006. These executable checks establish the unchanged baseline, not the unimplemented feature.
+- **Files changed:** Spec Kit scaffold/workflow skills and constitution; `specs/001-powerups-perks/`; docs index/context manifest; Evidence 006; work/AI usage logs. No application source, tests, package, or Hint contract changed.
+- **Out of scope:** no gameplay, server, client, API, styling, or test implementation in this specification/planning task.
+- **Limitations/next step:** feature scenarios remain N/A until implementation. A reviewer should evaluate the unchecked 27-item custom requirements checklist, then implementation starts with task T001 to reconcile `GAME_SPEC.md` before any behavior code.
+
+## 2026-09-29 — Draft Week 4 powerups and perks implementation prompt
+
+- **Goal:** capture the user's accepted run-based XP, powerup, perk, shop, and life decisions in a versioned implementation prompt.
+- **Prompt/spec references:** created [Powerups and perks prompt v1](../prompts/week4/BUILD_PROMPT_POWERUPS_PERKS_V1.md) using the [prompt template](../prompts/PROMPT_TEMPLATE.md); linked the current [game spec](../specs/GAME_SPEC.md) and relevant project instructions as implementation context.
+- **Outcome:** documented the three pickups, three perks, proposed balance values, server-authoritative behavior, S-key pause/shop flow, plus-only purchases, two-life cap, acceptance criteria, allowed files, and verification commands. The game spec is to be updated by the implementation task before code changes.
+- **Verification:** `git diff --check` passed; all relative links in the new prompt resolve. Code checks were not run because no implementation changed.
+- **Limitations/next step:** proposed balance values remain tunable. Use this prompt to guide a separately evidenced implementation task.
+
 ## 2026-09-29 — Server-authoritative single-player refactor
 
 - **Goal:** preserve current Snake gameplay while moving authority to a TypeScript Node backend, with multiple independent in-memory single-player containers and a path to extend player/session state later.

@@ -6,7 +6,7 @@ This guide extracts the Week 4 assignment and teaching materials into an actiona
 
 The generic Week 4 assignment asks students to add one user-visible AI feature through a TypeScript backend and a live provider. It covers API keys, provider choice, timeouts, retry, fallback, usage telemetry, and a limited live demonstration.
 
-RETRO SNAKE's current project contract is intentionally narrower:
+At the time this guide was first written, RETRO SNAKE's project contract was intentionally narrower:
 
 - The browser game remains local and uses the existing TypeScript/Vite app.
 - The only AI feature is a local, user-triggered, read-only Hint.
@@ -14,7 +14,7 @@ RETRO SNAKE's current project contract is intentionally narrower:
 - The model path is fake/mock. There is no backend, API key, provider SDK, external request, or network call.
 - AI output cannot issue movement commands or mutate any game/configuration state.
 
-Therefore, the Week 4 provider architecture is useful as design education, but its live-provider requirements are **not acceptance criteria for this repository**. Do not add them just to make this project resemble the generic assignment. A future provider/backend change would require an explicit user-approved scope change and corresponding updates to `AGENTS.md`, the game/tool specifications, security design, tests, and evidence.
+The user has since approved one specific scope change: replace the mock Hint model with a single server-side Gemini provider. Follow the current [`GEMINI_HINT_INTEGRATION.md`](../../specs/GEMINI_HINT_INTEGRATION.md) plan and security module. The broader provider architecture remains reference material; OpenAI, multi-provider routing, and unrelated examples are still out of scope.
 
 ## 2. What Week 4 teaches
 
@@ -49,7 +49,7 @@ Reject invalid values before display. The UI should not parse arbitrary AI prose
 
 ### D. Classify failures before selecting a response
 
-The provider materials distinguish application preflight, transport, provider API, provider content, application validation, and UI/API failures. That classification helps diagnose issues, but only local categories apply to the current fake path:
+The provider materials distinguish application preflight, transport, provider API, provider content, application validation, and UI/API failures. The table below records the original mock-only baseline; use the current [Gemini integration plan](../../specs/GEMINI_HINT_INTEGRATION.md) for the authorized provider behavior.
 
 | Failure category | Current RETRO SNAKE treatment |
 |---|---|
@@ -79,7 +79,7 @@ For future provider work, the detailed distinction is:
 | Missing required tool call | Tool-contract/model behavior error, not a transport timeout | Invalid/unsupported fake proposals are rejected |
 | Cancellation | Propagate cancellation; do not start another attempt | No loop or retries |
 
-Retry and fallback are separate policies. Retry repeats the same operation/model after a classified transient error; fallback changes the model/provider or returns a defined safe application result. If ever authorized, both must share one total deadline, fixed max-attempt count, bounded backoff, cancellation handling, and observable per-attempt records. Hidden SDK retries and parallel model races undermine cost, latency, and evidence.
+Retry and fallback are separate policies. Retry repeats the same operation/model after a classified transient error; fallback changes the model/provider or returns a defined safe application result. For the approved Gemini Hint, there is one model and fallback means a clearly identified local unavailable result after the bounded retry policy. Both use the single total deadline, fixed attempt cap, bounded backoff, cancellation handling, and observable per-attempt records in the integration plan. Hidden SDK retries and parallel model races undermine cost, latency, and evidence.
 
 ### E. Retry and fallback are different
 
@@ -87,13 +87,13 @@ Retry and fallback are separate policies. Retry repeats the same operation/model
 - A **fallback** chooses a different allowed route or a safe application outcome.
 - Both require a finite attempt limit and total time budget in a live integration. Hidden SDK retries make evidence and usage inaccurate.
 - A fallback must not bypass validation, privacy, safety, or authorization. It must be recorded as a separate attempt.
-- The current fake Hint has no network retry or provider fallback requirement. A local safe error is the correct failure outcome.
+- The earlier fake Hint had no network retry requirement. The approved Gemini Hint retries only transient errors and falls back locally after two total attempts; it does not switch to another provider.
 
 ### F. Keep data and diagnostics small
 
 Send or expose only the minimum facts needed by the operation. Never place keys, environment values, private payloads, source dumps, complete hidden state, raw prompt/response, or stack traces in UI output or evidence. Missing token/cost values stay unknown; do not estimate them from string length. For this project, a local fake model has no provider token usage to report.
 
-For a live service (reference only), a safe internal event can capture a logical interaction ID, ordered attempt number/kind, operation, provider/model, phase, sanitized status/error class, latency, attempt count, fallback/cache status, and provider-reported usage when available. Keep the public user error separate from internal diagnostics. Never claim live usage or latency from fake tests.
+For the Gemini service, a safe internal event can capture a logical interaction ID, ordered attempt number/kind, operation, provider/model, phase, sanitized status/error class, latency, attempt count, fallback/cache status, and provider-reported usage when available. Keep the public user error separate from internal diagnostics. Never claim live usage or latency from fake tests.
 
 ## 3. Action plan for reviewing the existing project
 
@@ -163,8 +163,8 @@ The assignment suggests separate `AI_FEATURE_SPEC.md`, `AI_FEATURE_PROMPT.md`, `
 
 | Course artifact/content | RETRO SNAKE location | Applicability |
 |---|---|---|
-| Feature scenario/spec, acceptance, out of scope | `docs/specs/GAME_SPEC.md` plus the AI Hint section in `docs/specs/TOOL_CONTRACT.md` | Applicable; update only if approved behavior changes |
-| Prompt for the bounded flow | `docs/prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` | Applicable; fake/mock scope only |
+| Feature scenario/spec, acceptance, out of scope | `docs/specs/GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and `docs/specs/GEMINI_HINT_INTEGRATION.md` | Current approved Gemini behavior is in the integration plan |
+| Prompt for the bounded flow | `docs/prompts/week4/BUILD_PROMPT_GEMINI_HINT_V1.md` | Current implementation prompt; Week 3 prompt is historical mock-only context |
 | Provider contract | `docs/specs/TOOL_CONTRACT.md` | Its tool and response contract applies; external provider fields (key, model, provider timeout) do not |
 | AI eval cases | Hint-specific table inside `docs/tracking/evidence/EVIDENCE_004.md` | Applicable and task-specific |
 | W04 evidence | `docs/tracking/evidence/EVIDENCE_004.md` | Applicable; actual local mock results only |
@@ -172,15 +172,15 @@ The assignment suggests separate `AI_FEATURE_SPEC.md`, `AI_FEATURE_PROMPT.md`, `
 
 The Week 4 assignment requires at least four provider-oriented evals (normal success, invalid local input with zero provider calls, provider failure/timeout, malformed output). For this repository adapt these to valid fake Hint, invalid/unsupported proposal with zero tool calls, fake-model failure, and malformed output. A fake exception is not evidence of a real network timeout.
 
-## 6. Course-only provider work, if a future task explicitly changes scope
+## 6. Provider work authorized by the current scope update
 
 The generic course assignment expects a server-side boundary and may ask for a provider/model, server-only key, endpoint, explicit request/response contracts, timeouts, bounded retry, safe errors, a fake provider, and a small live smoke test. The reliability addendum further discusses status classification, model chains, fallback policy, provider capability checks, telemetry, token usage, caching, quotas, cancellation, and provider-specific adapters.
 
-None of those live integration tasks are authorized by the current RETRO SNAKE contract. If the scope is explicitly changed later, plan them as a separate feature and address at least:
+The single Gemini Hint slice is now authorized and planned separately. Apply only the relevant controls below; the detailed acceptance criteria and retry values live in the Gemini integration plan. Do not treat generic examples as permission to add other providers/features. At minimum:
 
-- provider-neutral application contract with provider-specific adapters; the feature service owns scenario, bounded input, and business rules, the gateway/router owns allowlisted selection and overall budgets/telemetry, and each adapter owns SDK mapping and provider error normalization;
-- server-side secret storage and model allowlist; never put a real key in browser code, Git, prompts, screenshots, evidence, fixtures, or user-visible logs; use placeholder-only example config and rotate any leaked key;
-- explicit provider/model selection policy. The course recommends Gemini as a teaching default and says provider brand is not graded; choose the least expensive model that reliably meets the scenario, and do not let browser input select arbitrary models;
+- a stable Hint application contract and one Gemini adapter; keep the existing feature behavior separate from Gemini SDK mapping, and do not add a router until a second provider is explicitly approved;
+- server-side secret configuration and one server-owned model allowlist; never put a real key in browser code, Git, prompts, screenshots, evidence, fixtures, or user-visible logs; use placeholder-only example config and rotate any leaked key;
+- fixed server-side Gemini/model selection. The browser cannot choose a provider or arbitrary model;
 - input/output bounds, strict schema plus semantic validation;
 - explicit timeout/deadline, cancellation propagation, retryable error classes, and a maximum total attempt budget; a timed-out public result must not silently turn into success later;
 - no retry/fallback for invalid input, authorization/privacy rejection, cancellation, safety refusal, or deterministic schema errors;
@@ -193,15 +193,15 @@ Provider names, model IDs, SDK syntax, status behavior, and capability lists can
 
 ## 7. Course workflow, demo, and assessment notes
 
-The assignment recommends this order: stabilize the W03 project → establish the frontend/backend boundary → select a scenario → specify it → define contracts → build a fake provider → implement the endpoint → validate input/output → add timeout/error policy → test → only then connect a live provider → capture evidence → review the diff and play-test. For RETRO SNAKE, stop before backend/provider work; the remaining local steps are contract, fake flow, validation, negative/failure tests, evidence, and review.
+The assignment recommends this order: stabilize the W03 project → establish the frontend/backend boundary → select a scenario → specify it → define contracts → build a fake provider → implement the endpoint → validate input/output → add timeout/error policy → test → only then connect a live provider → capture evidence → review the diff and play-test. For the earlier RETRO SNAKE mock milestone, work stopped before backend/provider calls. The current user request authorizes the next step: implement the single Gemini backend flow under the integration plan, then verify it with offline fake transport and separate opt-in live evidence.
 
 For pair assignments, one person may drive specification/implementation while the other reviews architecture, secrets, tests, and evidence; switch roles and record each person's real contribution. Existing project records describe this repo as independent work, so do not rewrite those contribution claims to imply a pair.
 
-The generic six-minute demo structure is: scenario (0:00–0:45), architecture (0:45–1:30), success (1:30–2:30), contract/validation (2:30–3:30), one failure (3:30–4:30), fake tests (4:30–5:15), evidence/limitations/contribution (5:15–6:00). Adapt architecture to show local UI → Hint flow → fake model/tool; explicitly state there is no backend/provider.
+The generic six-minute demo structure is: scenario (0:00–0:45), architecture (0:45–1:30), success (1:30–2:30), contract/validation (2:30–3:30), one failure (3:30–4:30), fake tests (4:30–5:15), evidence/limitations/contribution (5:15–6:00). Show browser → backend Hint endpoint → Gemini adapter and the fake transport used by automated tests. State clearly whether a live smoke check was run; never show or read the key during the demo.
 
-The assignment's grading weights are: feature design 10%, frontend/backend architecture 15%, security/secrets 15%, specification discipline 10%, request/response contract 10%, runtime validation 10%, reliability 10%, tests/fake provider 10%, evidence/reproducibility 5%, and member understanding 5%. These are course grading criteria; provider/backend points are out of scope by project contract, not a reason to change the product unilaterally.
+The assignment's grading weights are: feature design 10%, frontend/backend architecture 15%, security/secrets 15%, specification discipline 10%, request/response contract 10%, runtime validation 10%, reliability 10%, tests/fake provider 10%, evidence/reproducibility 5%, and member understanding 5%. The approved Gemini Hint plan addresses the provider/backend criteria within its narrow scope.
 
-The assignment's suggested live API budget (up to 20 development calls and 5 demo calls) and provider dashboard are course guidance for live integrations. This local mock-only project should make zero live calls; do not interpret those numbers as a target.
+The assignment's suggested live API budget (up to 20 development calls and 5 demo calls) and provider dashboard are course guidance for live integrations. Keep live calls opt-in and separate from automated tests; do not interpret the suggested call counts as a target.
 
 ## 8. Source materials and precedence
 

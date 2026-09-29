@@ -2,7 +2,7 @@
 
 ## Identity
 
-RETRO SNAKE je originalna igra sa retro izgledom i bez tuđih asseta, muzike ili logotipa. Vite browser klijent prikazuje igru; TypeScript Node backend poseduje autoritativno stanje i može da hostuje više nezavisnih single-player game containera. Svaki container trenutno ima jednog igrača. Igrač vodi zmiju po mreži, skuplja hranu i pokušava da izdrži što duže bez udara u zid ili telo. Partija počinje tek posle prvog validnog smera. Lokalni AI Hint je demonstracioni, read-only tok i ne poziva pravi AI servis.
+RETRO SNAKE je originalna igra sa retro izgledom i bez tuđih asseta, muzike ili logotipa. Vite browser klijent prikazuje igru; TypeScript Node backend poseduje autoritativno stanje i može da hostuje više nezavisnih single-player game containera. Svaki container trenutno ima jednog igrača. Igrač vodi zmiju po mreži, skuplja hranu i pokušava da izdrži što duže bez udara u zid ili telo. Partija počinje tek posle prvog validnog smera. AI Hint je read-only, korisnički pokrenut tok koji poziva Gemini isključivo sa backend-a; pri nedostupnosti vraća bezbedan lokalni fallback.
 
 ## Core rules
 
@@ -25,7 +25,8 @@ RETRO SNAKE je originalna igra sa retro izgledom i bez tuđih asseta, muzike ili
 - Browser sends intended actions and renders validated snapshots received from the server. It does not advance game timers or mutate authoritative state.
 - HTTP API creates and reads games and accepts direction, pause, resume, and restart actions. WebSocket broadcasts current snapshots to connected clients.
 - Game containers are in-memory and may run independently on one server. A container has shared game state and a `players` collection; each player owns its snake, direction, and score. There is exactly one player per container in this version, with no room creation/join endpoints or multiplayer UI.
-- The Hint consumes a sanitized read-only snapshot derived from the latest server snapshot. It remains a local fake/mock model flow with no external provider.
+- The Hint endpoint derives a sanitized read-only snapshot from authoritative server state and sends only that bounded snapshot to the server-side Gemini adapter. The browser never calls Gemini or receives the API key.
+- The Hint request is asynchronous, has a finite deadline and bounded retry policy, and is independent of the game tick. Failure, missing configuration, or invalid provider output never blocks or changes the game.
 - Architecture steps, scope, and task validation are tracked in [`REFACTOR_PLAN.md`](REFACTOR_PLAN.md).
 
 ### HTTP and WebSocket contract
@@ -39,6 +40,7 @@ RETRO SNAKE je originalna igra sa retro izgledom i bez tuđih asseta, muzike ili
 | `POST` | `/api/games/:gameId/pause` | Pause a playing game. |
 | `POST` | `/api/games/:gameId/resume` | Resume a paused game. |
 | `POST` | `/api/games/:gameId/restart` | Reset the game while retaining its container and player IDs. |
+| `POST` | `/api/games/:gameId/hint` | Request one read-only AI Hint; response contract and provider failure policy are in [`TOOL_CONTRACT.md`](TOOL_CONTRACT.md). |
 | WebSocket | `/api/games/:gameId/events` | Send an initial `{ "type": "snapshot", "game": snapshot }` and later snapshots after transitions and ticks. This connection accepts no commands. |
 
 Errors use `{ "error": { "code": string, "message": string } }`. Invalid requests return HTTP 400, missing routes/sessions return 404, and actions invalid for the current game status return 409. Invalid config uses the existing safe default and includes `configError` in the snapshot.
@@ -71,8 +73,10 @@ Tamna pozadina, jasna mreža, kontrastna zelena zmija i crvena hrana moraju osta
 - Pause, restart, and local best score work through the client/server app; local best score remains in browser storage.
 - `GameConfig` i AI Hint ulazi/izlazi imaju runtime validaciju i bezbedan fallback ili grešku.
 - Postoje testovi za core logiku i success, negative i failure AI Hint putanje.
-- No secrets, live AI provider, AI write tool, or automatic AI-driven game mutation is present.
+- Gemini credentials are server-only; browser bundles, public DTOs, logs, prompts, tests, screenshots, and tracking records contain no credential. The pre-push guard scans outgoing commits and client build/source surfaces without opening secret files.
+- The Hint uses bounded asynchronous Gemini calls, runtime output validation, safe errors, and local fallback. The game remains playable if Gemini is not configured or available.
+- No AI write tool or automatic AI-driven game mutation is present.
 
 ## Out of scope
 
-Room creation/joining, multiple players in one game, multiplayer UI, login/authentication, database, online leaderboard, deployment, levels, sound, AI opponent, live AI provider, API keys, additional AI tools, write tools, autonomous loops, and any game mutation through AI Hint. Lives, powerups, breakable walls, obstacles, and selectable map layouts are also out of scope for this refactor.
+Room creation/joining, multiple players in one game, multiplayer UI, login/authentication, database, online leaderboard, deployment, levels, sound, AI opponent, additional AI providers/models, browser-selected model/provider, additional AI tools, write tools, autonomous loops, and any game mutation through AI Hint. Lives, powerups, breakable walls, obstacles, and selectable map layouts are also out of scope for this refactor.

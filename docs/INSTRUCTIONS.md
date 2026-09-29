@@ -15,7 +15,7 @@ Use this index to load only the project guidance relevant to the task. `AGENTS.m
 | Task | Read |
 |---|---|
 | Game rules, state transitions, rendering, configuration | 01, 02, 04; `specs/GAME_SPEC.md` |
-| AI Hint, tool contract, model-simulator behavior | 03, 04; `specs/TOOL_CONTRACT.md`, `prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` |
+| AI Hint, Gemini provider, tool contract, security | 03, 04; `specs/TOOL_CONTRACT.md`, `specs/GEMINI_HINT_INTEGRATION.md`, accepted prompt |
 | Tests, evals, failure investigation | 04, 05; relevant files under `tracking/` |
 | Documentation, project instructions, task handoff | 05 and the relevant source/spec |
 | Any larger or cross-cutting change | 01–05 as relevant; summarize the plan before editing |
@@ -30,7 +30,10 @@ The precedence for product behavior is: current user request → `AGENTS.md` pro
 |---|---|---|
 | Game specification | [`specs/GAME_SPEC.md`](specs/GAME_SPEC.md) | Rules, configuration, Definition of Done, and scope |
 | Server refactor plan | [`specs/REFACTOR_PLAN.md`](specs/REFACTOR_PLAN.md) | Accepted client/server architecture, task checklist, and validation record |
+| Spec Kit constitution | [`.specify/memory/constitution.md`](../.specify/memory/constitution.md) | Non-negotiable planning gates derived from the project contract; subordinate to the user request and `AGENTS.md` |
+| Powerups/perks feature package | [`../specs/001-powerups-perks/`](../specs/001-powerups-perks/) | Clarified feature spec, research, plan, model, API contract, quickstart, checklists, and tasks; implementation remains pending |
 | AI tool contract | [`specs/TOOL_CONTRACT.md`](specs/TOOL_CONTRACT.md) | Allowed `get_game_state` tool, data shape, and failure policy |
+| Gemini Hint plan | [`specs/GEMINI_HINT_INTEGRATION.md`](specs/GEMINI_HINT_INTEGRATION.md) | Approved single-provider scope, server-only key, reliability policy, and acceptance criteria |
 | Build prompts and template | [`prompts/`](prompts/) | Versioned task prompts; use [`prompts/PROMPT_TEMPLATE.md`](prompts/PROMPT_TEMPLATE.md) for new artifacts |
 | Work log | [`tracking/WORK_LOG.md`](tracking/WORK_LOG.md) | Chronological work, decisions, checks, and next steps |
 | Context manifest | [`tracking/CONTEXT_MANIFEST.md`](tracking/CONTEXT_MANIFEST.md) | Actual repository source map, task selection guidance, source priority, and default exclusions |
@@ -38,6 +41,8 @@ The precedence for product behavior is: current user request → `AGENTS.md` pro
 | Core baseline and regression evals | [`tracking/evidence/EVIDENCE_003.md`](tracking/evidence/EVIDENCE_003.md) | Session 003 baseline and frozen core scenarios reused by the Hint change |
 | Hint controlled-change evidence | [`tracking/evidence/EVIDENCE_004.md`](tracking/evidence/EVIDENCE_004.md) | Hint baseline status, core regressions, positive/negative/failure evals, and limitations |
 | Server refactor evidence | [`tracking/evidence/EVIDENCE_005.md`](tracking/evidence/EVIDENCE_005.md) | Server refactor scenarios, after results, and explicit missing pre-run limitation |
+| Powerups/perks planning evidence | [`tracking/evidence/EVIDENCE_006.md`](tracking/evidence/EVIDENCE_006.md) | Pre-implementation baseline, frozen feature scenarios, Spec Kit artifact validation, and limitations |
+| Gemini security/integration plan evidence | [`tracking/evidence/EVIDENCE_007.md`](tracking/evidence/EVIDENCE_007.md) | Gemini scope decisions, source exposure inspection, pre-push guard verification, and implementation limitations |
 | Evidence template | [`tracking/evidence/EVIDENCE_TEMPLATE.md`](tracking/evidence/EVIDENCE_TEMPLATE.md) | Reusable record format for baseline, frozen evals, controlled iterations, actual checks, and limitations |
 | Future task evidence | [`tracking/evidence/`](tracking/evidence/) | Use the common baseline → frozen evals → controlled iteration → same before/after evals → limitations structure |
 | Exercise review | [`tracking/checklists/WEEK03_EXERCISE_REVIEW.md`](tracking/checklists/WEEK03_EXERCISE_REVIEW.md) | Week 3 audit checklist; items remain pending until checked |

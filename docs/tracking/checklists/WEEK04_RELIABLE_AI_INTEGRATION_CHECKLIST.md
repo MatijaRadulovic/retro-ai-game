@@ -2,11 +2,13 @@
 
 Use this checklist to assess the Week 4 assignment against RETRO SNAKE. Each item starts **Pending**; change status only after checking the current files or running the relevant verification. The checklist separates project acceptance from generic course requirements that conflict with this repository's approved scope.
 
+> **Scope update:** This checklist records the earlier mock-Hint review. The user has since authorized one server-side Gemini Hint. Its current acceptance criteria are in [`GEMINI_HINT_INTEGRATION.md`](../../specs/GEMINI_HINT_INTEGRATION.md); the old N/A entries below describe the prior review and do not prohibit that scoped change.
+
 ## Project authority and status key
 
-- `AGENTS.md`, `docs/specs/GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and `docs/prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` define the current project boundary for the existing mock Hint.
+- `AGENTS.md`, `docs/specs/GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and [`GEMINI_HINT_INTEGRATION.md`](../../specs/GEMINI_HINT_INTEGRATION.md) define the current project boundary. The Week 3 prompt is historical mock-only context.
 - The course assignment is broader and describes live-provider/backend integration. Those instructions are course requirements, not authority to override this repo.
-- **Status key:** Pending = not checked in this review; Verified = inspected or tested with evidence; N/A — project scope = intentionally excluded by the current project contract.
+- **Status key:** Pending = not checked in this review; Verified = inspected or tested with evidence; N/A — prior scope = excluded under the mock-only contract before the scope update above.
 - Existing `EVIDENCE_004.md` contains historical test claims. Reconfirm them before describing them as current results.
 
 ## A. Keep the Week 3 game stable
@@ -22,7 +24,7 @@ Use this checklist to assess the Week 4 assignment against RETRO SNAKE. Each ite
 - [ ] **Pending** — The Hint receives only the minimum game facts required by its task.
 - [ ] **Pending** — Success and failure behavior are defined before implementation.
 - [ ] **Pending** — The Hint is advice only; the user or game controls movement and all state changes.
-- [ ] **Pending** — Scope stays at one local AI Hint flow; no replay analysis, ticket classification, second tool, or unrelated AI feature is added.
+- [ ] **Pending** — Scope stays at one user-triggered Gemini Hint flow; no replay analysis, second provider/tool, or unrelated AI feature is added.
 
 ## C. Contract and trust boundary
 
@@ -37,7 +39,7 @@ Use this checklist to assess the Week 4 assignment against RETRO SNAKE. Each ite
 
 ## D. Failure behavior
 
-- [ ] **Pending** — Unknown tool, invalid input, malformed tool output, malformed final output, and fake-model failure each fail safely.
+- [ ] **Pending** — Invalid input, malformed tool/provider/final output, refusal, auth/config failure, timeout, and exhausted transient retries each fail safely.
 - [ ] **Pending** — A failure never becomes a fabricated successful hint or changes game state.
 - [ ] **Pending** — UI presents a stable, clear local message without stack trace, raw payload, or secret.
 - [ ] **Pending** — Failure handling does not make repeated calls or leave the UI stuck.
@@ -45,20 +47,22 @@ Use this checklist to assess the Week 4 assignment against RETRO SNAKE. Each ite
 
 ## E. Offline test matrix and evidence
 
-- [ ] **Pending** — Fake/mock tests cover a valid Hint with expected input, output, and call count.
+- [ ] **Pending** — Fake transport tests cover valid Gemini request/response mapping, expected input/output, and exact call count without network or key.
 - [ ] **Pending** — Invalid arguments and unsupported tool names assert `callCount === 0`.
 - [ ] **Pending** — Malformed tool output and malformed `HintResponse` are rejected.
 - [ ] **Pending** — Fake-model failure produces the safe fallback.
 - [ ] **Pending** — A state-invariance test proves the Hint path does not mutate game state.
+- [ ] **Pending** — Transient-only retry, two-attempt limit, total deadline, cancellation, and local fallback are covered.
+- [ ] **Pending** — Browser source and build contain no credential reference/value; pre-push guard passes without reading secret files.
 - [ ] **Pending** — Test fixtures are deterministic and require no key, network, or live account.
 - [ ] **Pending** — [`EVIDENCE_004.md`](../evidence/EVIDENCE_004.md) records expected cases, observed results, actual commands/output, limits, and prompt/spec links.
 - [ ] **Pending** — [`WORK_LOG.md`](../WORK_LOG.md) links this task to the relevant prompt/spec and evidence.
 - [ ] **Pending** — AI usage and contributors are recorded accurately; no private chain-of-thought or credentials are included.
 - [ ] **Pending** — Required implementation checks are run: `npm run typecheck`, `npm test`, and `npm run build`; actual outcomes are preserved.
 
-## F. Course requirements intentionally excluded by current project scope
+## F. Course requirements excluded under the prior mock-only scope
 
-These are present in the generic Week 4 assignment. Their status here is **N/A — project scope**, not a hidden implementation defect. Do not implement them without an explicit scope/spec change.
+These rows preserve the earlier mock-only review record. Their **N/A — prior scope** status is superseded for the single Gemini Hint by the approved plan above.
 
 - [x] **N/A — project scope** — Frontend-to-TypeScript-backend split and AI endpoint.
 - [x] **N/A — project scope** — Gemini/OpenAI provider integration, provider selection, live smoke test, model choice, and API key/environment configuration.
@@ -70,7 +74,7 @@ The relevant lesson still applies offline: fake first, explicit contracts, stric
 
 ## G. Week 4 stretch and out-of-scope work
 
-- [x] **N/A — not selected** — Optional retry/fallback, usage dashboard, token accounting, second model/provider, or live play-test.
+- [x] **N/A — prior scope** — Usage dashboard, token accounting, second model/provider, or automatic alternate-model fallback.
 - [x] **N/A — out of scope** — Agent loops, autonomous operation, RAG/vector database, write tool, multiplayer, backend, deployment, or AI in frame-by-frame game updates.
 
 ## Review result
