@@ -15,7 +15,7 @@ Use this index to load only the project guidance relevant to the task. `AGENTS.m
 | Task | Read |
 |---|---|
 | Game rules, state transitions, rendering, configuration | 01, 02, 04; `specs/GAME_SPEC.md` |
-| AI Hint, tool contract, model-simulator behavior | 03, 04; `specs/TOOL_CONTRACT.md`, `prompts/BUILD_PROMPT_HINTS-MOCK.md` |
+| AI Hint, tool contract, model-simulator behavior | 03, 04; `specs/TOOL_CONTRACT.md`, `prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` |
 | Tests, evals, failure investigation | 04, 05; relevant files under `tracking/` |
 | Documentation, project instructions, task handoff | 05 and the relevant source/spec |
 | Any larger or cross-cutting change | 01–05 as relevant; summarize the plan before editing |
@@ -29,18 +29,21 @@ The precedence for product behavior is: current user request → `AGENTS.md` pro
 | Area | Location | Purpose |
 |---|---|---|
 | Game specification | [`specs/GAME_SPEC.md`](specs/GAME_SPEC.md) | Rules, configuration, Definition of Done, and scope |
+| Server refactor plan | [`specs/REFACTOR_PLAN.md`](specs/REFACTOR_PLAN.md) | Accepted client/server architecture, task checklist, and validation record |
 | AI tool contract | [`specs/TOOL_CONTRACT.md`](specs/TOOL_CONTRACT.md) | Allowed `get_game_state` tool, data shape, and failure policy |
-| Build prompts | [`prompts/`](prompts/) | Initial and final implementation briefs |
+| Build prompts and template | [`prompts/`](prompts/) | Versioned task prompts; use [`prompts/PROMPT_TEMPLATE.md`](prompts/PROMPT_TEMPLATE.md) for new artifacts |
 | Work log | [`tracking/WORK_LOG.md`](tracking/WORK_LOG.md) | Chronological work, decisions, checks, and next steps |
 | Context manifest | [`tracking/CONTEXT_MANIFEST.md`](tracking/CONTEXT_MANIFEST.md) | Actual repository source map, task selection guidance, source priority, and default exclusions |
 | AI usage log | [`tracking/AI_USAGE_LOG.md`](tracking/AI_USAGE_LOG.md) | Significant AI-assisted decisions; no private chain-of-thought |
-| Core baseline and evals | [`tracking/evidence/EVIDENCE_003.md`](tracking/evidence/EVIDENCE_003.md) | Session 003 baseline, task context, core cases, and controlled-change results |
-| Hint evals and evidence | [`tracking/evidence/EVIDENCE_004.md`](tracking/evidence/EVIDENCE_004.md) | Session 004 success, negative, read-only, and failure cases |
-| Future task evidence | [`tracking/evidence/`](tracking/evidence/) | Keep each new task's baseline, context, evals, actual results, and limits together |
+| Core baseline and regression evals | [`tracking/evidence/EVIDENCE_003.md`](tracking/evidence/EVIDENCE_003.md) | Session 003 baseline and frozen core scenarios reused by the Hint change |
+| Hint controlled-change evidence | [`tracking/evidence/EVIDENCE_004.md`](tracking/evidence/EVIDENCE_004.md) | Hint baseline status, core regressions, positive/negative/failure evals, and limitations |
+| Server refactor evidence | [`tracking/evidence/EVIDENCE_005.md`](tracking/evidence/EVIDENCE_005.md) | Server refactor scenarios, after results, and explicit missing pre-run limitation |
+| Evidence template | [`tracking/evidence/EVIDENCE_TEMPLATE.md`](tracking/evidence/EVIDENCE_TEMPLATE.md) | Reusable record format for baseline, frozen evals, controlled iterations, actual checks, and limitations |
+| Future task evidence | [`tracking/evidence/`](tracking/evidence/) | Use the common baseline → frozen evals → controlled iteration → same before/after evals → limitations structure |
 | Exercise review | [`tracking/checklists/WEEK03_EXERCISE_REVIEW.md`](tracking/checklists/WEEK03_EXERCISE_REVIEW.md) | Week 3 audit checklist; items remain pending until checked |
 | Week 4 checklist | [`tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_CHECKLIST.md`](tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_CHECKLIST.md) | Project-adapted Week 4 acceptance checklist |
 | Week 4 task guide | [`tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_GUIDE.md`](tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_GUIDE.md) | Detailed course extraction, project mapping, work plan, and evidence instructions |
 | Weekly reports | [`tracking/reports/`](tracking/reports/) | Existing report and reusable report template |
 | Detailed instructions | [`instructions/`](instructions/) | Focused agent guidance by subject |
 
-Update the smallest owning file when a rule changes. Keep evidence and activity records separate from specifications and permanent instructions. Evals and task-specific context notes belong inside the task evidence/work log; the context manifest is only a stable map of repository sources and does not replace those records.
+Update the smallest owning file when a rule changes. Keep evidence and activity records separate from specifications and permanent instructions. Use the workflow guide to keep spec, prompt, evidence, AI usage, work log, and report responsibilities distinct. Evals and task-specific context notes belong inside task evidence; the context manifest is only a stable map of repository sources and does not replace those records.

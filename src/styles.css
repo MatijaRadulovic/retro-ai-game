@@ -76,6 +76,8 @@ h1 { margin: 0; color: var(--snake); font-size: clamp(2rem, 8vw, 3.3rem); line-h
 .shake { animation: shake 420ms ease-in-out; }
 .status-row { margin-bottom: 13px; color: var(--text-muted); font-size: 0.68rem; letter-spacing: 0.08em; }
 .status-row span:first-child { color: var(--snake); }
+.status-row [data-connection="offline"] { color: var(--food); }
+.status-row [data-connection="reconnecting"], .status-row [data-connection="connecting"] { color: #ffd166; }
 .status-row [data-state="game_over"] { color: var(--food); }
 .status-row [data-state="won"] { color: #ffd166; }
 .status-row [data-state="ready"] { color: #d8f3dc; }
@@ -84,7 +86,7 @@ h1 { margin: 0; color: var(--snake); font-size: clamp(2rem, 8vw, 3.3rem); line-h
 .board-frame { position: relative; }
 .board {
   display: grid;
-  grid-template-columns: repeat(20, 1fr);
+  grid-template-columns: repeat(var(--grid-size, 20), 1fr);
   width: min(100%, 576px);
   margin: 0 auto;
   aspect-ratio: 1;

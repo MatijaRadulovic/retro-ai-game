@@ -4,7 +4,7 @@ This document summarizes the supplied Week 3 Session 1 material and weekly assig
 
 ## Authority and adaptation
 
-- `AGENTS.md`, `docs/specs/GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and `docs/prompts/BUILD_PROMPT_HINTS-MOCK.md` remain authoritative for this repository.
+- `AGENTS.md`, `docs/specs/GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and the historical Hint prompt at `docs/prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` define the project boundary for that milestone.
 - The Week 3 course documents are exercise guidance. They do not override the project specifications or authorize adding a new product feature.
 - The exercise's `Ticket` classification examples (`category`, `matchId`, replay messages) are instructional examples from the course package. RETRO SNAKE currently specifies a Snake game, runtime-validated `GameConfig`, and local read-only AI Hint. Do not add replay lookup, ticket classification, or a replay AI feature just to copy those examples.
 - The general learning goals still apply: explicit scope, curated context, a runtime-checked structured contract, baseline/evaluation, a controlled change, and evidence.

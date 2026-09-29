@@ -2,7 +2,7 @@
 
 ## Identity
 
-RETRO SNAKE je originalna minimalna browser igra sa retro izgledom i bez tuđih asseta, muzike, logotipa ili backend-a. Igrač vodi zmiju po mreži, skuplja hranu i pokušava da izdrži što duže bez udara u zid ili telo. Partija počinje tek posle prvog validnog smera, pa je početno stanje proverljivo i ne gubi se pre reakcije igrača. Lokalni AI Hint je demonstracioni, read-only tok: ne menja igru, ne koristi mrežu i ne poziva pravi AI servis.
+RETRO SNAKE je originalna igra sa retro izgledom i bez tuđih asseta, muzike ili logotipa. Vite browser klijent prikazuje igru; TypeScript Node backend poseduje autoritativno stanje i može da hostuje više nezavisnih single-player game containera. Svaki container trenutno ima jednog igrača. Igrač vodi zmiju po mreži, skuplja hranu i pokušava da izdrži što duže bez udara u zid ili telo. Partija počinje tek posle prvog validnog smera. Lokalni AI Hint je demonstracioni, read-only tok i ne poziva pravi AI servis.
 
 ## Core rules
 
@@ -18,6 +18,30 @@ RETRO SNAKE je originalna minimalna browser igra sa retro izgledom i bez tuđih 
 - `P`, `Space` ili dugme `PAUSE` pauziraju i nastavljaju igru; dodirom su dostupna četiri smerna dugmeta na manjim ekranima.
 - `NEW GAME`, overlay dugme ili `R` vraćaju početnu zmiju, rezultat i hranu u stanje `ready`.
 - Najbolji rezultat se čuva lokalno u browseru; nema naloga, baze ni online tabele.
+
+## Client/server boundary
+
+- Server owns validated game configuration, game containers, player state, transitions, tick timing, and snapshots.
+- Browser sends intended actions and renders validated snapshots received from the server. It does not advance game timers or mutate authoritative state.
+- HTTP API creates and reads games and accepts direction, pause, resume, and restart actions. WebSocket broadcasts current snapshots to connected clients.
+- Game containers are in-memory and may run independently on one server. A container has shared game state and a `players` collection; each player owns its snake, direction, and score. There is exactly one player per container in this version, with no room creation/join endpoints or multiplayer UI.
+- The Hint consumes a sanitized read-only snapshot derived from the latest server snapshot. It remains a local fake/mock model flow with no external provider.
+- Architecture steps, scope, and task validation are tracked in [`REFACTOR_PLAN.md`](REFACTOR_PLAN.md).
+
+### HTTP and WebSocket contract
+
+| Method | Path | Behavior |
+|---|---|---|
+| `GET` | `/api/health` | Return `{ "status": "ok" }`. |
+| `POST` | `/api/games` | Create a ready game container with one player; accepts an optional `config`. |
+| `GET` | `/api/games/:gameId` | Return the current authoritative `{ "game": snapshot }`. |
+| `POST` | `/api/games/:gameId/move` | Accept `{ "direction": "up" | "right" | "down" | "left" }`; the first valid move starts the game. |
+| `POST` | `/api/games/:gameId/pause` | Pause a playing game. |
+| `POST` | `/api/games/:gameId/resume` | Resume a paused game. |
+| `POST` | `/api/games/:gameId/restart` | Reset the game while retaining its container and player IDs. |
+| WebSocket | `/api/games/:gameId/events` | Send an initial `{ "type": "snapshot", "game": snapshot }` and later snapshots after transitions and ticks. This connection accepts no commands. |
+
+Errors use `{ "error": { "code": string, "message": string } }`. Invalid requests return HTTP 400, missing routes/sessions return 404, and actions invalid for the current game status return 409. Invalid config uses the existing safe default and includes `configError` in the snapshot.
 
 ## Runtime configuration
 
@@ -44,11 +68,11 @@ Tamna pozadina, jasna mreža, kontrastna zelena zmija i crvena hrana moraju osta
 - Igra radi lokalno kroz postojeći Vite/TypeScript stack.
 - Tastatura i mobilna smerna dugmad kontrolišu smer; suprotan smer se odbija.
 - Hrana se ne pojavljuje na zmiji, rezultat i dužina rastu, a sudari završavaju partiju.
-- Pauza, restart i lokalni rekord rade bez mreže.
+- Pause, restart, and local best score work through the client/server app; local best score remains in browser storage.
 - `GameConfig` i AI Hint ulazi/izlazi imaju runtime validaciju i bezbedan fallback ili grešku.
 - Postoje testovi za core logiku i success, negative i failure AI Hint putanje.
-- Nema tajni, API poziva, write alata, backend-a ni automatskog menjanja stanja igre.
+- No secrets, live AI provider, AI write tool, or automatic AI-driven game mutation is present.
 
 ## Out of scope
 
-Multiplayer, login, baza, online leaderboard, backend, deployment, nivoi, zvuk, AI protivnik, live AI provider, API ključevi, više alata, write alati, autonomna petlja i bilo kakvo menjanje igre kroz AI Hint.
+Room creation/joining, multiple players in one game, multiplayer UI, login/authentication, database, online leaderboard, deployment, levels, sound, AI opponent, live AI provider, API keys, additional AI tools, write tools, autonomous loops, and any game mutation through AI Hint. Lives, powerups, breakable walls, obstacles, and selectable map layouts are also out of scope for this refactor.

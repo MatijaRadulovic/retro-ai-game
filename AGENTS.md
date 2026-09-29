@@ -3,8 +3,9 @@
 ## Authority and scope
 
 - Follow the user's current request and acceptance criteria within this project contract.
-- Keep RETRO SNAKE a small, original TypeScript/Vite browser game: 20 × 20 board, three-segment snake, controls, food, score, collisions, restart, runtime configuration validation, and focused tests.
-- The only AI/tool exception is the local, read-only `get_game_state` Hint flow defined in `docs/specs/TOOL_CONTRACT.md`. No live provider, API key, network call, backend, write-capable tool, or game-state mutation is allowed.
+- Keep RETRO SNAKE a small, original TypeScript game with a Vite browser client and a TypeScript Node backend: 20 × 20 board, three-segment snake, controls, food, score, collisions, restart, runtime configuration validation, and focused tests.
+- The backend is authoritative for in-memory game containers, configuration, transitions, timers, and snapshots. One server may host multiple independent single-player games; each has one player. No room/join flow or multiplayer play is in scope yet.
+- The only AI/tool exception is the local, read-only `get_game_state` Hint flow defined in `docs/specs/TOOL_CONTRACT.md`. No live provider, API key, write-capable tool, or game-state mutation is allowed.
 - Do not add third-party assets, music, logos, unrelated frameworks, or broad refactors.
 
 ## Core engineering rules

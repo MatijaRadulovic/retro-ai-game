@@ -5,13 +5,13 @@ Read this module for changes to game behavior, state transitions, rendering, or 
 ## Product boundary
 
 - RETRO SNAKE is an original, minimal browser game on a 20 × 20 board. It has a three-segment starting snake, arrow-key/touch controls, food, score, collision handling, pause/resume, restart, and win handling.
-- Preserve the existing TypeScript + Vite stack. Do not add backend, accounts, multiplayer, online leaderboard, deployment, new game modes, or third-party visual/audio assets.
+- Preserve TypeScript + Vite for the browser and the TypeScript Node backend described in [`../specs/REFACTOR_PLAN.md`](../specs/REFACTOR_PLAN.md). The backend may host multiple independent in-memory single-player game containers; each has one player. Do not add room/join flows, accounts, multiplayer participation, online leaderboard, deployment, new game modes, or third-party visual/audio assets.
 - The local AI Hint is a narrow demonstration described by [`../specs/TOOL_CONTRACT.md`](../specs/TOOL_CONTRACT.md). It does not change the game rules or authoritative state.
 
 ## State and rendering boundaries
 
 - Keep state transitions and game rules in pure TypeScript where practical.
-- The game engine owns authoritative game state. UI controls dispatch intended actions; rendering reads state and never mutates it.
+- The server owns authoritative game state and tick scheduling. UI controls send intended actions; the browser renders validated snapshots and never advances or mutates game state.
 - Keep randomness explicit/injectable in the game logic when needed for deterministic tests.
 - Keep DOM/CSS responsible for the board, controls, status, and responsive presentation. Do not move game rules into event handlers or rendering code.
 - Preserve the existing module layout unless a scoped change requires otherwise. Avoid broad refactors made only to demonstrate a pattern.

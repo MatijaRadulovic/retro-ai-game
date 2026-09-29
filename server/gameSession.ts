@@ -1,0 +1,180 @@
+import { randomUUID } from "node:crypto";
+import { DEFAULT_CONFIG, getTickMs, parseGameConfig, type GameConfig } from "../src/game/snakeConfig.ts";
+import type { GameSnapshot } from "../src/game/gameProtocol.ts";
+import {
+  createInitialState,
+  pauseGame,
+  resumeGame,
+  setDirection,
+  startGame,
+  step,
+  type Direction,
+  type GameState,
+} from "../src/game/snakeEngine.ts";
+
+export type { GameSnapshot, PlayerState } from "../src/game/gameProtocol.ts";
+
+type Session = {
+  id: string;
+  revision: number;
+  config: GameConfig;
+  configError: string | null;
+  playerId: string;
+  gameState: GameState;
+  timer?: NodeJS.Timeout;
+  listeners: Set<(snapshot: GameSnapshot) => void>;
+};
+
+export type SessionErrorCode = "game_not_found" | "invalid_status";
+
+export class SessionError extends Error {
+  readonly code: SessionErrorCode;
+
+  constructor(code: SessionErrorCode, message: string) {
+    super(message);
+    this.name = "SessionError";
+    this.code = code;
+  }
+}
+
+function cloneSnapshot(snapshot: GameSnapshot): GameSnapshot {
+  return structuredClone(snapshot);
+}
+
+export class GameSessionManager {
+  private readonly sessions = new Map<string, Session>();
+  private readonly random: () => number;
+  private readonly makeId: () => string;
+
+  constructor(random: () => number = Math.random, makeId: () => string = randomUUID) {
+    this.random = random;
+    this.makeId = makeId;
+  }
+
+  create(configInput: unknown = DEFAULT_CONFIG): GameSnapshot {
+    const result = parseGameConfig(configInput);
+    const session: Session = {
+      id: this.makeId(),
+      revision: 0,
+      config: result.config,
+      configError: result.error ?? null,
+      playerId: this.makeId(),
+      gameState: createInitialState(result.config, this.random),
+      listeners: new Set(),
+    };
+    this.sessions.set(session.id, session);
+    return this.toSnapshot(session);
+  }
+
+  get(id: string): GameSnapshot {
+    return this.toSnapshot(this.requireSession(id));
+  }
+
+  subscribe(id: string, listener: (snapshot: GameSnapshot) => void): () => void {
+    const session = this.requireSession(id);
+    session.listeners.add(listener);
+    listener(this.toSnapshot(session));
+    return () => session.listeners.delete(listener);
+  }
+
+  move(id: string, direction: Direction): GameSnapshot {
+    const session = this.requireSession(id);
+    const state = session.gameState;
+    if (state.status !== "ready" && state.status !== "playing") {
+      throw new SessionError("invalid_status", "Moves are accepted only while the game is ready or playing.");
+    }
+    if (direction === state.queuedDirection) return this.toSnapshot(session);
+    const directed = setDirection(state, direction);
+    const next = state.status === "ready" && directed !== state ? startGame(directed) : directed;
+    if (next !== state) {
+      session.gameState = next;
+      this.publish(session);
+      this.schedule(session);
+    }
+    return this.toSnapshot(session);
+  }
+
+  pause(id: string): GameSnapshot {
+    const session = this.requireSession(id);
+    if (session.gameState.status !== "playing") {
+      throw new SessionError("invalid_status", "Only a playing game can be paused.");
+    }
+    this.clearTimer(session);
+    session.gameState = pauseGame(session.gameState);
+    this.publish(session);
+    return this.toSnapshot(session);
+  }
+
+  resume(id: string): GameSnapshot {
+    const session = this.requireSession(id);
+    if (session.gameState.status !== "paused") {
+      throw new SessionError("invalid_status", "Only a paused game can be resumed.");
+    }
+    session.gameState = resumeGame(session.gameState);
+    this.publish(session);
+    this.schedule(session);
+    return this.toSnapshot(session);
+  }
+
+  restart(id: string): GameSnapshot {
+    const session = this.requireSession(id);
+    this.clearTimer(session);
+    session.gameState = createInitialState(session.config, this.random);
+    this.publish(session);
+    return this.toSnapshot(session);
+  }
+
+  /** Exposed for deterministic service tests; normal ticking is scheduled by the manager. */
+  advance(id: string): GameSnapshot {
+    const session = this.requireSession(id);
+    this.clearTimer(session);
+    session.gameState = step(session.gameState, session.config, this.random);
+    this.publish(session);
+    this.schedule(session);
+    return this.toSnapshot(session);
+  }
+
+  close(): void {
+    for (const session of this.sessions.values()) this.clearTimer(session);
+    this.sessions.clear();
+  }
+
+  private requireSession(id: string): Session {
+    const session = this.sessions.get(id);
+    if (!session) throw new SessionError("game_not_found", "Game session was not found.");
+    return session;
+  }
+
+  private toSnapshot(session: Session): GameSnapshot {
+    const { snake, direction, queuedDirection, score, food, status } = session.gameState;
+    return cloneSnapshot({
+      id: session.id,
+      revision: session.revision,
+      config: session.config,
+      configError: session.configError,
+      players: [{ id: session.playerId, snake, direction, queuedDirection, score }],
+      state: { food, status },
+    });
+  }
+
+  private publish(session: Session): void {
+    session.revision += 1;
+    const snapshot = this.toSnapshot(session);
+    for (const listener of session.listeners) listener(snapshot);
+  }
+
+  private clearTimer(session: Session): void {
+    if (session.timer) clearTimeout(session.timer);
+    session.timer = undefined;
+  }
+
+  private schedule(session: Session): void {
+    this.clearTimer(session);
+    if (session.gameState.status !== "playing") return;
+    session.timer = setTimeout(() => {
+      session.gameState = step(session.gameState, session.config, this.random);
+      this.publish(session);
+      this.schedule(session);
+    }, getTickMs(session.config, session.gameState.score));
+  }
+}

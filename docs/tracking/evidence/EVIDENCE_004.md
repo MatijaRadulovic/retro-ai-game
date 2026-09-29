@@ -1,32 +1,37 @@
-# Evidence 004 — Controlled Read-only AI Hint
+# Evidence 004 — Controlled Read-only AI Hint Change
 
-This is the task-specific evaluation and evidence record for the AI Hint flow. Core Snake baseline/eval cases and the broader change context are in [Evidence 003](EVIDENCE_003.md).
+## Record
 
-## Related contract and prompt
+- **Purpose:** evaluate the local AI Hint as one bounded change and preserve its positive, negative, read-only, and failure results.
+- **Related spec/instructions:** [Game specification](../../specs/GAME_SPEC.md), [tool contract](../../specs/TOOL_CONTRACT.md), and [verification guidance](../../instructions/04-testing-and-verification.md).
+- **Prompt artifact:** [Week 3 final Hint prompt](../../prompts/week3/BUILD_PROMPT_FINAL_VERSION.md). This is the recorded task prompt; its historical text does not have a separate version-history/changelog section.
+- **Baseline:** [Evidence 003](EVIDENCE_003.md) records the pre-Hint core baseline, commands, and frozen regression scenarios C1–C4.
+- **Changed files in scope:** `src/ai/hint.ts`, Hint UI in `src/main.ts` / `src/styles.css`, and `tests/hint.test.ts`; core Snake engine was not intended to change.
+- **Context:** project instructions, game/tool specs, task prompt, relevant implementation/tests. Credentials, `.env`, private data, live provider credentials/context, and unrelated source/assets were excluded.
 
-- [Mock Hint prompt](../../prompts/BUILD_PROMPT_HINTS-MOCK.md)
-- [Tool contract](../../specs/TOOL_CONTRACT.md)
-- [Game specification](../../specs/GAME_SPEC.md)
-- Implementation: `src/ai/hint.ts`
-- Tests: `tests/hint.test.ts`
+## Baseline
 
-## Implementation boundary
+Before the change, the core game passed 9 tests; recorded baseline commands/output are in Evidence 003. The Hint UI, tool allowlist, validation, and Hint failure behavior did not exist, so Hint-specific baseline results are **N/A**, not passes. The intended change was one local fake/mock flow; there was no real provider or network call.
 
-The Hint flow validates the model-simulator proposal, enforces the tool allowlist, validates the sanitized tool output, and validates the final `HintResponse`. The UI uses `createFakeHintModel()`. There is no live provider, network call, or API key. The sole tool is read-only `get_game_state`.
+## Frozen evaluation scenarios and before/after results
 
-## Hint-specific evals
+The core regression definitions C1–C4 are owned by Evidence 003 and are repeated here by ID to show the same checks across the change. Hint cases H1–H6 were added for the new capability; baseline is N/A because the feature did not exist.
 
-| ID | Scenario | Expected behavior | Observed result / evidence |
-|---|---|---|---|
-| H1 | Valid local Hint | Validated `get_game_state` request, one call, valid response | PASS; test `valid AI hint request…`, `callCount = 1` |
-| H2 | `detail: "everything"` plus `executeCode` | Reject before tool execution | PASS; test `invalid arguments…`, `callCount = 0` |
-| H3 | Unsupported `reset_game` tool | Reject before execution | PASS; test `unsupported tool names…`, `callCount = 0` |
-| H4a | Malformed tool snapshot | No hint is presented as success | PASS; test `a malformed read-only tool result…` |
-| H4b | Fake provider failure | Safe local error is shown | PASS; test `provider failure…` |
-| H4c | Malformed final `HintResponse` | Reject the response | PASS; test `a malformed final response…` |
-| H5 | Read-only state boundary | Snapshot reveals no full snake body and does not mutate `GameState` | PASS; test `get_game_state exposes no body data…` |
+| ID | Scenario | Expected result | Before | After | Evidence / actual result |
+|---|---|---|---|---|---|
+| C1–C4 | Core start, wall collision, invalid config, and food/growth scenarios from Evidence 003 | Preserve existing Snake behavior | PASS (9-test baseline) | PASS (16-test suite) | Four frozen core cases remained passing |
+| H1 | Valid local Hint request | Validate `get_game_state`; execute exactly once; return valid response | N/A | PASS | `valid AI hint request…`; `callCount = 1` |
+| H2 | `detail: "everything"` plus `executeCode` | Reject before tool execution | N/A | PASS | `invalid arguments…`; `callCount = 0` |
+| H3 | Unsupported `reset_game` tool | Reject before execution | N/A | PASS | `unsupported tool names…`; `callCount = 0` |
+| H4 | Malformed tool snapshot | Do not present a successful hint | N/A | PASS | `a malformed read-only tool result…` |
+| H5 | Fake provider failure or malformed final `HintResponse` | Return controlled safe error / reject invalid response | N/A | PASS | `provider failure…`; `a malformed final response…` |
+| H6 | Read-only boundary | Snapshot omits full snake body and does not mutate `GameState` | N/A | PASS | `get_game_state exposes no body data…` |
 
-## Actual test output
+## Controlled change and after verification
+
+The one controlled change added `src/ai/hint.ts`, a small Hint control/panel, and focused tests. It allowed only the read-only `get_game_state` tool, validated the proposal, sanitized tool result, and strict `HintResponse`, and used `createFakeHintModel()`. The core engine was not changed.
+
+Recorded after command:
 
 ```text
 $ npm test
@@ -35,10 +40,10 @@ pass 16
 fail 0
 ```
 
-The historical full verification commands and outputs for the combined milestone are recorded in [Evidence 003](EVIDENCE_003.md).
+The historical full after-change output for typecheck, test, and build is recorded in Evidence 003. The per-Hint case names and outcomes above are the available detail; separate raw output per case was not saved.
 
-## Limitation and contribution record
+## Honest limitations and attribution
 
-This is a controlled local fake/mock path, not an evaluation of a live provider or generated-hint quality. That limitation is intentional; the negative and failure paths remain repeatable without secrets or network access.
-
-The repository implementation, tests, and documentation are Uroš's independent work. Although officially assigned as a pair with Matija, they agreed to complete separate individual versions.
+- This checks validation, allowlisting, safe failure, and state isolation for a deterministic local fake. It does not evaluate live-provider reliability, real LLM quality, latency, or provider-specific behavior.
+- Hint scenarios have no pre-change pass/fail baseline because the feature was absent; the core regression scenarios provide the before/after comparison.
+- The repository implementation, tests, and documentation were Uroš's independent work. Although officially assigned as a pair with Matija, they agreed to complete separate individual versions.

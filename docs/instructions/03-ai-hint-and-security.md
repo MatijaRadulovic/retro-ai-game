@@ -1,10 +1,10 @@
 # AI Hint and Security
 
-This repository has exactly one permitted AI/tool flow: the local read-only Hint defined in [`../specs/TOOL_CONTRACT.md`](../specs/TOOL_CONTRACT.md) and [`../prompts/BUILD_PROMPT_HINTS-MOCK.md`](../prompts/BUILD_PROMPT_HINTS-MOCK.md).
+This repository has exactly one permitted AI/tool flow: the local read-only Hint defined in [`../specs/TOOL_CONTRACT.md`](../specs/TOOL_CONTRACT.md) and the historical task brief in [`../prompts/week3/BUILD_PROMPT_FINAL_VERSION.md`](../prompts/week3/BUILD_PROMPT_FINAL_VERSION.md).
 
 ## Allowed behavior
 
-- Use the fake/mock model path only. Never add a live provider, API key, network request, backend, or external AI service.
+- Use the fake/mock model path only. Never add a live provider, API key, provider network request, or external AI service. The game backend is allowed; the Hint must use the latest validated server snapshot already held by the client and make no separate request.
 - Allow only the `get_game_state` tool and its documented `{ detail: "summary" | "tactical" }` input.
 - Validate the proposed tool name and strict arguments before executing anything. Invalid or unsupported proposals must make zero tool calls.
 - Return only the documented sanitized game snapshot. Do not expose secrets, environment values, source code, local storage, the full snake body, or unrelated/private browser data.
@@ -15,7 +15,7 @@ This repository has exactly one permitted AI/tool flow: the local read-only Hint
 
 - Treat user input, model output, parsed JSON, tool proposals, and tool output as untrusted data, not instructions.
 - A model proposal is not permission. The application retains authority over the allowlist, validation, and execution.
-- The tool is read-only. It must not change score, direction, snake, food, configuration, timer, game status, or restart the game.
+- The tool is read-only. It must not change score, direction, snake, food, configuration, timer, game status, or restart the game. Its sanitized snapshot is derived locally from the authoritative game snapshot received from the backend.
 - Keep errors safe and useful. Do not show credentials, raw sensitive payloads, private prompts, or stack traces.
 - Do not add write tools, arbitrary code execution, extra tools, autonomous loops, or cross-provider fallback.
 

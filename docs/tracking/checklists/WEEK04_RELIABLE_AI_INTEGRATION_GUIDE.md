@@ -164,7 +164,7 @@ The assignment suggests separate `AI_FEATURE_SPEC.md`, `AI_FEATURE_PROMPT.md`, `
 | Course artifact/content | RETRO SNAKE location | Applicability |
 |---|---|---|
 | Feature scenario/spec, acceptance, out of scope | `docs/specs/GAME_SPEC.md` plus the AI Hint section in `docs/specs/TOOL_CONTRACT.md` | Applicable; update only if approved behavior changes |
-| Prompt for the bounded flow | `docs/prompts/BUILD_PROMPT_HINTS-MOCK.md` | Applicable; fake/mock scope only |
+| Prompt for the bounded flow | `docs/prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` | Applicable; fake/mock scope only |
 | Provider contract | `docs/specs/TOOL_CONTRACT.md` | Its tool and response contract applies; external provider fields (key, model, provider timeout) do not |
 | AI eval cases | Hint-specific table inside `docs/tracking/evidence/EVIDENCE_004.md` | Applicable and task-specific |
 | W04 evidence | `docs/tracking/evidence/EVIDENCE_004.md` | Applicable; actual local mock results only |

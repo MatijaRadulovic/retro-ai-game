@@ -1,0 +1,93 @@
+import { validateGameSnapshot, type GameSnapshot } from "../game/gameProtocol.ts";
+import type { Direction } from "../game/snakeEngine.ts";
+
+export class GameApiError extends Error {
+  constructor(readonly code: string, message: string, readonly status: number) {
+    super(message);
+    this.name = "GameApiError";
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+async function request(path: string, method = "GET", body?: unknown): Promise<GameSnapshot> {
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method,
+      headers: body === undefined ? undefined : { "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    throw new GameApiError("server_unavailable", "GAME SERVER IS UNAVAILABLE.", 0);
+  }
+  let result: unknown;
+  try {
+    result = await response.json() as unknown;
+  } catch {
+    throw new GameApiError("invalid_server_response", "GAME SERVER RETURNED AN INVALID RESPONSE.", response.status);
+  }
+  if (!response.ok) {
+    const error = isRecord(result) && isRecord(result.error) ? result.error : null;
+    throw new GameApiError(
+      typeof error?.code === "string" ? error.code : "request_failed",
+      typeof error?.message === "string" ? error.message : "GAME REQUEST FAILED.",
+      response.status,
+    );
+  }
+  const game = isRecord(result) ? validateGameSnapshot(result.game) : null;
+  if (!game) throw new GameApiError("invalid_server_response", "GAME SERVER RETURNED AN INVALID SNAPSHOT.", response.status);
+  return game;
+}
+
+export const gameClient = {
+  create: () => request("/api/games", "POST", {}),
+  get: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}`),
+  move: (gameId: string, direction: Direction) => request(`/api/games/${encodeURIComponent(gameId)}/move`, "POST", { direction }),
+  pause: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}/pause`, "POST", {}),
+  resume: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}/resume`, "POST", {}),
+  restart: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}/restart`, "POST", {}),
+};
+
+export function connectGameEvents(gameId: string, onSnapshot: (snapshot: GameSnapshot) => void, onConnection: (connected: boolean) => void): () => void {
+  let socket: WebSocket | undefined;
+  let stopped = false;
+  let reconnectTimer: number | undefined;
+  let retryMs = 500;
+
+  const connect = () => {
+    if (stopped) return;
+    const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
+    socket = new WebSocket(`${scheme}//${window.location.host}/api/games/${encodeURIComponent(gameId)}/events`);
+    socket.addEventListener("open", () => {
+      retryMs = 500;
+      onConnection(true);
+    });
+    socket.addEventListener("message", (event) => {
+      try {
+        const message: unknown = JSON.parse(String(event.data));
+        if (!isRecord(message) || message.type !== "snapshot") return;
+        const snapshot = validateGameSnapshot(message.game);
+        if (snapshot) onSnapshot(snapshot);
+      } catch {
+        // Ignore malformed event data; the next valid authoritative snapshot will recover the view.
+      }
+    });
+    socket.addEventListener("close", () => {
+      onConnection(false);
+      if (stopped) return;
+      reconnectTimer = window.setTimeout(connect, retryMs);
+      retryMs = Math.min(retryMs * 2, 8_000);
+    });
+    socket.addEventListener("error", () => socket?.close());
+  };
+
+  connect();
+  return () => {
+    stopped = true;
+    if (reconnectTimer !== undefined) window.clearTimeout(reconnectTimer);
+    socket?.close();
+  };
+}
