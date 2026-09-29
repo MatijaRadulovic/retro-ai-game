@@ -130,3 +130,12 @@ Append one concise entry for each substantive implementation, review, or documen
 - **Outcome:** reduced prompt metadata to a single version label (`v1`, incrementing on revision); retained goal, context priority, scope/constraints, allowed files, acceptance criteria, and verification guidance; removed evidence/reporting fields.
 - **Verification:** Python 3 Markdown link scan passed (`All relative Markdown links resolve.`); no trailing whitespace found; `git diff --check` passed. Code checks skipped because this was documentation-only.
 - **Limitations:** no historical prompt artifacts were rewritten or retroactively versioned.
+
+## 2026-09-29 — Bring Spec Kit and Gemini planning artifacts onto main
+
+- **Goal:** retain useful workflow and security artifacts from `test` while preserving `main`'s implemented powerups/perks specifications and evidence.
+- **Prompt/spec references:** [Gemini Hint prompt](../prompts/week4/BUILD_PROMPT_GEMINI_HINT_V1.md), [Gemini integration plan](../specs/GEMINI_HINT_INTEGRATION.md), [security instructions](../instructions/03-ai-hint-and-security.md), and the project instruction index.
+- **Evidence used/updated:** [Evidence 008](evidence/EVIDENCE_008.md); `main`'s existing Evidence 006–007 remain authoritative for the powerups/perks implementation.
+- **Outcome:** added Spec Kit skills/scaffolding, Gemini security/reliability planning and push guard, and updated Week 4 guidance. Excluded the stale broad powerups research draft because it includes mechanics outside the implemented Phase 1 scope. Kept the base game spec unchanged.
+- **Verification:** `npm run security:scan` passed; the configured pre-push hook scanned 3 outgoing and 7 additional locally reachable commits; `git diff --cached --check` passed; all Markdown links in 28 changed files resolve. Application tests/build were skipped because no application implementation changed. No live provider code or credentials were added.
+- **Limitations:** Gemini provider implementation remains pending; the push scanner detects known patterns and cannot prove absence of unknown credential formats.

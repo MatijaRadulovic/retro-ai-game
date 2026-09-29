@@ -15,7 +15,7 @@ Use this index to load only the project guidance relevant to the task. `AGENTS.m
 | Task | Read |
 |---|---|
 | Game rules, state transitions, rendering, configuration | 01, 02, 04; `specs/BASE_GAME_SPEC.md` and the relevant accepted feature spec |
-| AI Hint, tool contract, model-simulator behavior | 03, 04; `specs/TOOL_CONTRACT.md`, `prompts/week3/BUILD_PROMPT_FINAL_VERSION.md` |
+| AI Hint, Gemini provider, tool contract, security | 03, 04; `specs/TOOL_CONTRACT.md`, `specs/GEMINI_HINT_INTEGRATION.md`, accepted prompt |
 | Tests, evals, failure investigation | 04, 05; relevant files under `tracking/` |
 | Documentation, project instructions, task handoff | 05 and the relevant source/spec |
 | Any larger or cross-cutting change | 01–05 as relevant; summarize the plan before editing |
@@ -32,6 +32,7 @@ The precedence for product behavior is: current user request → `AGENTS.md` pro
 | XP, perks, and Lucky pickup feature | [`../specs/001-powerups-perks/`](../specs/001-powerups-perks/) | Phase 1 requirements, plan, data model, API contract, quickstart, and tasks; see Evidence 006–007 for implementation status |
 | Server refactor plan | [`specs/REFACTOR_PLAN.md`](specs/REFACTOR_PLAN.md) | Accepted client/server architecture, task checklist, and validation record |
 | AI tool contract | [`specs/TOOL_CONTRACT.md`](specs/TOOL_CONTRACT.md) | Allowed `get_game_state` tool, data shape, and failure policy |
+| Gemini Hint plan | [`specs/GEMINI_HINT_INTEGRATION.md`](specs/GEMINI_HINT_INTEGRATION.md) | Approved server-only Gemini scope, retry/fallback policy, and acceptance criteria |
 | Build prompts and template | [`prompts/`](prompts/) | Versioned task prompts; use [`prompts/PROMPT_TEMPLATE.md`](prompts/PROMPT_TEMPLATE.md) for new artifacts |
 | Work log | [`tracking/WORK_LOG.md`](tracking/WORK_LOG.md) | Chronological work, decisions, checks, and next steps |
 | Context manifest | [`tracking/CONTEXT_MANIFEST.md`](tracking/CONTEXT_MANIFEST.md) | Actual repository source map, task selection guidance, source priority, and default exclusions |
@@ -41,6 +42,7 @@ The precedence for product behavior is: current user request → `AGENTS.md` pro
 | Server refactor evidence | [`tracking/evidence/EVIDENCE_005.md`](tracking/evidence/EVIDENCE_005.md) | Server refactor scenarios, after results, and explicit missing pre-run limitation |
 | XP/perks planning evidence | [`tracking/evidence/EVIDENCE_006.md`](tracking/evidence/EVIDENCE_006.md) | Phase 1 scope, frozen scenarios, documentation checks, and implementation status |
 | Luck/Lucky pickup evidence | [`tracking/evidence/EVIDENCE_007.md`](tracking/evidence/EVIDENCE_007.md) | Luck perk, orange pickup, deterministic spawn/reward cases, and implementation checks |
+| Gemini security/integration evidence | [`tracking/evidence/EVIDENCE_008.md`](tracking/evidence/EVIDENCE_008.md) | Gemini plan, security checks, pre-push guard, and current implementation limits |
 | Evidence template | [`tracking/evidence/EVIDENCE_TEMPLATE.md`](tracking/evidence/EVIDENCE_TEMPLATE.md) | Reusable record format for baseline, frozen evals, controlled iterations, actual checks, and limitations |
 | Future task evidence | [`tracking/evidence/`](tracking/evidence/) | Use the common baseline → frozen evals → controlled iteration → same before/after evals → limitations structure |
 | Exercise review | [`tracking/checklists/WEEK03_EXERCISE_REVIEW.md`](tracking/checklists/WEEK03_EXERCISE_REVIEW.md) | Week 3 audit checklist; items remain pending until checked |
