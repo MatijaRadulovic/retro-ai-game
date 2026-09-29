@@ -1,4 +1,4 @@
-# BUILD_PROMPT_FINAL — Controlled Read-only AI Hint
+# BUILD_PROMPT_HINTS-MOCK — Controlled Read-only AI Hint
 
 Dodaj samo lokalni demonstracioni AI Hint tok na postojeću Retro Snake igru. Model-simulator sme da predloži isključivo `get_game_state` sa argumentom `{ detail: "summary" | "tactical" }`. Aplikacija mora proveriti naziv, argumente i allowlist pre izvršenja. Alat je read-only, vraća sanitizovan snapshot bez browser podataka, tajni, izvornog koda ili mogućnosti da promeni rezultat, zmiju, hranu, konfiguraciju ili partiju.
 

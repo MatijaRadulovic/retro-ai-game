@@ -21,8 +21,11 @@ npm run build
 
 ## Dokumentacija
 
-- `docs/GAME_SPEC.md` — pravila igre i runtime ugovor konfiguracije.
-- `docs/CONTEXT_MANIFEST.md` — uključeni kontekst i ograničenja scope-a.
-- `docs/EVALS.md` i `docs/EVIDENCE_003.md` — baseline, eval skup i kontrolisana promena.
-- `docs/TOOL_CONTRACT.md` i `docs/EVIDENCE_004.md` — read-only AI Hint granice i dokaz putanja.
-- `docs/AI_USAGE_LOG.md` — kratka evidencija razvojnih AI odluka.
+- `AGENTS.md` — kratak, uvek važeći projektni ugovor.
+- `docs/INSTRUCTIONS.md` — indeks detaljnih instrukcija, specifikacija i evidencija.
+- `docs/instructions/` — pravila po temi: arhitektura, kod, AI/security, provere i workflow.
+- `docs/specs/` — autoritativni opis igre i read-only tool contract.
+- `docs/prompts/` — početni i finalni build prompt.
+- `docs/tracking/` — work log, AI usage log, task-specific evidence, Week 3/4 checklists and guides, i weekly reports.
+
+Za promene prati obavezni workflow u `docs/instructions/05-workflow-tracking-and-reporting.md`. Njegov cilj je da stvarni rad i rezultati ostanu zabeleženi i da nedeljni izveštaj može da se sastavi iz tih zapisa.

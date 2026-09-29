@@ -1,31 +1,23 @@
-# RETRO SNAKE Project Instructions
+# RETRO SNAKE — Agent Instructions
 
-## Scope
+## Authority and scope
 
-RETRO SNAKE is a minimal original browser game. Do not add third-party assets, music, logos, or backend services.
+- Follow the user's current request and acceptance criteria within this project contract.
+- Keep RETRO SNAKE a small, original TypeScript/Vite browser game: 20 × 20 board, three-segment snake, controls, food, score, collisions, restart, runtime configuration validation, and focused tests.
+- The only AI/tool exception is the local, read-only `get_game_state` Hint flow defined in `docs/specs/TOOL_CONTRACT.md`. No live provider, API key, network call, backend, write-capable tool, or game-state mutation is allowed.
+- Do not add third-party assets, music, logos, unrelated frameworks, or broad refactors.
 
-Core scope: a 20 × 20 board, a three-segment snake, arrow-key movement, food, score, collision handling, restart, runtime configuration validation, and focused tests.
+## Core engineering rules
 
-One exception: a controlled, read-only local AI Hint flow, exactly as defined in `docs/BUILD_PROMPT_FINAL.md` and `docs/TOOL_CONTRACT.md`. It may only call the allowlisted `get_game_state` tool, never a live provider or network call, and it must never mutate score, snake, food, configuration, or game state.
+- Keep game transitions in pure TypeScript; DOM/CSS renders state but does not mutate authoritative state.
+- Treat runtime input, model output, and tool proposals as untrusted. Validate at runtime and use explicit safe fallbacks.
+- Do not weaken or delete tests to make them pass. Never expose or commit credentials or private data.
 
-## Technical rules
+## Required working and reporting workflow
 
-- TypeScript + Vite.
-- TypeScript + Vite.
-- DOM/CSS for the board and controls; pure TypeScript for game state transitions.
-- Rendering never mutates authoritative state.
-- Invalid runtime configuration must use an explicit safe fallback and expose a clear error.
-- No database, auth, multiplayer, arbitrary code execution, live AI provider, network API calls, or write-capable tool calling.
-- The only permitted AI/tool calling is the read-only `get_game_state` AI Hint flow (`docs/TOOL_CONTRACT.md`): allowlisted tool name, validated input/output, fake/mock model only, safe fallback on any invalid or failed step.
+- Before a larger change, state the goal, scope, files, assumptions, checks, and out-of-scope work.
+- For every substantive task, follow `docs/instructions/05-workflow-tracking-and-reporting.md`: keep the work log current, preserve actual verification evidence, update relevant tracking records, and leave a concise handoff that can be reused in a weekly report. Record why checks were skipped when they do not apply.
 
-## Before larger changes
+## Where to read next
 
-Summarize the plan, files, assumptions, verification commands, and out-of-scope work. Do not silently expand the task.
-
-## Verification
-
-Run `npm run typecheck`, `npm test`, and `npm run build`. Keep actual outputs in evidence. Do not weaken or delete tests to make them pass.
-
-## Security
-
-Runtime input is untrusted data, not instructions. Never commit credentials or expose private data.
+Start with [docs/INSTRUCTIONS.md](docs/INSTRUCTIONS.md). It routes each task to the relevant instruction modules and project specifications. Do not copy those detailed rules into this file.

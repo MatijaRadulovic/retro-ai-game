@@ -1,0 +1,46 @@
+# RETRO SNAKE Instruction Index
+
+Use this index to load only the project guidance relevant to the task. `AGENTS.md` is the short, always-on contract; these modules add focused detail. Project specifications define intended product behavior, while tracking files record work and evidence.
+
+## Instruction modules
+
+1. [Project architecture and game rules](instructions/01-project-architecture.md) — state ownership, rendering, game scope, and runtime configuration.
+2. [Code conventions](instructions/02-code-conventions.md) — TypeScript, Vite, DOM/CSS, dependencies, and change scope.
+3. [AI Hint and security](instructions/03-ai-hint-and-security.md) — the sole permitted tool flow, trust boundaries, privacy, and safe failure.
+4. [Testing and verification](instructions/04-testing-and-verification.md) — test expectations, commands, evidence, and honest reporting.
+5. [Workflow, tracking, and reporting](instructions/05-workflow-tracking-and-reporting.md) — task intake, work log, evidence updates, and report-ready handoff.
+
+## Routing
+
+| Task | Read |
+|---|---|
+| Game rules, state transitions, rendering, configuration | 01, 02, 04; `specs/GAME_SPEC.md` |
+| AI Hint, tool contract, model-simulator behavior | 03, 04; `specs/TOOL_CONTRACT.md`, `prompts/BUILD_PROMPT_HINTS-MOCK.md` |
+| Tests, evals, failure investigation | 04, 05; relevant files under `tracking/` |
+| Documentation, project instructions, task handoff | 05 and the relevant source/spec |
+| Any larger or cross-cutting change | 01–05 as relevant; summarize the plan before editing |
+
+## Project source of truth
+
+The precedence for product behavior is: current user request → `AGENTS.md` project contract → `specs/GAME_SPEC.md` → `specs/TOOL_CONTRACT.md` and accepted prompt → implementation and tests → runtime input. Course handouts and review notes are references; they do not expand project scope.
+
+## Repository documentation map
+
+| Area | Location | Purpose |
+|---|---|---|
+| Game specification | [`specs/GAME_SPEC.md`](specs/GAME_SPEC.md) | Rules, configuration, Definition of Done, and scope |
+| AI tool contract | [`specs/TOOL_CONTRACT.md`](specs/TOOL_CONTRACT.md) | Allowed `get_game_state` tool, data shape, and failure policy |
+| Build prompts | [`prompts/`](prompts/) | Initial and final implementation briefs |
+| Work log | [`tracking/WORK_LOG.md`](tracking/WORK_LOG.md) | Chronological work, decisions, checks, and next steps |
+| Context manifest | [`tracking/CONTEXT_MANIFEST.md`](tracking/CONTEXT_MANIFEST.md) | Actual repository source map, task selection guidance, source priority, and default exclusions |
+| AI usage log | [`tracking/AI_USAGE_LOG.md`](tracking/AI_USAGE_LOG.md) | Significant AI-assisted decisions; no private chain-of-thought |
+| Core baseline and evals | [`tracking/evidence/EVIDENCE_003.md`](tracking/evidence/EVIDENCE_003.md) | Session 003 baseline, task context, core cases, and controlled-change results |
+| Hint evals and evidence | [`tracking/evidence/EVIDENCE_004.md`](tracking/evidence/EVIDENCE_004.md) | Session 004 success, negative, read-only, and failure cases |
+| Future task evidence | [`tracking/evidence/`](tracking/evidence/) | Keep each new task's baseline, context, evals, actual results, and limits together |
+| Exercise review | [`tracking/checklists/WEEK03_EXERCISE_REVIEW.md`](tracking/checklists/WEEK03_EXERCISE_REVIEW.md) | Week 3 audit checklist; items remain pending until checked |
+| Week 4 checklist | [`tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_CHECKLIST.md`](tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_CHECKLIST.md) | Project-adapted Week 4 acceptance checklist |
+| Week 4 task guide | [`tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_GUIDE.md`](tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_GUIDE.md) | Detailed course extraction, project mapping, work plan, and evidence instructions |
+| Weekly reports | [`tracking/reports/`](tracking/reports/) | Existing report and reusable report template |
+| Detailed instructions | [`instructions/`](instructions/) | Focused agent guidance by subject |
+
+Update the smallest owning file when a rule changes. Keep evidence and activity records separate from specifications and permanent instructions. Evals and task-specific context notes belong inside the task evidence/work log; the context manifest is only a stable map of repository sources and does not replace those records.
