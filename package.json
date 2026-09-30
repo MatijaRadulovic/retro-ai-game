@@ -15,11 +15,13 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run typecheck && node --test tests/*.test.ts",
     "security:scan": "node scripts/security/pre-push-scan.mjs --worktree",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "tsx scripts/e2e/shopAdvisor.e2e.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/ws": "^8.18.2",
+    "playwright": "^1.63.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.5"
   },

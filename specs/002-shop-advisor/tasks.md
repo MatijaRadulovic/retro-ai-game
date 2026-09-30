@@ -35,7 +35,7 @@
 
 - [x] T011 [US2] Implement native REST transport with server-only `GEMINI_API_KEY`, minimal JSON context, and structured-output schema in `server/ai/geminiTransport.ts` and `server/index.ts`; put the reviewed user system prompt and accurate game facts in `server/ai/shopPrompt.ts`.
 - [x] T012 [US2] Add fake transport tests for primary success, two primary calls, three fallback calls, congestion skip/expiry, exhausted failures, 429 budget, terminal errors, cancellation, and deadline in `tests/shopAdvice.test.ts`.
-- [x] T013 [US2] Implement the 65-second logical deadline, max 10-second calls, at most two primary plus three fallback calls, 1/3/5/5-second backoff, 15-minute primary congestion memory, and safe unavailable result in `server/ai/shopAdvice.ts`.
+- [x] T013 [US2] Implement the 85-second logical deadline (V2), max 10-second calls, at most one Flash, two Flash-Lite, and three Gemma calls, 1/3/5/5/5-second bounded-jitter backoff, 15-minute primary congestion memory, and safe unavailable result in `server/ai/shopAdvice.ts`.
 - [x] T014 [US2] Abort provider work on dropped HTTP response and prevent overlapping calls per game in `server/httpServer.ts`; test this in `tests/httpServer.test.ts`.
 
 ## Phase 5: User Story 3 — Validate and protect the boundary (P3)

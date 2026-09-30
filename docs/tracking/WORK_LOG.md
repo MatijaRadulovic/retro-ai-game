@@ -2,6 +2,30 @@
 
 Append one concise entry for each substantive implementation, review, or documentation task. Every entry links the prompt/specification that guided the work and the evidence used or created. If there was no standalone prompt artifact, say so. Keep results factual and do not rewrite history.
 
+## 2026-09-30 — Make the browser E2E portable and deterministic (PR #1 re-review)
+
+- **Goal:** address the PR #1 re-review: `spawn("npx")` fails on Windows, `stop()` did not wait for the real backend process (EADDRINUSE on 3001 before M6), fixed API port, and M5 skipped in a fresh run.
+- **Prompt/spec/evidence:** reviewer re-review of PR #1; no standalone prompt applies. Results in [Evidence 013](evidence/EVIDENCE_013.md).
+- **Outcome:** `scripts/e2e/shopAdvisor.e2e.ts` now spawns `process.execPath` directly (`--import tsx` for the fake API, Vite's resolved CLI entry for the client), picks free API/web ports, and awaits process exit in `stop()` with a SIGKILL fallback. `vite.config.ts` reads the proxy target port from `API_PORT` (default 3001). `scripts/e2e/fakeAdvisorServer.ts` gained an opt-in `E2E_SEED_PERK_POINTS=1` fixture that grants one perk point on a game's first pause, so M5 always runs.
+- **Verification:** `npm run test:e2e` → 7 passed, 0 skipped, 0 failed (also with port 3001 occupied; no leftover processes). `npm test` (55/55), `npm run build`, `npm run security:scan` passed.
+- **Open:** re-run the unmodified `npm run test:e2e` on Windows; only macOS was available here.
+
+## 2026-09-30 — Add reproducible browser E2E for the shop advisor
+
+- **Goal:** replace the documented-only manual browser scenario with an executed, repeatable check, as requested in the Week 4 review.
+- **Prompt/spec/evidence:** reviewer feedback; [quickstart manual flow](../../specs/002-shop-advisor/quickstart.md); no standalone prompt applies. Results in [Evidence 013](evidence/EVIDENCE_013.md).
+- **Outcome:** added `scripts/e2e/fakeAdvisorServer.ts` (real server/advisor, scripted provider: Flash 503 → Flash-Lite answer, or no provider) and `scripts/e2e/shopAdvisor.e2e.ts` (headless Chromium via `playwright`), plus `npm run test:e2e`. Offline `npm test` is unchanged.
+- **Verification:** `npm run test:e2e` → 6 passed, 1 skipped (M5, no affordable perk in a fresh run), 0 failed. `npm run typecheck`, `npm test` (55/55), `npm run build`, `npm run security:scan`, `git diff --check` passed.
+- **Finding:** the Vite dev/preview proxy does not forward browser aborts to the backend, so a cancelled request behind the proxy still completes its provider call; the UI discards it and direct backend cancellation works (M4b).
+
+## 2026-09-30 — Address Week 4 review feedback
+
+- **Goal:** resolve the reviewer's Week 4 remarks: stale research record, contribution evidence, smoke/manual scenario, README navigation.
+- **Prompt/spec/evidence:** reviewer feedback on the Week 4 submission; no standalone prompt applies. See [Evidence 013](evidence/EVIDENCE_013.md) and [CONTRIBUTIONS_WEEK04](CONTRIBUTIONS_WEEK04.md).
+- **Outcome:** collapsed the superseded reliability policy in `specs/002-shop-advisor/research.md` to a pointer to Reliability V2 (85 s, Flash ×1 → Flash-Lite ×2 → Gemma ×3); aligned task T013 in `tasks.md`; added the Week 4 contribution record; added Evidence 013 (real-server HTTP smoke S1–S3 executed, manual browser scenario M1–M6 documented, not executed); added a Week 3 vs Week 4 section and evidence chain to the README.
+- **Verification:** `npm run typecheck`, `npm test` (55/55), `npm run build`, `npm run security:scan`, and `git diff --check` passed; HTTP smoke S1–S3 in Evidence 013.
+- **Limitations:** browser scenario M1–M6 not run; attribution rows for Uroš's local work come from the team reports, not from Git authorship.
+
 ## 2026-09-30 — Prepare Week 4 learner report
 
 - **Goal:** prepare the Week 4 report from the learner's confirmed identity, team, contribution, and next step, cross-checked against project tracking records.
