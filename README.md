@@ -96,7 +96,7 @@ Browser E2E za ASK SHOP AI (fake provider, bez ključa i bez poziva ka Google-u;
 npm run test:e2e
 ```
 
-Pokreće backend sa lažnim providerom (Flash vraća 503, Flash-Lite odgovara) i Vite klijent na portu 3001/5199, pa u headless Chromium-u proverava savet, fallback, da savet ne kupuje, zatvaranje prodavnice tokom zahteva i poruku bez ključa. Rezultati: [Evidence 013](docs/tracking/evidence/EVIDENCE_013.md).
+Pokreće backend sa lažnim providerom (Flash vraća 503, Flash-Lite odgovara) i Vite klijent na slobodnim portovima (bez `npx`, radi i na Windows-u), pa u headless Chromium-u proverava savet, fallback, da savet ne kupuje, kupovinu dok savet čeka, zatvaranje prodavnice tokom zahteva i poruku bez ključa. Rezultati: [Evidence 013](docs/tracking/evidence/EVIDENCE_013.md).
 
 ## Week 3 baseline i Week 4 proširenje
 
