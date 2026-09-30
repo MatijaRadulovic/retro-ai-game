@@ -1,5 +1,7 @@
 # RETRO SNAKE — Refactor Plan
 
+**Historical milestone:** This records the completed client/server refactor at the time the local movement Hint was active. The current XP/perks and Gemini shop-advice features are specified in [feature 001](../../specs/001-powerups-perks/spec.md) and [feature 002](../../specs/002-shop-advisor/spec.md); its mock-only checklist items do not constrain those later approved changes.
+
 ## Goal and accepted decisions
 
 Move the existing Snake game to a TypeScript client/server architecture while preserving its current single-player gameplay. The server owns game configuration, sessions, timers, transitions, and snapshots. The browser sends actions and renders snapshots.

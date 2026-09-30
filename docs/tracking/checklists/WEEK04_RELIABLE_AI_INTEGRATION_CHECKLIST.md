@@ -2,7 +2,7 @@
 
 Use this checklist to assess the Week 4 assignment against RETRO SNAKE. Each item starts **Pending**; change status only after checking the current files or running the relevant verification. The checklist separates project acceptance from generic course requirements that conflict with this repository's approved scope.
 
-> **Scope update:** This checklist records the earlier mock-Hint review. The user has since authorized one server-side Gemini Hint. Its current acceptance criteria are in [`GEMINI_HINT_INTEGRATION.md`](../../specs/GEMINI_HINT_INTEGRATION.md); the old N/A entries below describe the prior review and do not prohibit that scoped change.
+> **Scope update (2026-09-30):** This checklist records the earlier mock-Hint review. The current feature is the paused [shop AI advisor](../../../specs/002-shop-advisor/spec.md), using one Google provider with three allowlisted models. Its current acceptance and verification record are in [Gemini Hint Changes V2](../../specs/GEMINI_HINT_CHANGES_V2.md) and [Evidence 010](../evidence/EVIDENCE_010.md). The old N/A entries below describe the prior review only.
 
 ## Project authority and status key
 
@@ -52,7 +52,7 @@ Use this checklist to assess the Week 4 assignment against RETRO SNAKE. Each ite
 - [ ] **Pending** — Malformed tool output and malformed `HintResponse` are rejected.
 - [ ] **Pending** — Fake-model failure produces the safe fallback.
 - [ ] **Pending** — A state-invariance test proves the Hint path does not mutate game state.
-- [ ] **Pending** — Transient-only retry, two-attempt limit, total deadline, cancellation, and local fallback are covered.
+- [ ] **Pending** — Transient-only retry, exact 1/2/3 model limits, total deadline, 15-minute congestion skip, cancellation, `Retry-After`, and safe exhaustion are covered.
 - [ ] **Pending** — Browser source and build contain no credential reference/value; pre-push guard passes without reading secret files.
 - [ ] **Pending** — Test fixtures are deterministic and require no key, network, or live account.
 - [ ] **Pending** — [`EVIDENCE_004.md`](../evidence/EVIDENCE_004.md) records expected cases, observed results, actual commands/output, limits, and prompt/spec links.

@@ -1,10 +1,8 @@
 <!--
 Sync Impact Report
-- Version change: template (unversioned) → 1.0.0
-- Added principles: Server-Authoritative State; Validate Every Trust Boundary;
-  Small, Original, and Scoped; Verification and Evidence; Narrow Read-Only AI Boundary
-- Added sections: Product and Technology Constraints; Specification-Driven Workflow
-- Removed sections: none; template placeholders were replaced
+- Version change: 1.1.0 → 1.2.0
+- Amended principle V to cover the user-approved three-model Google chain and privacy-safe attempt telemetry.
+- Impacted sources: AGENTS.md, TOOL_CONTRACT.md, AI security instructions, Gemini plan, feature 002.
 - Follow-up TODOs: none
 -->
 # RETRO SNAKE Constitution
@@ -43,13 +41,15 @@ be recorded honestly; skipped or unavailable checks MUST include a reason. Compl
 traceable evidence rather than unchecked plan items.
 
 ### V. Narrow Read-Only AI Boundary
-The only permitted AI/tool behavior is the `get_game_state` Hint flow governed by
-`docs/specs/TOOL_CONTRACT.md` and `docs/instructions/03-ai-hint-and-security.md`. It MUST remain
-read-only, allowlisted, sanitized, and unable to mutate game state. A live provider is permitted only
-when the current project contract explicitly approves its server-side scope and secret-handling,
-validation, retry, timeout, fallback, and offline-test requirements. No other provider, browser-held
-credential, write-capable tool, autonomous loop, or game-state mutation may be introduced. Invalid
-proposals or outputs MUST fail safely without invoking an unapproved tool or exposing private data.
+The only active AI behavior is the paused-shop advisor governed by
+`specs/002-shop-advisor/`, `docs/specs/TOOL_CONTRACT.md`, and
+`docs/instructions/03-ai-hint-and-security.md`. It MUST remain read-only, allowlisted, sanitized,
+and unable to mutate game state. The current user request approves three server-selected Google models
+within one provider, with bounded retries, provider-specific capability branches, privacy-safe attempt
+telemetry, and safe fallback. No browser-held credential, arbitrary
+model ID, write-capable tool, autonomous loop, or game-state mutation may be introduced. Invalid
+inputs and outputs MUST fail safely without exposing private data or invoking another model after a
+terminal failure.
 
 ## Product and Technology Constraints
 
@@ -59,7 +59,7 @@ proposals or outputs MUST fail safely without invoking an unapproved tool or exp
   one player until a separate multiplayer feature is approved.
 - The existing TypeScript, Node.js, Vite, DOM/CSS, HTTP, and WebSocket architecture MUST be retained.
 - Persistent progression, accounts, online currency, deployment, AI/provider changes beyond the
-  explicitly approved Hint scope, music, logos, and third-party visual assets are prohibited unless
+  explicitly approved shop-advisor scope, music, logos, and third-party visual assets are prohibited unless
   the project contract is amended.
 - Secrets, credentials, private data, and unrelated local files MUST NOT enter prompts, logs,
   snapshots, source, or committed artifacts.
@@ -93,4 +93,4 @@ principle incompatibly, a MINOR version adds or materially expands governance, a
 clarifies wording without changing obligations. Feature planning and final handoff MUST include a
 constitution compliance review; unjustified complexity or exceptions block completion.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-09-29
+**Version**: 1.2.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-09-30

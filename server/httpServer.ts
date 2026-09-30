@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { WebSocketServer, WebSocket } from "ws";
 import { GameSessionManager, SessionError } from "./gameSession.ts";
 import type { Direction } from "../src/game/snakeEngine.ts";
+import { createShopAdvisor, type ShopAdvisor } from "./ai/shopAdvice.ts";
 
 type ApiError = { error: { code: string; message: string } };
 
@@ -54,7 +55,7 @@ function asHttpError(error: unknown): HttpError {
   return new HttpError(500, "internal_error", "The server could not complete the request.");
 }
 
-async function handleRequest(request: IncomingMessage, response: ServerResponse, manager: GameSessionManager): Promise<void> {
+async function handleRequest(request: IncomingMessage, response: ServerResponse, manager: GameSessionManager, advisor: ShopAdvisor): Promise<void> {
   try {
     const url = new URL(request.url ?? "/", "http://localhost");
     const path = url.pathname.split("/").filter(Boolean);
@@ -81,6 +82,26 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
     }
     if (request.method === "POST" && path.length === 4) {
       const action = path[3];
+      if (action === "shop-advice") {
+        const body = await readJson(request);
+        if (!isRecord(body) || Object.keys(body).length !== 0) {
+          throw new HttpError(400, "invalid_request", "Shop advice does not accept request fields.");
+        }
+        const snapshot = manager.get(gameId);
+        if (snapshot.state.status !== "paused") {
+          throw new HttpError(409, "invalid_status", "Shop advice is available only while paused.");
+        }
+        const controller = new AbortController();
+        const onClose = () => { if (!response.writableEnded) controller.abort(); };
+        response.once("close", onClose);
+        try {
+          const advice = await advisor.advise(manager, gameId, controller.signal);
+          if (!response.destroyed) sendJson(response, 200, { advice });
+        } finally {
+          response.removeListener("close", onClose);
+        }
+        return;
+      }
       if (action === "move") {
         const body = await readJson(request);
         if (!isRecord(body) || Object.keys(body).length !== 1 || !isDirection(body.direction)) {
@@ -114,13 +135,16 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
   } catch (error) {
     const apiError = asHttpError(error);
     const body: ApiError = { error: { code: apiError.code, message: apiError.message } };
-    sendJson(response, apiError.status, body);
+    if (!response.destroyed) sendJson(response, apiError.status, body);
   }
 }
 
-export function createGameHttpServer(manager: GameSessionManager = new GameSessionManager()): Server {
+export function createGameHttpServer(
+  manager: GameSessionManager = new GameSessionManager(),
+  advisor: ShopAdvisor = createShopAdvisor(null),
+): Server {
   const server = createServer((request, response) => {
-    void handleRequest(request, response, manager);
+    void handleRequest(request, response, manager, advisor);
   });
   const webSockets = new WebSocketServer({ noServer: true });
 

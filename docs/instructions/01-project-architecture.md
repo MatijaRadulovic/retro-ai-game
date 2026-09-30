@@ -6,7 +6,7 @@ Read this module for changes to game behavior, state transitions, rendering, or 
 
 - RETRO SNAKE is an original, minimal browser game on a 20 × 20 board. It has a three-segment starting snake, arrow-key/touch controls, food, score, collision handling, pause/resume, restart, and win handling.
 - Preserve TypeScript + Vite for the browser and the TypeScript Node backend described in [`../specs/REFACTOR_PLAN.md`](../specs/REFACTOR_PLAN.md). The backend may host multiple independent in-memory single-player game containers; each has one player. Do not add room/join flows, accounts, multiplayer participation, online leaderboard, deployment, new game modes, or third-party visual/audio assets.
-- The local AI Hint is a narrow demonstration described by [`../specs/TOOL_CONTRACT.md`](../specs/TOOL_CONTRACT.md). It does not change the game rules or authoritative state.
+- The shop AI advisor is a narrow, read-only server flow described by the [shop contract](../specs/TOOL_CONTRACT.md) and [feature 002](../../specs/002-shop-advisor/spec.md). It does not change game rules or authoritative state.
 
 ## State and rendering boundaries
 
@@ -25,6 +25,6 @@ Read this module for changes to game behavior, state transitions, rendering, or 
 ## Change checklist
 
 - Identify the relevant game rule and acceptance condition before changing behavior.
-- Preserve unrelated game behavior and the read-only AI Hint boundary.
+- Preserve unrelated game behavior and the read-only shop AI boundary.
 - Update the owning task evidence with focused tests/evals when accepted behavior changes.
 - Update the spec only when the user-approved requirement changes; do not rewrite the spec to fit an accidental implementation.

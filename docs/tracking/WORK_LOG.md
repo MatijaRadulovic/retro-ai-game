@@ -2,6 +2,24 @@
 
 Append one concise entry for each substantive implementation, review, or documentation task. Every entry links the prompt/specification that guided the work and the evidence used or created. If there was no standalone prompt artifact, say so. Keep results factual and do not rewrite history.
 
+## 2026-09-30 — Fix Gemini structured-output MIME enum
+
+- **Goal:** diagnose the recurring HTTP 400 and verify the structured Gemini request against the live API.
+- **Prompt/spec references:** current user request; [Shop Advisor API contract](../../specs/002-shop-advisor/contracts/shop-advice-api.md), [V2 plan](../specs/GEMINI_HINT_CHANGES_V2.md), and official [Google GenerateContent API reference](https://ai.google.dev/api/generate-content). No standalone prompt artifact applies.
+- **Finding/outcome:** Google rejected `responseFormat.text.mimeType: "application/json"` as an invalid enum. Changed it to `APPLICATION_JSON` and updated the adapter test and request examples.
+- **Live check:** corrected Flash request passed payload validation but Flash returned HTTP 503 for high demand. Flash-Lite returned HTTP 200 and the adapter parsed a valid structured advice pair. See [Evidence 012](evidence/EVIDENCE_012.md).
+- **Verification:** focused 26/26 tests, typecheck, full 55/55 tests, build, security scan, and `git diff --check` passed.
+- **Security:** key was used only for the explicitly authorized check and was not recorded in files; because it was pasted into chat, revoke it and create a new one.
+
+## 2026-09-30 — Fix Gemini REST system instruction field
+
+- **Goal:** resolve the Gemini `400 bad_request` reported at runtime.
+- **Prompt/spec references:** current user request and runtime log; [Shop Advisor API contract](../../specs/002-shop-advisor/contracts/shop-advice-api.md), [V2 plan](../specs/GEMINI_HINT_CHANGES_V2.md), and official [Google GenerateContent API reference](https://ai.google.dev/api/generate-content). No standalone prompt artifact applies.
+- **Starting state:** dirty `main` worktree with prior shop-advisor changes; focused test passed while asserting the incorrect `system_instruction` field.
+- **Outcome:** corrected Gemini REST payload and adapter test to use camelCase `systemInstruction`; synchronized the research note and API contract.
+- **Verification:** focused suite 26/26, `npm run typecheck`, `npm test` 55/55, `npm run build`, `npm run security:scan`, and `git diff --check` passed. See [Evidence 011](evidence/EVIDENCE_011.md).
+- **Limitations / next step:** live provider checks were not run because the project contract prohibits them. The key pasted into chat was not used; revoke it and create a replacement.
+
 ## 2026-09-29 — Add Luck perk and orange Lucky pickup
 
 - **Goal:** extend the existing XP/perks feature with a Luck perk (0–5) and one orange pickup that awards one perk point.
@@ -139,3 +157,37 @@ Append one concise entry for each substantive implementation, review, or documen
 - **Outcome:** added Spec Kit skills/scaffolding, Gemini security/reliability planning and push guard, and updated Week 4 guidance. Excluded the stale broad powerups research draft because it includes mechanics outside the implemented Phase 1 scope. Kept the base game spec unchanged.
 - **Verification:** `npm run security:scan` passed; the configured pre-push hook scanned 3 outgoing and 7 additional locally reachable commits; `git diff --cached --check` passed; all Markdown links in 28 changed files resolve. Application tests/build were skipped because no application implementation changed. No live provider code or credentials were added.
 - **Limitations:** Gemini provider implementation remains pending; the push scanner detects known patterns and cannot prove absence of unknown credential formats.
+
+## 2026-09-30 — Replace movement Hint with shop AI advice
+
+- **Goal:** implement read-only shop recommendations with structured validation, bounded Gemini retries, and an approved lower-cost fallback model.
+- **Starting state:** clean `main` at `ba3174e`; current browser Hint uses a local fake model for movement advice. The shop and perk purchases already exist.
+- **Prompt/spec/evidence:** user request and pending user system prompt; [Shop AI Advisor spec](../../specs/002-shop-advisor/spec.md), the existing [Gemini integration plan](../specs/GEMINI_HINT_INTEGRATION.md), and [Evidence 009](evidence/EVIDENCE_009.md).
+- **Acceptance checks:** legal and current buy/wait advice only; no automatic purchases; bounded attempts and deadline; safe unavailability; server-only key; offline fake transport; required typecheck, tests, build, and security scan.
+- **Baseline:** `npm run typecheck` passed; `npm test` passed 33/33; `npm run build` passed (Vite 6.4.3, 9 modules). No live provider or shop advisor is implemented yet.
+- **Decision:** user confirmed a free-tier model pair; researching Gemini 3.8 Flash primary and Gemini 3.5 Flash-Lite fallback. Exact project quotas are unknown until viewed in the user's AI Studio account.
+- **Outcome:** Spec Kit feature 002, the paused shop endpoint, server-only Gemini transport, exact decision validation, bounded retry/fallback, asynchronous shop UI, and security/documentation updates are implemented offline. The active movement-Hint path and its obsolete tests were replaced. The user approved [system prompt v1](../prompts/week4/SHOP_ADVISOR_SYSTEM_PROMPT_V1.md), and it is active in `server/ai/shopPrompt.ts`.
+- **Verification:** initial implementation typecheck passed; full suite passed 44/44; production build passed; `npm run security:scan` and a simulated configured pre-push hook passed; `git diff --check` and changed-Markdown link scan passed. See [Evidence 009](evidence/EVIDENCE_009.md) for subsequent retry-policy and prompt-approval checks. No real key or live provider call was used.
+- **Limitations / next step:** browser runtime had no available browser for visual QA. Live Gemini behavior, real latency, and exact project quotas remain unverified. The model-selection UI preference was asked; current implementation automatically selects the two server-side models.
+- **Reliability revision:** user set two 10-second Flash calls, then up to three 10-second Flash-Lite calls, with 1/3/5/5-second delays. Two transient Flash failures now open a process-local 15-minute congestion window that sends following requests directly to Flash-Lite. The overall bound is 65 seconds. Added a separate [system-prompt draft](../prompts/week4/SHOP_ADVISOR_SYSTEM_PROMPT_V1.md) for user review before runtime adoption.
+- **Reliability revision verification:** typecheck passed; full suite passed 47/47; production build, worktree security scan, and `git diff --check` passed. Fake transport tests cover exact order, delays, congestion skip/expiry, and the five-call cap. Live latency and provider behavior remain unverified.
+- **Prompt approval:** user approved system prompt v1. Integrated it with accurate current rules; completed Spec Kit T011 and T020. Final verification recorded in Evidence 009 iteration 3.
+
+## 2026-09-30 — Document secret-safe local Gemini setup
+
+- **Goal:** explain how to run the backend with `GEMINI_API_KEY` while keeping the key out of project files and the browser.
+- **Prompt/spec/evidence:** current user request; [shop security instructions](../instructions/03-ai-hint-and-security.md), [Gemini plan](../specs/GEMINI_HINT_INTEGRATION.md), and [Evidence 009](evidence/EVIDENCE_009.md).
+- **Outcome:** added hidden-input Bash and PowerShell commands plus cleanup steps to the README; linked the setup from the feature quickstart, and documented why backend-only runtime configuration protects secrecy.
+- **Verification:** changed-Markdown relative links resolve; `git diff --check` passed. Application tests/build were skipped because this was documentation-only.
+- **Limitations:** no key was provided, read, or used; the live provider path remains unverified.
+
+## 2026-09-30 — Start Gemini Hint reliability V2
+
+- **Goal:** add sanitized provider-attempt telemetry, separate structured-output failure coverage, safe `Retry-After` handling, and Gemma 4 as a final fallback using a 1/2/3 attempt chain.
+- **Starting state:** existing dirty `main` worktree containing the uncommitted shop-advisor feature; user and unrelated changes are preserved. Baseline typecheck and 18 focused shop-advisor tests pass.
+- **Prompt/spec/evidence:** [build prompt v2](../prompts/week4/BUILD_PROMPT_GEMINI_HINT_CHANGES_V2.md), [Gemini Hint Changes V2](../specs/GEMINI_HINT_CHANGES_V2.md), and [Evidence 010](evidence/EVIDENCE_010.md).
+- **Acceptance checks:** exact Flash ×1 → Flash-Lite ×2 → Gemma ×3 routing; separate Gemma adapter; bounded timeout/deadline/backoff; safe `Retry-After`; one redacted structured event per attempt; four distinct output-failure tests; full project/security verification.
+- **Limitations:** no credential or secret file will be read and no live provider call is authorized; real availability, quality, latency, and account limits remain unverified.
+- **Outcome:** completed the [V2 plan](../specs/GEMINI_HINT_CHANGES_V2.md). The server now uses Flash ×1, Flash-Lite ×2, then Gemma 4 ×3; Gemma has a separate text-JSON capability branch; long `Retry-After` values skip same-model retries; two transient Flash failures accumulate across requests; and every attempt produces a sanitized structured JSON log with normalized usage when available.
+- **Verification:** `npm run typecheck`, `npm test` (55/55), `npm run build`, `npm run security:scan`, `git diff --check`, the configured pre-push guard, and a 57-file Markdown link scan passed. Detailed scenario results are in [Evidence 010](evidence/EVIDENCE_010.md).
+- **Remaining limits:** no live provider or browser manual check was run. Model availability, generated advice quality, real latency, and account-specific limits remain unverified.

@@ -55,12 +55,12 @@ Open the preview URL (default `http://localhost:4173`). The Vite preview proxy f
 - Cover a meaningful success case and relevant invalid, boundary, or failure cases.
 - Keep game logic deterministic in tests. Use controlled fixtures rather than live services or variable external state.
 - For runtime contracts, test malformed and unsupported input/output, not only valid TypeScript objects.
-- For the AI Hint, prove rejected proposals do not invoke the tool (`callCount === 0`), success invokes only the permitted tool, failures show a safe fallback, and game state is unchanged.
+- For shop AI advice, prove invalid/non-paused requests make zero provider calls, structured output is legal for the current points/caps/revision, transient retries and model fallback obey exact attempt limits, terminal failures stop, and game state is unchanged.
 - For configuration, check invalid values produce the documented safe fallback and visible error.
 
 ## Task-specific evals and evidence
 
-- Keep evaluation cases with the task evidence that owns them: core-game baseline and frozen regression cases in `tracking/evidence/EVIDENCE_003.md`; Hint change cases in `tracking/evidence/EVIDENCE_004.md`; server-refactor cases in `tracking/evidence/EVIDENCE_005.md`. New substantial tasks should use a focused evidence record rather than a permanent global eval list.
+- Keep evaluation cases with the task evidence that owns them: core-game baseline and frozen regression cases in `tracking/evidence/EVIDENCE_003.md`; historical movement-Hint cases in `tracking/evidence/EVIDENCE_004.md`; server-refactor cases in `tracking/evidence/EVIDENCE_005.md`; current shop-advice cases in `tracking/evidence/EVIDENCE_009.md`. New substantial tasks should use a focused evidence record rather than a permanent global eval list.
 - Start new evidence records from `tracking/evidence/EVIDENCE_TEMPLATE.md` so baseline, scenario expectations, iterations, actual outcomes, and limitations use a consistent structure.
 - Preserve the baseline and rerun the same frozen cases across each controlled change. Do not silently change expected results to match implementation. If no baseline was captured, mark it missing; do not infer it from the after run.
 - Distinguish unit/test output from manual browser observations. Say exactly what each check establishes and what remains unverified.

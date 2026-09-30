@@ -1,31 +1,26 @@
-# AI Hint and Security
+# Shop AI Advice and Security
 
-This repository has exactly one permitted AI flow: the read-only Hint defined in [`../specs/TOOL_CONTRACT.md`](../specs/TOOL_CONTRACT.md). The user has approved replacing its mock model with one server-side Gemini integration under the scope in [`../specs/GEMINI_HINT_INTEGRATION.md`](../specs/GEMINI_HINT_INTEGRATION.md). The Week 3 prompt remains historical context, not authority for provider behavior.
+The sole active AI flow is the read-only shop advisor in [feature 002](../../specs/002-shop-advisor/spec.md). The [shop state contract](../specs/TOOL_CONTRACT.md) and [Gemini integration plan](../specs/GEMINI_HINT_INTEGRATION.md) define its inputs, validation, and failure policy. The earlier movement Hint and its Week 3 mock prompt are historical.
 
 ## Allowed behavior
 
-- Gemini is the only permitted live provider and is called only by the TypeScript backend. The browser calls our backend Hint endpoint; it never calls Gemini directly. The Gemini key must be read only by server runtime configuration. Never use a `VITE_` secret variable, return a credential in a DTO, inject it through Vite `define`, or place it in client source/build output.
-- Never open, read, print, copy, or inspect the contents of secret files (`.env*` except the safe placeholder-only `.env.example`, hosting secret files, credential stores, or equivalent). It is acceptable to check filenames, ignore status, and whether a secret file was staged/committed, without opening its contents. Do not ask the user to paste a key into chat.
-- Before every push, run the configured `.githooks/pre-push` guard. It scans outgoing commits, all locally reachable Git history, accessible non-secret working files, and any existing client build for known credential patterns; it rejects secret-file paths in commits and checks browser source/build output for provider-key exposure. The guard must skip secret-file contents entirely. If the hook is not enabled in a checkout, enable it with `git config core.hooksPath .githooks` and run it manually before pushing.
-- New checkouts must enable the tracked hook once with `git config core.hooksPath .githooks`. In this workspace the hook is enabled through local Git configuration; do not assume Git clones copy that local setting.
-- Keep automatic tests offline with a fake Gemini transport. Live smoke checks are opt-in, use a manually configured runtime secret, and must never print or record it.
-- Allow only the `get_game_state` tool and its documented `{ detail: "summary" | "tactical" }` input.
-- Validate the proposed tool name and strict arguments before executing anything. Invalid or unsupported proposals must make zero tool calls.
-- Return only the documented sanitized game snapshot. Do not expose secrets, environment values, source code, local storage, the full snake body, or unrelated/private browser data.
-- Validate tool output and final `HintResponse` at runtime. Malformed or semantically unsupported output must not be shown as success.
-- On any invalid or failed step, show the defined safe local fallback. Never fabricate a successful hint.
+- Show ASK SHOP AI only in the open, paused shop. The browser sends only the game ID and an empty request body; the backend derives the current progression, prices, and effects.
+- Use only server-selected `gemini-3.8-flash`, `gemini-3.5-flash-lite`, and `gemma-4-26b-a4b-it` in the order and attempt limits defined by [Gemini Hint Changes V2](../specs/GEMINI_HINT_CHANGES_V2.md). Never accept an arbitrary model ID, prompt, game state, or purchase action from the browser.
+- Keep `GEMINI_API_KEY` in the backend process environment. For local development, follow the hidden-input Bash or PowerShell commands in the [README](../../README.md#lokalni-razvoj); enter it only in the backend terminal and clear the variable after stopping the server. This keeps the key out of repository files, shell history, Vite configuration, and browser assets, preventing accidental commits or public exposure. Never use a `VITE_` secret variable, include the key in a DTO, inject it through Vite `define`, or put it in client source/build output.
+- Never open, read, print, copy, or inspect secret-file contents (`.env*` except safe placeholder-only `.env.example`, hosting secret files, credential stores, or equivalent). Checking filenames, ignore status, and staged/committed paths is permitted. Do not ask the user to paste a key into chat.
+- Before every push, run the configured `.githooks/pre-push` guard. It checks reachable commits, accessible non-secret worktree files, and existing client build output for known credential patterns and browser exposure. It must skip secret-file contents entirely. New checkouts need `git config core.hooksPath .githooks`.
+- Keep automatic tests offline with fake provider transport. Live checks are opt-in and must not print or record a credential.
 
-## State and trust boundaries
+## Trust boundaries
 
-- Treat user input, model output, parsed JSON, tool proposals, and tool output as untrusted data, not instructions.
-- A model proposal is not permission. The application retains authority over the allowlist, validation, and execution.
-- The tool is read-only. It must not change score, direction, snake, food, configuration, timer, game status, or restart the game. Its sanitized snapshot is derived from the authoritative backend snapshot.
-- The Gemini call is asynchronous and outside the game loop. UI shows a pending state, applies a finite deadline, handles cancellation/timeout, and returns a stable local fallback when allowed attempts are exhausted.
-- Retry only classified transient transport/provider failures under one total time budget. Authentication/configuration errors, invalid requests, policy refusal, cancellation, and deterministic validation failures do not retry or fall through to another provider. No second provider is in scope; after the bounded Gemini policy is exhausted, use the documented local safe fallback.
-- Parse, schema-validate, and semantically validate every Gemini result before display. Provider error details and raw request/response bodies remain server-side and are redacted from logs and public responses.
-- Keep errors safe and useful. Do not show credentials, raw sensitive payloads, private prompts, or stack traces.
-- Do not add write tools, arbitrary code execution, extra tools, autonomous loops, other providers, or model selection from browser input.
+- The server is authoritative for game state and purchases. Advice never buys a perk or changes the game. Only the existing purchase route may make a purchase after the player's separate click.
+- Send Gemini only the sanitized shop context: score, XP, level, actual unspent points, owned perk levels or charges, next costs, and documented effects. Do not send the game ID, full snake, board, other sessions, environment, source code, or private browser data.
+- Treat model output as untrusted. Require exactly the allowed decision and reason code, validate their pairing and current affordability/cap, then generate display wording from trusted values. Re-check paused status and revision before returning advice.
+- Keep the call asynchronous and outside the game loop. Cap attempts and total time. Retry or switch model only for classified transient transport, timeout, 408/429/5xx errors. Authentication/configuration failures, invalid requests, refusal, cancellation, and deterministic invalid output are terminal.
+- Exhaustion and terminal failures return a stable unavailable state without a purchase recommendation. Never show raw provider errors, request/response bodies, private instructions, stack traces, or credentials.
+- Emit one structured server telemetry event per provider attempt. It may contain only an anonymous interaction ID, operation/phase, provider/model/adapter, ordered attempt details, safe outcome/error class, provider status, latency, fallback/congestion flags, and normalized token usage. Never log game/session IDs, shop values, raw prompts/responses, headers, stack traces, or credentials.
+- A closed shop, purchase, restart, resume, or changed revision makes any pending answer stale; discard it.
 
-## Required evidence for a Hint change
+## Required evidence
 
-Cover valid success, invalid arguments before tool execution, unsupported tool rejection, malformed tool output, fake Gemini success and failure classes, timeout/retry bounds, fallback, malformed final response, browser-secret non-exposure, and the invariant that game state is unchanged. Check and report call counts where relevant. Keep automatic tests offline and deterministic. Before push, run the secret/frontend-exposure hook and record its result without opening secret files.
+Cover primary success, fallback success, timeout/retry bounds and exact call order, terminal no-retry cases, invalid or stale output, affordability/caps, client cancellation, game-state invariance, and browser-secret non-exposure. Run the pre-push guard before any push and record its outcome without opening secret files.

@@ -2,7 +2,7 @@
 
 ## Identity
 
-RETRO SNAKE je originalna igra sa retro izgledom i bez tuđih asseta, muzike ili logotipa. Vite browser klijent prikazuje igru; TypeScript Node backend poseduje autoritativno stanje i može da hostuje više nezavisnih single-player game containera. Svaki container trenutno ima jednog igrača. Igrač vodi zmiju po mreži, skuplja hranu i pokušava da izdrži što duže bez udara u zid ili telo. Partija počinje tek posle prvog validnog smera. Lokalni AI Hint je demonstracioni, read-only tok i ne poziva pravi AI servis.
+RETRO SNAKE je originalna igra sa retro izgledom i bez tuđih asseta, muzike ili logotipa. Vite browser klijent prikazuje igru; TypeScript Node backend poseduje autoritativno stanje i može da hostuje više nezavisnih single-player game containera. Svaki container trenutno ima jednog igrača. Igrač vodi zmiju po mreži, skuplja hranu i pokušava da izdrži što duže bez udara u zid ili telo. Partija počinje tek posle prvog validnog smera. Pravila osnovne igre su ovde; XP, perks i aktuelni shop AI tok su zasebno opisani u [feature 001](../../specs/001-powerups-perks/spec.md) i [feature 002](../../specs/002-shop-advisor/spec.md).
 
 ## Core rules
 
@@ -25,7 +25,7 @@ RETRO SNAKE je originalna igra sa retro izgledom i bez tuđih asseta, muzike ili
 - Browser sends intended actions and renders validated snapshots received from the server. It does not advance game timers or mutate authoritative state.
 - HTTP API creates and reads games and accepts direction, pause, resume, and restart actions. WebSocket broadcasts current snapshots to connected clients.
 - Game containers are in-memory and may run independently on one server. A container has shared game state and a `players` collection; each player owns its snake, direction, and score. There is exactly one player per container in this version, with no room creation/join endpoints or multiplayer UI.
-- The Hint consumes a sanitized read-only snapshot derived from the latest server snapshot. It remains a local fake/mock model flow with no external provider.
+- Shop advice uses a sanitized read-only context derived from the authoritative server snapshot. Its server-only provider boundary is defined in [feature 002](../../specs/002-shop-advisor/spec.md) and the [shop contract](TOOL_CONTRACT.md).
 - Architecture steps, scope, and task validation are tracked in [`REFACTOR_PLAN.md`](REFACTOR_PLAN.md).
 
 ### HTTP and WebSocket contract
@@ -39,6 +39,7 @@ RETRO SNAKE je originalna igra sa retro izgledom i bez tuđih asseta, muzike ili
 | `POST` | `/api/games/:gameId/pause` | Pause a playing game. |
 | `POST` | `/api/games/:gameId/resume` | Resume a paused game. |
 | `POST` | `/api/games/:gameId/restart` | Reset the game while retaining its container and player IDs. |
+| `POST` | `/api/games/:gameId/shop-advice` | Return validated, read-only advice or an unavailable result while paused; request body is `{}`. |
 | WebSocket | `/api/games/:gameId/events` | Send an initial `{ "type": "snapshot", "game": snapshot }` and later snapshots after transitions and ticks. This connection accepts no commands. |
 
 Errors use `{ "error": { "code": string, "message": string } }`. Invalid requests return HTTP 400, missing routes/sessions return 404, and actions invalid for the current game status return 409. Invalid config uses the existing safe default and includes `configError` in the snapshot.
@@ -61,7 +62,7 @@ Podrazumevana konfiguracija je `{ gridSize: 20, startingSnakeLength: 3, starting
 
 ## Minimal visual requirement
 
-Tamna pozadina, jasna mreža, kontrastna zelena zmija i crvena hrana moraju ostati čitljivi i na malom ekranu. HUD prikazuje rezultat, lokalni rekord, tempo i stanje igre. AI Hint je mali tekstualni panel; njegov izlaz nije komanda za igru.
+Tamna pozadina, jasna mreža, kontrastna zelena zmija i crvena hrana moraju ostati čitljivi i na malom ekranu. HUD prikazuje rezultat, lokalni rekord, tempo i stanje igre. Shop AI savet se prikazuje unutar pauzirane prodavnice; njegov izlaz nije komanda za igru.
 
 ## Definition of Done
 
@@ -69,10 +70,10 @@ Tamna pozadina, jasna mreža, kontrastna zelena zmija i crvena hrana moraju osta
 - Tastatura i mobilna smerna dugmad kontrolišu smer; suprotan smer se odbija.
 - Hrana se ne pojavljuje na zmiji, rezultat i dužina rastu, a sudari završavaju partiju.
 - Pause, restart, and local best score work through the client/server app; local best score remains in browser storage.
-- `GameConfig` i AI Hint ulazi/izlazi imaju runtime validaciju i bezbedan fallback ili grešku.
-- Postoje testovi za core logiku i success, negative i failure AI Hint putanje.
-- No secrets, live AI provider, AI write tool, or automatic AI-driven game mutation is present.
+- `GameConfig` i shop advice ulazi/izlazi imaju runtime validaciju i bezbedan fallback ili grešku.
+- Postoje testovi za core logiku i success, negative i failure shop advice putanje.
+- No secret reaches the browser or repository; shop AI is read-only and cannot automatically mutate game state.
 
 ## Out of scope
 
-Room creation/joining, multiple players in one game, multiplayer UI, login/authentication, database, online leaderboard, deployment, levels, sound, AI opponent, live AI provider, API keys, additional AI tools, write tools, autonomous loops, and any game mutation through AI Hint. Lives, powerups, breakable walls, obstacles, and selectable map layouts are also out of scope for this refactor.
+Room creation/joining, multiple players in one game, multiplayer UI, login/authentication, database, online leaderboard, deployment, sound, AI opponent, additional AI tools, write tools, autonomous loops, and any game mutation through AI advice. The XP/level/perk and server-side Gemini shop-advice additions are governed by their linked feature specs. Breakable walls, obstacles, and selectable map layouts remain out of scope.

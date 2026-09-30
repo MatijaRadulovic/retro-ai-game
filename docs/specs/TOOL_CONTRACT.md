@@ -1,62 +1,21 @@
-# Tool Contract — `get_game_state`
+# Read-Only Shop State Contract
 
-## Purpose
+The current shop advisor replaces the historical `get_game_state` movement-Hint tool. Gemini does not propose or execute tool calls. The backend derives one sanitized shop state from the authoritative paused game, then sends only its allowed fields to Gemini. The [feature data model](../../specs/002-shop-advisor/data-model.md) and [HTTP contract](../../specs/002-shop-advisor/contracts/shop-advice-api.md) provide exact shapes.
 
-Vraća mali, sanitizovan snapshot tekuće Snake partije isključivo za server-side Gemini Hint tok.
+## Caller and effect
 
-## Read/write i caller
+- Caller: one user-triggered request to the paused shop advice endpoint.
+- Read/write: strictly read-only. The operation cannot buy a perk, move the snake, pause/resume, restart, alter a timer, or publish a new game revision.
+- Preflight: reject unknown game, non-paused status, nonempty/invalid request body, and overlapping requests before any provider call.
 
-- **Read/write:** strogo READ ONLY.
-- **Dozvoljeni caller:** samo backend Hint service za zahtev koji je pokrenuo korisnik.
-- **Allowlist:** jedino ime `get_game_state`.
+## Allowed context
 
-## Input
+The server may derive score, cumulative XP, current level, actual unspent perk points, Extra XP/Luck levels, held +1 Life charges, current next prices, and documented effects. The server keeps the game ID and revision only to check staleness; neither is sent to Gemini. It excludes the full snake, board, food coordinates, session internals, secrets, source, browser storage, and other players' games.
 
-```ts
-{ detail: "summary" | "tactical" }
-```
+## Model output
 
-Svako drugo ime, dodatno polje ili vrednost — na primer `{ detail: "everything", executeCode: "..." }` — odbija se pre izvršenja alata.
-
-## Output
-
-```ts
-type GameStateSnapshot = {
-  score: number;
-  status: "ready" | "playing" | "paused" | "game_over" | "won";
-  gridSize: number;
-  direction: "up" | "right" | "down" | "left";
-  snakeHead: { x: number; y: number };
-  food: { x: number; y: number } | null;
-  nearbyObjects: Array<{ type: "food" | "wall"; direction: "up" | "right" | "down" | "left" }>;
-};
-```
-
-`summary` ne dodaje taktičke objekte; `tactical` sme dodati samo smer hrane i neposrednog zida.
-
-## Must not return / do
-
-Alat nikada ne vraća secrets, environment promenljive, source code, `localStorage`, kompletno telo zmije, druge aplikacione podatke ili privatne podatke. Samo sanitizovani snapshot sme biti poslat Gemini-ju. Ne sme menjati score, smer, zmiju, hranu, konfiguraciju, timer ili restartovati partiju. Gemini ključ se ne prosleđuje ovoj funkciji niti bilo kom browser DTO-u.
+Gemini must return exactly `{decision, reasonCode}` with no extra fields. `decision` is `buy_extra_xp`, `buy_luck`, `buy_extra_life`, or `wait`. Reason codes and pairings are defined in the [data model](../../specs/002-shop-advisor/data-model.md). The server rejects malformed, unsupported, unaffordable, capped, or stale choices before display, and creates explanation text from trusted facts. No model text is interpreted as a game command.
 
 ## Failure policy
 
-Ako ulaz nije validan ili game session ne postoji, Gemini se ne poziva. Ako output snapshot-a ili `HintResponse` nije validan, UI prikazuje bezbednu lokalnu poruku i ne prikazuje odgovor kao uspešan savet. Timeout, provider failure ili nedostajuća konfiguracija poštuju bounded retry politiku i zatim prikazuju lokalni fallback.
-
-## Gemini request lifecycle
-
-- Poziv je asinhron i van game tick loop-a. UI prikazuje čekanje i ostaje upotrebljiv.
-- Jedna logička interakcija ima najviše dva Gemini pokušaja ukupno (početni pokušaj i jedan retry) i ukupan rok od 8 sekundi. Predloženi rok po pokušaju je do 3.5 sekunde; backoff je kratak i sa jitter-om. Svi rokovi su server-side konfiguracija sa bezbednim granicama.
-- Retry je dozvoljen samo za timeout/transport, 429 ili transient 5xx, i samo ako ukupni deadline dozvoljava pokušaj. Poštuj `Retry-After` samo ako staje u preostali budžet.
-- Ne retry-uj auth/config, 400/invalid request, refusal/safety, cancellation, prazan odgovor, schema-invalid ili semantički neispravan output. Nema drugog providera kao fallback-a.
-- Po iscrpljenju dozvoljenih pokušaja vrati jasno označen lokalni fallback/unavailable rezultat; nikad ne predstavljaj ga kao Gemini uspeh.
-- Javni odgovor je normalizovan i ne uključuje provider raw error, prompt, tajnu, stack trace ili privatni telemetry.
-
-## Final response contract
-
-```ts
-type HintResponse = {
-  hint: string; // 4–180 znakova
-  suggestedAction: "move_up" | "move_right" | "move_down" | "move_left" | "avoid" | "collect" | "wait";
-  urgency: "low" | "medium" | "high";
-};
-```
+The [Gemini Hint Changes V2 plan](GEMINI_HINT_CHANGES_V2.md) owns deadlines, retry classification, telemetry, and the three-model fallback order. All terminal and exhausted paths show an unavailable state with no purchase recommendation. A model refusal, invalid output, or policy/permission failure cannot be routed to another model to evade it. Public responses contain no raw provider error, prompt, credential, private telemetry, or stack trace.

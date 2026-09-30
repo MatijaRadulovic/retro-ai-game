@@ -2,6 +2,8 @@
 
 This guide extracts the Week 4 assignment and teaching materials into an actionable plan for RETRO SNAKE. It is a course-informed project guide, not a new product specification.
 
+> **Current scope (2026-09-30):** The user replaced movement Hint with the paused [shop AI advisor](../../../specs/002-shop-advisor/spec.md). Its [reliability v2 prompt](../../prompts/week4/BUILD_PROMPT_GEMINI_HINT_CHANGES_V2.md), [contract](../../specs/TOOL_CONTRACT.md), [V2 plan](../../specs/GEMINI_HINT_CHANGES_V2.md), and [Evidence 010](../evidence/EVIDENCE_010.md) govern current work. Sections below that describe earlier milestones only.
+
 ## 1. Read the scope before the assignment
 
 The generic Week 4 assignment asks students to add one user-visible AI feature through a TypeScript backend and a live provider. It covers API keys, provider choice, timeouts, retry, fallback, usage telemetry, and a limited live demonstration.
@@ -14,13 +16,13 @@ At the time this guide was first written, RETRO SNAKE's project contract was int
 - The model path is fake/mock. There is no backend, API key, provider SDK, external request, or network call.
 - AI output cannot issue movement commands or mutate any game/configuration state.
 
-The user has since approved one specific scope change: replace the mock Hint model with a single server-side Gemini provider. Follow the current [`GEMINI_HINT_INTEGRATION.md`](../../specs/GEMINI_HINT_INTEGRATION.md) plan and security module. The broader provider architecture remains reference material; OpenAI, multi-provider routing, and unrelated examples are still out of scope.
+The current approved scope uses one server-side Google provider with three allowlisted models for shop advice. Follow the [V2 plan](../../specs/GEMINI_HINT_CHANGES_V2.md) and [security module](../../instructions/03-ai-hint-and-security.md). Other providers and unrelated examples remain out of scope.
 
 ## 2. What Week 4 teaches
 
 ### A. Design one useful scenario
 
-Before implementation, write down who triggers the feature, when it runs, which minimum input it needs, what output helps the user, how long the user should wait, what can fail, and how success is validated. Do not put a slow model operation in a frame-by-frame game loop. The existing button-triggered Hint is the intended project shape.
+Before implementation, write down who triggers the feature, when it runs, which minimum input it needs, what output helps the user, how long the user should wait, what can fail, and how success is validated. Do not put a slow model operation in a frame-by-frame game loop. The shop's ASK SHOP AI button is the current trigger.
 
 ### B. Treat the tool as a contract
 
@@ -34,7 +36,7 @@ Keep the trust checks distinct:
 4. **Validate output:** does the returned data satisfy runtime shape, limits, and safe semantics?
 5. **Map:** return only the documented safe result or fallback to the UI.
 
-For this local application there is no external identity or authorization service. The applicable gate is the `runHintFlow` caller restriction and strict single-tool allowlist. Do not invent an auth layer.
+For this local application there is no external identity or authorization service. The current gate is the paused-only shop route, exact empty request body, and server-selected model allowlist. Do not invent an auth layer.
 
 ### C. Validate structure and meaning
 
@@ -45,7 +47,7 @@ Structured output has multiple failure layers:
 3. JSON with the wrong fields, types, lengths, or enum values;
 4. structurally valid output that is unsupported, nonsensical, or unsafe in relation to the game snapshot.
 
-Reject invalid values before display. The UI should not parse arbitrary AI prose as an action. `HintResponse` is display-only; game input remains under the existing controls.
+Reject invalid values before display. The UI should not parse arbitrary AI prose as an action. The validated shop-advice result is display-only; purchases remain separate manual actions.
 
 ### D. Classify failures before selecting a response
 
@@ -79,7 +81,7 @@ For future provider work, the detailed distinction is:
 | Missing required tool call | Tool-contract/model behavior error, not a transport timeout | Invalid/unsupported fake proposals are rejected |
 | Cancellation | Propagate cancellation; do not start another attempt | No loop or retries |
 
-Retry and fallback are separate policies. Retry repeats the same operation/model after a classified transient error; fallback changes the model/provider or returns a defined safe application result. For the approved Gemini Hint, there is one model and fallback means a clearly identified local unavailable result after the bounded retry policy. Both use the single total deadline, fixed attempt cap, bounded backoff, cancellation handling, and observable per-attempt records in the integration plan. Hidden SDK retries and parallel model races undermine cost, latency, and evidence.
+Retry and fallback are separate policies. Retry repeats the same operation/model after a classified transient error; fallback changes the model/provider or returns a defined safe application result. The current shop advisor tries Gemini 3.8 Flash once, Gemini 3.5 Flash-Lite at most twice, then Gemma 4 at most three times under one 85-second deadline. It uses 10-second call limits and 1/3/5/5/5-second base delays with bounded jitter. Two consecutive transient Flash failures across requests open a 15-minute process-local congestion window. Exhaustion returns a safe unavailable result. Hidden SDK retries and parallel model races undermine cost, latency, and evidence.
 
 ### E. Retry and fallback are different
 
@@ -87,7 +89,7 @@ Retry and fallback are separate policies. Retry repeats the same operation/model
 - A **fallback** chooses a different allowed route or a safe application outcome.
 - Both require a finite attempt limit and total time budget in a live integration. Hidden SDK retries make evidence and usage inaccurate.
 - A fallback must not bypass validation, privacy, safety, or authorization. It must be recorded as a separate attempt.
-- The earlier fake Hint had no network retry requirement. The approved Gemini Hint retries only transient errors and falls back locally after two total attempts; it does not switch to another provider.
+- The earlier fake Hint had no network retry requirement. The current shop advisor has one primary call, two Flash-Lite calls, and three Gemma calls.
 
 ### F. Keep data and diagnostics small
 
@@ -164,7 +166,7 @@ The assignment suggests separate `AI_FEATURE_SPEC.md`, `AI_FEATURE_PROMPT.md`, `
 | Course artifact/content | RETRO SNAKE location | Applicability |
 |---|---|---|
 | Feature scenario/spec, acceptance, out of scope | `docs/specs/BASE_GAME_SPEC.md`, `docs/specs/TOOL_CONTRACT.md`, and `docs/specs/GEMINI_HINT_INTEGRATION.md` | Current approved Gemini behavior is in the integration plan |
-| Prompt for the bounded flow | `docs/prompts/week4/BUILD_PROMPT_GEMINI_HINT_V1.md` | Current implementation prompt; Week 3 prompt is historical mock-only context |
+| Prompt for the bounded flow | `docs/prompts/week4/BUILD_PROMPT_GEMINI_HINT_V2.md` | Current implementation prompt; v1 and Week 3 prompts are historical |
 | Provider contract | `docs/specs/TOOL_CONTRACT.md` | Its tool and response contract applies; external provider fields (key, model, provider timeout) do not |
 | AI eval cases | Hint-specific table inside `docs/tracking/evidence/EVIDENCE_004.md` | Applicable and task-specific |
 | W04 evidence | `docs/tracking/evidence/EVIDENCE_004.md` | Applicable; actual local mock results only |
@@ -176,9 +178,9 @@ The Week 4 assignment requires at least four provider-oriented evals (normal suc
 
 The generic course assignment expects a server-side boundary and may ask for a provider/model, server-only key, endpoint, explicit request/response contracts, timeouts, bounded retry, safe errors, a fake provider, and a small live smoke test. The reliability addendum further discusses status classification, model chains, fallback policy, provider capability checks, telemetry, token usage, caching, quotas, cancellation, and provider-specific adapters.
 
-The single Gemini Hint slice is now authorized and planned separately. Apply only the relevant controls below; the detailed acceptance criteria and retry values live in the Gemini integration plan. Do not treat generic examples as permission to add other providers/features. At minimum:
+The Gemini shop advisor is now authorized and planned separately. Apply only the relevant controls below; the detailed acceptance criteria and retry values live in the Gemini integration plan. Do not treat generic examples as permission to add other providers/features. At minimum:
 
-- a stable Hint application contract and one Gemini adapter; keep the existing feature behavior separate from Gemini SDK mapping, and do not add a router until a second provider is explicitly approved;
+- a stable shop-advice contract and one Gemini adapter with two fixed model IDs; keep feature validation separate from Gemini transport mapping;
 - server-side secret configuration and one server-owned model allowlist; never put a real key in browser code, Git, prompts, screenshots, evidence, fixtures, or user-visible logs; use placeholder-only example config and rotate any leaked key;
 - fixed server-side Gemini/model selection. The browser cannot choose a provider or arbitrary model;
 - input/output bounds, strict schema plus semantic validation;
@@ -193,7 +195,7 @@ Provider names, model IDs, SDK syntax, status behavior, and capability lists can
 
 ## 7. Course workflow, demo, and assessment notes
 
-The assignment recommends this order: stabilize the W03 project → establish the frontend/backend boundary → select a scenario → specify it → define contracts → build a fake provider → implement the endpoint → validate input/output → add timeout/error policy → test → only then connect a live provider → capture evidence → review the diff and play-test. For the earlier RETRO SNAKE mock milestone, work stopped before backend/provider calls. The current user request authorizes the next step: implement the single Gemini backend flow under the integration plan, then verify it with offline fake transport and separate opt-in live evidence.
+The assignment recommends this order: stabilize the W03 project → establish the frontend/backend boundary → select a scenario → specify it → define contracts → build a fake provider → implement the endpoint → validate input/output → add timeout/error policy → test → only then connect a live provider → capture evidence → review the diff and play-test. For the earlier RETRO SNAKE mock milestone, work stopped before backend/provider calls. The current request authorizes the Gemini shop advisor under the integration plan, with offline fake transport verification and separate opt-in live evidence.
 
 For pair assignments, one person may drive specification/implementation while the other reviews architecture, secrets, tests, and evidence; switch roles and record each person's real contribution. Existing project records describe this repo as independent work, so do not rewrite those contribution claims to imply a pair.
 

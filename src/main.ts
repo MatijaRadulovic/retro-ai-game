@@ -3,7 +3,6 @@ import { gameClient, GameApiError, connectGameEvents } from "./api/gameClient.ts
 import { getTickMs } from "./game/snakeConfig.ts";
 import { validateGameSnapshot, type GameSnapshot } from "./game/gameProtocol.ts";
 import { type Direction } from "./game/snakeEngine.ts";
-import { createFakeHintModel, getGameStateSnapshot, runHintFlow } from "./ai/hint.ts";
 
 const board = document.getElementById("board");
 const gameCard = document.querySelector<HTMLElement>(".game-card");
@@ -18,8 +17,8 @@ const overlay = document.getElementById("game-overlay");
 const overlayTitle = document.getElementById("overlay-title");
 const overlayMessage = document.getElementById("overlay-message");
 const overlayActionButton = document.getElementById("overlay-action");
-const hintButton = document.getElementById("hint") as HTMLButtonElement | null;
-const hintOutput = document.getElementById("hint-output");
+const adviceButton = document.getElementById("shop-advice-button") as HTMLButtonElement | null;
+const adviceOutput = document.getElementById("shop-advice-output");
 const xpValue = document.getElementById("xp-value");
 const levelValue = document.getElementById("level-value");
 const perkPointsValue = document.getElementById("perk-points-value");
@@ -46,7 +45,7 @@ const buyLuck = document.getElementById("buy-luck") as HTMLButtonElement | null;
 const shopClose = document.getElementById("shop-close") as HTMLButtonElement | null;
 const shopMessage = document.getElementById("shop-message");
 
-if (!board || !gameCard || !scoreElement || !bestScoreElement || !statusElement || !paceElement || !connectionElement || !pauseButton || !restartButton || !overlay || !overlayTitle || !overlayMessage || !overlayActionButton || !hintButton || !hintOutput || !xpValue || !levelValue || !perkPointsValue || !extraXpValue || !luckValue || !lifeValue || !extraXpCubes || !luckCubes || !lifeCubes || !shopToggle || !perkShop || !shopXp || !shopLevel || !shopPoints || !shopExtraXpValue || !shopLuckValue || !shopLifeValue || !shopExtraXpCubes || !shopLuckCubes || !shopLifeCubes || !buyExtraXp || !buyLuck || !buyExtraLife || !shopClose || !shopMessage) {
+if (!board || !gameCard || !scoreElement || !bestScoreElement || !statusElement || !paceElement || !connectionElement || !pauseButton || !restartButton || !overlay || !overlayTitle || !overlayMessage || !overlayActionButton || !adviceButton || !adviceOutput || !xpValue || !levelValue || !perkPointsValue || !extraXpValue || !luckValue || !lifeValue || !extraXpCubes || !luckCubes || !lifeCubes || !shopToggle || !perkShop || !shopXp || !shopLevel || !shopPoints || !shopExtraXpValue || !shopLuckValue || !shopLifeValue || !shopExtraXpCubes || !shopLuckCubes || !shopLifeCubes || !buyExtraXp || !buyLuck || !buyExtraLife || !shopClose || !shopMessage) {
   throw new Error("Snake UI nije kompletno inicijalizovan.");
 }
 
@@ -62,8 +61,8 @@ const gameOverlay = overlay;
 const gameOverlayTitle = overlayTitle;
 const gameOverlayMessage = overlayMessage;
 const gameOverlayActionButton = overlayActionButton;
-const askHint = hintButton;
-const hintMessage = hintOutput;
+const askAdvice = adviceButton;
+const adviceMessage = adviceOutput;
 const runXpValue = xpValue;
 const runLevelValue = levelValue;
 const runPerkPointsValue = perkPointsValue;
@@ -98,6 +97,13 @@ let previousStatus = "ready";
 let best = 0;
 let disconnectEvents: (() => void) | undefined;
 let shopVisible = false;
+let adviceAbort: AbortController | null = null;
+
+function clearAdvice(message = "ASK WHETHER TO BUY A PERK OR WAIT."): void {
+  adviceAbort?.abort();
+  adviceAbort = null;
+  adviceMessage.textContent = message;
+}
 
 function readBestScore(): number {
   try {
@@ -167,6 +173,7 @@ function renderCubes(element: HTMLElement, filled: number, total: number): void 
 function applySnapshot(value: unknown): void {
   const next = validateGameSnapshot(value);
   if (!next || (game && next.id !== game.id) || (game && next.revision < game.revision)) return;
+  if (game && (next.revision !== game.revision || next.state.status !== "paused")) clearAdvice();
   if (!game || next.config.gridSize !== game.config.gridSize || cells.length === 0) {
     cells.splice(0, cells.length);
     gameBoard.replaceChildren();
@@ -262,7 +269,7 @@ function render(next: GameSnapshot): void {
   gameOverlayActionButton.hidden = state.status === "ready";
   pause.textContent = state.status === "paused" ? "RESUME" : "PAUSE";
   pause.disabled = state.status === "ready" || state.status === "game_over" || state.status === "won";
-  askHint.disabled = state.status !== "playing" && state.status !== "paused";
+  askAdvice.disabled = state.status !== "paused" || !shopVisible || adviceAbort !== null;
 
   if (state.status === "ready") {
     gameOverlayTitle.textContent = "READY?";
@@ -313,7 +320,7 @@ async function restart(): Promise<void> {
   }
   displayedScore = 0;
   shopVisible = false;
-  hintMessage.textContent = "START A GAME TO ASK FOR A READ-ONLY HINT.";
+  clearAdvice();
   await runAction(() => gameClient.restart(game!.id));
 }
 
@@ -326,8 +333,10 @@ async function togglePause(): Promise<void> {
   if (!game) return;
   if (game.state.status === "playing") {
     shopVisible = false;
+    clearAdvice();
     await runAction(() => gameClient.pause(game!.id));
   } else if (game.state.status === "paused") {
+    clearAdvice();
     if (await runAction(() => gameClient.resume(game!.id))) {
       shopVisible = false;
       if (game) render(game);
@@ -340,16 +349,19 @@ async function toggleShop(): Promise<void> {
   if (game.state.status === "playing") {
     if (await runAction(() => gameClient.pause(game!.id))) {
       shopVisible = true;
+      clearAdvice();
       if (game) render(game);
     }
   } else if (game.state.status === "paused") {
     if (shopVisible) {
+      clearAdvice();
       if (await runAction(() => gameClient.resume(game!.id))) {
         shopVisible = false;
         if (game) render(game);
       }
     } else {
       shopVisible = true;
+      clearAdvice();
       render(game);
     }
   }
@@ -357,6 +369,7 @@ async function toggleShop(): Promise<void> {
 
 async function purchasePerk(perk: "extra_xp" | "extra_life" | "luck"): Promise<void> {
   if (!game || game.state.status !== "paused") return;
+  clearAdvice();
   shopStatusMessage.textContent = "";
   try {
     applySnapshot(await gameClient.purchasePerk(game.id, perk));
@@ -407,19 +420,31 @@ gameOverlayActionButton.addEventListener("click", () => {
   if (game?.state.status === "paused") void togglePause();
   else void restart();
 });
-askHint.addEventListener("click", async () => {
-  if (!game || (game.state.status !== "playing" && game.state.status !== "paused")) return;
-  askHint.disabled = true;
-  hintMessage.textContent = "CHECKING THE READ-ONLY GAME STATE…";
-  const current = game;
-  const result = await runHintFlow(
-    createFakeHintModel(),
-    (detail) => getGameStateSnapshot(toSnakeState(current), current.config, detail),
-  );
-  hintMessage.textContent = result.ok
-    ? `HINT / ${result.response.urgency.toUpperCase()} — ${result.response.hint}`
-    : result.message;
-  if (game) render(game);
+askAdvice.addEventListener("click", async () => {
+  if (!game || game.state.status !== "paused" || !shopVisible || adviceAbort) return;
+  const gameId = game.id;
+  const revision = game.revision;
+  const controller = new AbortController();
+  adviceAbort = controller;
+  askAdvice.disabled = true;
+  adviceMessage.textContent = "CHECKING YOUR CURRENT SHOP OPTIONS…";
+  try {
+    const result = await gameClient.shopAdvice(gameId, controller.signal);
+    if (controller.signal.aborted || !game || game.id !== gameId || game.revision !== revision || !shopVisible
+      || game.state.status !== "paused" || result.revision !== revision) return;
+    adviceMessage.textContent = result.status === "advice"
+      ? `${result.message} · ${result.model === "gemini-3.8-flash" ? "GEMINI FLASH" : "GEMINI FLASH-LITE"}`
+      : result.message;
+  } catch {
+    if (!controller.signal.aborted && game?.id === gameId && game.revision === revision && shopVisible) {
+      adviceMessage.textContent = "SHOP ADVICE IS UNAVAILABLE. NO PURCHASE WAS MADE.";
+    }
+  } finally {
+    if (adviceAbort === controller) {
+      adviceAbort = null;
+      if (game) render(game);
+    }
+  }
 });
 document.querySelectorAll<HTMLButtonElement>("[data-direction]").forEach((button) => {
   button.addEventListener("click", () => {

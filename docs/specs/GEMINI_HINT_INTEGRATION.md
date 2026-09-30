@@ -1,65 +1,39 @@
-# Gemini Hint Integration Plan
+# Gemini Shop Advisor Integration
 
-## Status and purpose
+**Status:** revised 2026-09-30 by [Gemini Hint Changes V2](GEMINI_HINT_CHANGES_V2.md). The original movement-Hint and earlier two-model retry policy are superseded.
 
-**Status:** accepted scope and implementation plan; integration code is not implemented yet.
+## Purpose and player flow
 
-Replace the mock model behind the existing user-triggered Snake Hint with one server-side Gemini request. Keep the current read-only game-state contract and make the game usable when Gemini is slow, unavailable, misconfigured, or returns invalid output.
+The player opens the paused perk shop and requests advice on buying Extra XP, Luck, +1 Life, or waiting. The AI returns a structured choice; the server validates it against current authoritative points, prices, caps, and revision. Advice never triggers a purchase. A player buys manually through the existing purchase button.
 
-The user's request authorizes this single-provider change. This plan narrows the generic Week 4 materials to RETRO SNAKE; provider-neutral routers, OpenAI, Gemma, replay summaries, and generic agent loops are excluded.
+The client sends `POST /api/games/:gameId/shop-advice` with `{}`. The server builds the read-only [shop context](TOOL_CONTRACT.md), calls Gemini, and returns validated advice or a clearly marked unavailable result. The shop stays usable during the wait. The browser discards answers after a shop close or revision change.
 
-## User flow
+## Model selection and reliability
 
-1. The player asks for a Hint while a game is active or paused.
-2. The browser sends a small request to the TypeScript backend. It does not send authoritative game state or provider/model selection.
-3. The backend validates the game session and derives the permitted `GameStateSnapshot` from its authoritative state.
-4. The Gemini adapter receives only that snapshot and a server-owned instruction, using server runtime configuration.
-5. The backend validates the response shape and allowed semantics before returning a normalized result.
-6. The UI shows a validated Hint, a clearly identified local fallback, or a stable unavailable message. The game state and tick loop continue independently.
+- Free-tier chain: `gemini-3.8-flash` once, `gemini-3.5-flash-lite` at most twice, then `gemma-4-26b-a4b-it` at most three times. Only these IDs are accepted by server code. Google's [model documentation](https://ai.google.dev/gemini-api/docs/models), [Gemma API guide](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api), and [pricing](https://ai.google.dev/gemini-api/docs/pricing) document these hosted models and free-tier access. Exact project limits must be checked in AI Studio.
+- A logical request has an 85-second total deadline and a maximum 10-second timeout per call. Base delays are 1, 3, 5, 5, then 5 seconds with bounded jitter.
+- Gemini models use native structured output. Gemma has a separate text-JSON request branch with a 128-token output cap and the same strict application validation.
+- A `Retry-After` at or below five seconds is honored when it fits the deadline. A longer value skips the rest of that model rather than retrying early. A documented allowlisted model returning `404` advances to the next capability branch without retrying that model.
+- After two consecutive transient Flash failures across logical requests, the server marks Flash congested in memory for 15 minutes. New requests start with Flash-Lite during the window. The marker expires automatically and is cleared after a later successful Flash call; it is not persisted or exposed publicly.
+- Retry/switch only for network/timeout, 408/429, transient 5xx, or confirmed model capability unavailability within the remaining time. Stop on invalid input, missing key, 400/401/403/409, refusal, cancellation, empty/invalid/schema-invalid output, or semantic validation failure.
+- Return a stable unavailable result without a purchase recommendation when attempts are exhausted or a terminal failure occurs. Public errors never include raw provider text, prompt, key, or stack.
+- Emit one structured JSON server log per attempt containing only an anonymous interaction ID, operation/phase, provider/model/adapter, attempt details, safe status/error class, provider status, latency, fallback/congestion flags, and normalized usage.
 
-## Security requirements
+## Security and data boundary
 
-- The provider key is a server runtime secret named `GEMINI_API_KEY`; local development may supply it through an ignored environment file, and hosted runtime uses its secret configuration. `.env.example` may contain only a placeholder.
-- Agents and scripts must never open, read, print, copy, or inspect secret-file contents. They may inspect filenames, Git ignore status, and whether such a path was staged or committed. If a real key is exposed, stop using it and ask the owner to rotate it without revealing it.
-- The key must never be prefixed with `VITE_`, referenced from browser source, injected by Vite `define`, returned in an API/WebSocket DTO, logged, stored in tests/prompts/screenshots/evidence, or included in a client asset.
-- A tracked pre-push hook scans outgoing commit content and accessible worktree/build files for credential-shaped strings; it rejects outgoing secret-file paths without reading those files. It also checks browser source and built assets for key references or key-like values.
-- The Gemini request contains only the fields permitted by `TOOL_CONTRACT.md`; do not send the full snake body, session internals, server environment, source, or unrelated browser data.
-- Treat the provider response as untrusted. Validate parse, schema, bounds, and game-related semantic rules before displaying it.
+- `GEMINI_API_KEY` is read only by the backend at runtime and sent only in a provider request header. Never open or inspect secret-file contents. Never expose it to Vite, browser source/build, DTOs, WebSocket, logs, prompts, tests, screenshots, or evidence.
+- For local use, enter the value with the hidden-input commands in the [README](../../README.md#lokalni-razvoj), in the terminal that runs the backend only. This keeps the secret out of committed project files and frontend assets. Clear the variable when the server stops; do not place it in `.env`, `VITE_` configuration, command arguments, or chat.
+- Send only current score, XP, level, actual unspent points, perk levels/charges, next costs, and documented effects. No game ID, full snake, board, source code, environment, or unrelated private data enters the prompt.
+- Request structured `decision` and `reasonCode` fields; independently parse and validate exact keys, enum values, pairings, affordability, cap, paused status, and revision. Generate the visible explanation from trusted game facts.
+- Keep one in-flight request per game. Abort on cancellation/disconnect. The provider cannot call a game tool or mutate state.
+- The configured pre-push hook checks known credential patterns and browser exposure without opening secret-file contents.
 
-## Reliability policy for v1
+## Verification and limitations
 
-- Keep the call asynchronous and outside the game tick loop. Show a pending state; prevent duplicate Hint requests while one is active; keep movement/pause/restart available.
-- Set an 8-second overall deadline for the logical request, including backoff. Each provider attempt has a maximum 3.5-second timeout. Propagate disconnect/cancellation and do not start another attempt after cancellation or deadline expiry.
-- Allow at most **2 Gemini attempts total**: one initial request and one retry. Use a short randomized backoff (250–500 ms). Respect `Retry-After` only when it fits inside the remaining deadline; otherwise stop and use the fallback.
-- Retry only timeout/network transport errors, HTTP 429, and transient HTTP 500/502/503. Disable hidden SDK retries so the application controls and counts all attempts.
-- Do not retry authentication/configuration errors, invalid requests, 403 permission errors, model-not-found/capability errors, provider refusal/safety outcomes, cancellation, empty/malformed/schema-invalid output, or semantic validation failures.
-- There is no alternate provider/model fallback. After the two-attempt limit, show a deterministic local unavailable/fallback message and keep the game playable. Do not claim the model succeeded.
-- Public errors stay stable and generic. Server diagnostics may contain interaction ID, attempt number, safe failure category, latency, and model ID, but no key, raw prompt, full response, game payload, or stack trace.
+The [V2 plan](GEMINI_HINT_CHANGES_V2.md), [provider contract](../../specs/002-shop-advisor/contracts/shop-advice-api.md), and [Evidence 010](../tracking/evidence/EVIDENCE_010.md) define and record current acceptance. Automatic tests use fake transport; run typecheck, tests, build, security scan, and the hook. A real provider smoke check requires a separately configured runtime key and opt-in; offline tests do not establish actual project quotas or live response quality.
 
-The numbers above are initial v1 policy choices based on the supplied reliability guidance. Adjust only if implementation/evidence shows the 8-second total or two-attempt cap is unsuitable.
-
-## API and data boundary
-
-- Proposed route: `POST /api/games/:gameId/hint`, with an empty JSON object. Reject extra fields. The server derives state from the game session.
-- Success returns only the validated `HintResponse` and a stable `source: "gemini"` marker. A local fallback has a distinct source/status and does not masquerade as a model response.
-- Failure statuses distinguish invalid/missing game, unavailable/missing provider configuration, timeout/exhausted transient failure, and invalid provider output without exposing upstream text.
-- The current `GameStateSnapshot` and `HintResponse` schemas remain the application contracts. Gemini output must not trigger movement or any state transition.
-
-## Verification and Definition of Done
-
-- Fake transport tests prove request shape and that no real network/key is needed for tests.
-- Cover success, missing configuration (zero Gemini requests), malformed/empty output, refusal, authentication failure (no retry), retryable transient failure followed by success, exhausted retries, timeout/deadline, cancellation, and safe public errors.
-- Assert exact call counts, attempt order, backoff/deadline behavior, and state invariance.
-- Prove the key is read only by server configuration and absent from browser DTOs, Vite source/config, logs, test fixtures, prompts, and built client assets. Use placeholder fixtures only.
-- Run the pre-push guard against current worktree and outgoing commits. Verify it rejects a synthetic credential in a temporary non-secret fixture and rejects an outgoing `.env` filename without opening that file; do not create or use a real credential for these checks.
-- Keep the game controls usable during a pending Hint and after each failure mode.
-- Record an opt-in live smoke result separately from automated fake tests. A live result is not required for deterministic tests and must never print the key.
-- Preserve the core game checks: `npm run typecheck`, `npm test`, and `npm run build`.
+The [shop advisor system prompt](../prompts/week4/SHOP_ADVISOR_SYSTEM_PROMPT_V1.md) was approved by the user and is active in `server/ai/shopPrompt.ts`. Its game facts were checked against the current engine and perk rules.
 
 ## Out of scope
 
-OpenAI or any second provider/model, browser provider/model selection, automatic alternate-model fallback, tool writes, arbitrary or multi-step agent loops, AI-controlled game actions, hidden/full game state, replay summaries, persistence, deployment, or changes to deterministic Snake rules.
-
-## Source priority
-
-The current user request and this plan govern the Gemini Hint change. `AGENTS.md`, `docs/instructions/03-ai-hint-and-security.md`, `docs/specs/TOOL_CONTRACT.md`, and `docs/specs/BASE_GAME_SPEC.md` express the project adaptation. The accepted powerups/perks feature spec remains separate. The supplied Week 4 files are educational references; their provider examples and broader scenarios do not override the narrower scope above.
+Automatic purchases, browser-supplied game state or arbitrary model IDs, write tools, autonomous loops, non-Google providers, replay summaries, persistence, multiplayer, and Snake economy changes.
