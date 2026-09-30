@@ -22,7 +22,7 @@ Purpose: the public Git history for Week 04 shows commits only under Matija Radu
 | Response validation and privacy-safe telemetry | Uroš (authored locally, committed by Matija) | `server/ai/shopAdvice.ts`, `server/ai/geminiTransport.ts`, `tests/shopAdvice.test.ts` |
 | Documentation reorganization, specs, tracking records | Uroš (authored locally, committed by Matija) | `docs/`, `specs/002-shop-advisor/`, `docs/tracking/` |
 | Choosing the agents, defining what to build | Shared (Uroš chose agents and gave ideas) | [AI_USAGE_LOG](AI_USAGE_LOG.md) |
-| Review, running tests and the app, manual play-testing | Shared | [Evidence 011](evidence/EVIDENCE_011.md), [012](evidence/EVIDENCE_012.md), [EVIDENCE_013](evidence/EVIDENCE_013.md) |
+| Review, running tests and the app, manual play-testing; Week 4 review fixes and browser E2E (`scripts/e2e/`) | Shared (review fixes committed by Uroš) | [Evidence 011](evidence/EVIDENCE_011.md), [012](evidence/EVIDENCE_012.md), [EVIDENCE_013](evidence/EVIDENCE_013.md) |
 
 ## Prior work by Uroš with public authorship (Week 3)
 

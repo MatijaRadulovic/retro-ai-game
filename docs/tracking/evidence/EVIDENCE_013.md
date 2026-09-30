@@ -2,13 +2,13 @@
 
 ## Record and task context
 
-- **Purpose / accepted goal:** give reviewers a repeatable check of the shop-advisor flow: a real-server HTTP smoke that was run, and a manual browser scenario with expected results.
+- **Purpose / accepted goal:** give reviewers a repeatable check of the shop-advisor flow: a real-server HTTP smoke and an automated browser E2E, both executed.
 - **Governing spec/task plan:** [specs/002-shop-advisor](../../../specs/002-shop-advisor/) (contract, quickstart).
 - **Exact prompt artifact and version:** no standalone prompt artifact applies.
 - **Starting source/revision:** `main` at `3e17a45`, plus documentation-only changes.
 - **Sources actually used:** the running backend (`npm start` equivalent via `tsx server/index.ts`, no `GEMINI_API_KEY`), `server/httpServer.ts`, the API contract.
 - **Relevant sources excluded and why:** no live Gemini call was made and no key was used; live provider behavior remains documented only in [Evidence 012](EVIDENCE_012.md).
-- **Scope / out of scope:** no code change. Browser UI steps below are a manual procedure and were **not** executed in this record.
+- **Scope / out of scope:** no game or advisor code change; adds a fake-provider E2E harness under `scripts/e2e/`. No live Gemini call.
 
 ## Baseline
 
@@ -26,21 +26,28 @@ Backend started on `PORT=3917` with `GEMINI_API_KEY` unset; requests made with `
 
 Server log contained only the listening line: nothing sensitive was printed.
 
-## Manual browser scenario (not executed here — to run before final sign-off)
+## Browser E2E (executed, reproducible)
 
-Setup: backend with a valid `GEMINI_API_KEY` from hidden input (see README), Vite client, earn at least one perk point.
+`npm run test:e2e` (`scripts/e2e/shopAdvisor.e2e.ts`) starts the real game server and advisor with a scripted fake provider (`scripts/e2e/fakeAdvisorServer.ts`: Flash throws 503, Flash-Lite answers after 1.5 s; no key, no Google call), starts the Vite client, and drives headless Chromium. One-time setup: `npx playwright install chromium`.
 
-| ID | Steps | Expected result |
-|---|---|---|
-| M1 | Open SHOP, press ASK SHOP AI | Pending message; controls still usable; then BUY EXTRA XP / BUY LUCK / BUY +1 LIFE / WAIT with a short reason and model label |
-| M2 | After M1, check perk points and score | Unchanged — advice never buys; purchase is a separate click |
-| M3 | Force a Flash 503 (offline tests do this; live it needs an overloaded moment) and ask again | Advice still appears, labeled with the fallback model; telemetry shows Flash then Flash-Lite attempt |
-| M4 | Press ASK SHOP AI, then close the shop before the answer arrives | Late answer is not shown; game resumes normally |
-| M5 | Press ASK SHOP AI, then buy a perk before the answer arrives | Stale answer (older revision) is discarded |
-| M6 | Start the backend without a key and ask | "SHOP ADVICE IS UNAVAILABLE. NO PURCHASE WAS MADE."; game state unchanged (matches S3) |
+| ID | Scenario | Expected | Result |
+|---|---|---|---|
+| M1 | Start, open SHOP, press ASK SHOP AI | Pending "CHECKING…", then BUY/WAIT advice with a model label | PASS |
+| M3 | Same request; Flash returns 503 | UI shows the fallback model (GEMINI FLASH-LITE); telemetry: Flash failure 503, then Flash-Lite success with `fallbackUsed: true` | PASS |
+| M2 | Compare score, XP, perk points and perk levels before/after advice | Unchanged; game stays paused — advice never buys | PASS |
+| M4 | ASK SHOP AI, then CLOSE SHOP before the answer | Shop hidden, game resumes, late answer never shown | PASS |
+| M4b | Backend request aborted by the client after 300 ms | Provider attempt ends as `cancelled`; no successful answer | PASS |
+| M5 | Buy a perk while advice is pending | Stale answer discarded | SKIP — a fresh run has no affordable perk; the stale-revision discard is covered by `tests/shopAdvice.test.ts` |
+| M6 | No provider configured | "SHOP ADVICE IS UNAVAILABLE. NO PURCHASE WAS MADE."; state unchanged | PASS |
 
-Automated coverage for M3–M5 is in `tests/shopAdvice.test.ts` and `tests/httpServer.test.ts`; the manual run confirms the browser wiring only.
+Run on 2026-09-30: `6 passed, 1 skipped, 0 failed`.
+
+**Finding from M4:** the browser aborts its request on close, and the backend cancels provider work when its client disconnects (M4b). The Vite dev/preview proxy, however, does not forward that abort to the backend: behind the proxy the Flash-Lite call still completed. The UI still discards the answer, so correctness and state safety hold, but one provider call is spent. This affects the local Vite proxy only; a production deployment should put the backend behind a proxy that propagates client disconnects.
+
+## Live provider
+
+The live Gemini path (real Flash 503 followed by a valid Flash-Lite answer) is recorded in [Evidence 012](EVIDENCE_012.md) and was not repeated here.
 
 ## Honest limitations
 
-S1–S3 were executed against the real HTTP server, not a browser. M1–M6 are a procedure with expected results; no results are claimed for them.
+S1–S3 ran against the real HTTP server; M1–M6 ran in headless Chromium against the real server and client with a fake provider, not against live Gemini. M5 was skipped as noted.

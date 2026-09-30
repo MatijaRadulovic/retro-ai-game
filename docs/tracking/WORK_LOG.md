@@ -2,6 +2,14 @@
 
 Append one concise entry for each substantive implementation, review, or documentation task. Every entry links the prompt/specification that guided the work and the evidence used or created. If there was no standalone prompt artifact, say so. Keep results factual and do not rewrite history.
 
+## 2026-09-30 — Add reproducible browser E2E for the shop advisor
+
+- **Goal:** replace the documented-only manual browser scenario with an executed, repeatable check, as requested in the Week 4 review.
+- **Prompt/spec/evidence:** reviewer feedback; [quickstart manual flow](../../specs/002-shop-advisor/quickstart.md); no standalone prompt applies. Results in [Evidence 013](evidence/EVIDENCE_013.md).
+- **Outcome:** added `scripts/e2e/fakeAdvisorServer.ts` (real server/advisor, scripted provider: Flash 503 → Flash-Lite answer, or no provider) and `scripts/e2e/shopAdvisor.e2e.ts` (headless Chromium via `playwright`), plus `npm run test:e2e`. Offline `npm test` is unchanged.
+- **Verification:** `npm run test:e2e` → 6 passed, 1 skipped (M5, no affordable perk in a fresh run), 0 failed. `npm run typecheck`, `npm test` (55/55), `npm run build`, `npm run security:scan`, `git diff --check` passed.
+- **Finding:** the Vite dev/preview proxy does not forward browser aborts to the backend, so a cancelled request behind the proxy still completes its provider call; the UI discards it and direct backend cancellation works (M4b).
+
 ## 2026-09-30 — Address Week 4 review feedback
 
 - **Goal:** resolve the reviewer's Week 4 remarks: stale research record, contribution evidence, smoke/manual scenario, README navigation.
