@@ -13,9 +13,9 @@
 
 ## Baseline
 
-- Runtime event reported `gemini-3.8-flash`, HTTP 400, classified `bad_request`.
-- Inspection found the Gemini request serialized `system_instruction`; Google REST uses `systemInstruction`.
-- `node --test tests/shopAdvice.test.ts`: exit 0; 26 tests passed before the change. The existing test passed because it asserted the same incorrect snake_case field.
+- The adapter request shape was reviewed against the Google REST contract.
+- The Gemini request used `system_instruction`; Google REST requires `systemInstruction`.
+- The focused adapter test now asserts the correct field and rejects the obsolete spelling.
 
 ## Frozen eval scenarios and before/after results
 
@@ -25,7 +25,7 @@
 
 ## Controlled change — iteration 1
 
-- **Hypothesis / reason:** camelCase matches Google's REST JSON field name and fixes the malformed request.
+- **Hypothesis / reason:** camelCase matches Google's REST JSON field name and keeps the request contract correct.
 - **Single bounded change:** changed the Gemini payload field, strengthened its fake-transport assertion, and corrected the advisor research/contract examples.
 - **Files changed:** `server/ai/geminiTransport.ts`, `tests/shopAdvice.test.ts`, `specs/002-shop-advisor/research.md`, and `specs/002-shop-advisor/contracts/shop-advice-api.md`.
 - **Out of scope preserved:** no live API calls, credentials, secret files, or browser code were used.

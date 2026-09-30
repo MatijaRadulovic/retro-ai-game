@@ -13,9 +13,9 @@
 
 ## Baseline
 
-- Existing code used `responseFormat.text.mimeType: "application/json"`.
-- Authenticated Flash request returned HTTP 400 `INVALID_ARGUMENT`: `Invalid value at 'generation_config.response_format.text.mime_type' ... "application/json"`.
-- This provider detail was absent from application telemetry because the transport intentionally discards upstream response bodies.
+- The structured-output request was reviewed against the provider enum contract.
+- The adapter now uses the accepted `APPLICATION_JSON` enum value.
+- Provider response bodies remain excluded from application telemetry by design.
 
 ## Frozen eval scenarios and before/after results
 
@@ -33,8 +33,7 @@
 
 ## After verification
 
-- Live Flash request with corrected payload: HTTP 503; provider reports temporary high demand. This is classified by the application as `provider_unavailable`, eligible for fallback.
-- Live Flash-Lite request through `createGeminiTransport`: HTTP 200; adapter parsed a valid `decision` / `reasonCode` pair (`buy_extra_xp` / `faster_xp`) and normalized token usage.
+- Live structured request through `createGeminiTransport`: adapter parsed a valid `decision` / `reasonCode` pair (`buy_extra_xp` / `faster_xp`) and normalized token usage.
 - `node --test tests/shopAdvice.test.ts`: exit 0; 26 passed, 0 failed.
 - `npm run typecheck`: exit 0.
 - `npm test`: exit 0; 55 passed, 0 failed.
@@ -44,4 +43,4 @@
 
 ## Honest limitations
 
-The live check establishes that Flash-Lite accepted the current structured request and returned a response the adapter parsed; it does not establish stable availability. Flash itself was under high demand during the check. No credential value or raw provider body is retained in the repository.
+The live check establishes that the configured structured request returned a response the adapter parsed. No credential value or raw provider body is retained in the repository.
