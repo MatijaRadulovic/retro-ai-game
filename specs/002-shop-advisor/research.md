@@ -28,13 +28,13 @@
 
 ## Historical initial reliability policy (superseded by V2)
 
-**Decision:** One request has a 65-second total deadline. Give the primary up to two attempts for transient transport, timeout, 408, 429, or 5xx failures; then allow up to three fallback-model attempts if time remains. Use at most 10 seconds per call and stepped backoff of 1, 3, 5, then 5 seconds. Bound provider `Retry-After` to 5 seconds. Abort on client cancellation or total deadline.
+**Superseded — do not implement from this section.** The authoritative policy is [Reliability V2](#reliability-v2-decision--2026-09-30): one Flash call, up to two Flash-Lite calls, then up to three Gemma 4 calls under an **85-second** deadline (10 seconds per call, 1/3/5/5/5-second bounded-jitter delays). The first draft used a shorter total deadline and two Flash attempts; the exact old wording is preserved only in Git history and [Evidence 009](../../docs/tracking/evidence/EVIDENCE_009.md)/[010](../../docs/tracking/evidence/EVIDENCE_010.md).
 
-**Rationale:** This implements the user's exact retry order while keeping a finite wait. Google recommends bounded backoff for transient 429/503 failures in its [troubleshooting guide](https://ai.google.dev/gemini-api/docs/troubleshooting). Five 10-second calls plus four delays total at most 64 seconds, leaving one second inside the logical deadline for orchestration and parsing.
+**Rules that carried over unchanged into V2:**
 
-**Congestion decision:** After two transient primary failures in a logical request, record a process-local `primaryCongestedUntil` timestamp for 15 minutes. Requests during that interval skip Flash and use at most three Flash-Lite attempts. A successful Flash call after expiry clears the marker. Terminal failures do not open the marker and do not route to fallback.
-
-**Terminal cases:** Missing key, malformed request, 400/401/403, unsupported model, refusal, empty or invalid output, semantic violation, and cancellation do not retry or switch models. A visible unavailable result contains no purchase advice.
+- `Retry-After` is bounded by the local five-second wait budget and the remaining deadline.
+- After two transient primary failures in a logical request, a process-local `primaryCongestedUntil` marker skips Flash for 15 minutes; a successful Flash call after expiry clears it. Terminal failures never open the marker or route to fallback.
+- Terminal cases — missing key, malformed request, 400/401/403/409, unsupported model, refusal, empty or invalid output, semantic violation, and cancellation — do not retry or switch models. A visible unavailable result contains no purchase advice.
 
 ## Advice representation
 
