@@ -2,7 +2,7 @@
 
 ## Record and task context
 
-- **Purpose / accepted goal:** replace movement Hint with shop purchase advice using two approved Gemini models, bounded attempts, structured validation, and safe failure.
+- **Purpose / accepted goal:** replace movement Hint with shop purchase advice using the approved three-model Google chain, bounded attempts, structured validation, and safe failure.
 - **Governing spec/task plan:** [Shop AI Advisor spec](../../../specs/002-shop-advisor/spec.md), [plan](../../../specs/002-shop-advisor/plan.md), [tasks](../../../specs/002-shop-advisor/tasks.md), and [HTTP contract](../../../specs/002-shop-advisor/contracts/shop-advice-api.md).
 - **Exact prompt artifact and version:** user request in this conversation; [Gemini shop-advisor build prompt v2](../../prompts/week4/BUILD_PROMPT_GEMINI_HINT_V2.md); [approved shop-advisor system prompt v1](../../prompts/week4/SHOP_ADVISOR_SYSTEM_PROMPT_V1.md). The approved prompt is active in `server/ai/shopPrompt.ts`.
 - **Starting source/revision or working-tree state:** clean `main` at `ba3174e` before new feature files.
@@ -29,15 +29,15 @@
 | S3 | Primary transient failure then success on retry | Correct order and at most two primary calls | N/A — capability absent | Pass | Pass | Fake 503 and timeout scenarios cover the two-call primary cap. |
 | S4 | Primary failures, fallback retries, and congestion window | Up to three fallback calls; following requests skip primary for 15 minutes | N/A — capability absent | Partial: initial policy had one fallback call | Pass | Exact five-call exhaustion order, 1/3/5/5-second delay sequence, congestion skip, and expiry are covered with deterministic fakes. |
 | S5 | Missing key, auth error, refusal, invalid output, cancellation | No further model attempt; safe unavailable result | N/A — capability absent | Pass | Pass | Missing-key HTTP result, terminal 401, blocked response, malformed decision, cancellation, and duplicate-request tests. |
-| S6 | Slow provider or exhausted attempts | Calls capped at 10 seconds and total work at 65 seconds; controls usable; no recommendation | N/A — capability absent | Pass for server bound; browser manual pending | Pass for server bound; browser manual pending | Hanging fake transport settled within the shortened test deadline; client uses an asynchronous request and independent shop controls. |
-| S7 | Shop state changes during pending request | Old answer discarded | N/A — capability absent | Pass for server and code; browser manual pending | Pass for server and code; browser manual pending | Server rejects changed revision; browser aborts and clears advice on new snapshot, close, purchase, and restart. |
+| S6 | Slow provider or exhausted attempts | Calls capped at 10 seconds and total work at 85 seconds; controls usable; no recommendation | N/A — capability absent | Pass for server bound; browser manual pending | Pass for server bound; user manual browser check reported pass | Hanging fake transport settled within the bounded test deadline; client uses an asynchronous request and independent shop controls. |
+| S7 | Shop state changes during pending request | Old answer discarded | N/A — capability absent | Pass for server and code; browser manual pending | Pass for server and code; user manual browser check reported pass | Server rejects changed revision; browser aborts and clears advice on new snapshot, close, purchase, and restart. |
 | S8 | Public response and built browser assets | No key, raw provider payload, or private prompt | Mock path uses no key | Pass, automated/static checks | Pass, automated/static checks | Exact-key public parser, safe error mapping, production build, `security:scan`, and simulated pre-push hook. Pattern scan cannot prove absence of unknown credential formats. |
 | S9 | Core game, perks, and purchases | Existing behavior remains valid | 33/33 tests passed | Pass, 44/44 | Pass, 47/47 | Includes existing Snake and perk checks. Obsolete movement-Hint tests were replaced by shop-advice tests. |
 
 ## Controlled change — iteration 1
 
 - **Hypothesis / reason:** the old browser mock movement Hint cannot produce authoritative, current perk advice or exercise provider reliability controls.
-- **Single bounded change:** replaced it with server-derived shop context, exact decision validation, a paused-only HTTP route, a fixed Gemini model pair, bounded retry/fallback, and an asynchronous shop UI.
+- **Single bounded change:** replaced it with server-derived shop context, exact decision validation, a paused-only HTTP route, a fixed three-model Google chain, bounded retry/fallback, and an asynchronous shop UI.
 - **Files changed:** `server/ai/`, `server/httpServer.ts`, `server/index.ts`, `src/ai/`, `src/api/gameClient.ts`, `src/main.ts`, `index.html`, `src/styles.css`, focused tests, and the linked feature/security/tracking documents. Retired `src/ai/hint.ts` and its movement-specific tests because that feature was replaced; the suite grew from 33 to 44 tests.
 - **Out of scope preserved:** purchase mechanics, game rules, and automatic AI actions.
 
@@ -49,7 +49,7 @@
 - `npm run security:scan`: exit 0; “no known credential patterns or client secret references found.”
 - Configured `.githooks/pre-push` simulated for local `main` against `origin/main`: exit 0; scanned 5 outgoing and 6 other reachable commits; no known credential patterns or client secret references found. No push occurred.
 - `git diff --check`: exit 0. Changed-Markdown relative link scan: passed.
-- Browser manual check: unavailable because the browser runtime reported no available browser. Live Gemini check: skipped because no credential was supplied and secret files were not opened.
+- Browser manual check: agent browser runtime was unavailable, but the user manually checked the game in a browser and reported that gameplay and shop behavior work correctly. This is user-reported verification; no detailed scenario notes were supplied. Live Gemini check: skipped in the automated review.
 
 ## Honest limitations
 

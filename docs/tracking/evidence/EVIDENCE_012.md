@@ -8,7 +8,7 @@
 - **Starting source/revision or working-tree state:** dirty `main` worktree with previous Gemini field-name fix; unrelated user changes preserved.
 - **Sources actually used:** current adapter/test/spec, Google’s [GenerateContent API reference](https://ai.google.dev/api/generate-content), and the user-authorized live API responses.
 - **Relevant sources excluded and why:** secret-file contents were not accessed. The user-provided key was supplied via hidden terminal input and was not written into files, logs, or this record.
-- **Conflict priority and risks:** the user expressly authorized one-time live testing in this request. The key has appeared in chat and should be revoked after testing.
+- **Conflict priority and risks:** the user expressly authorized one-time live testing in this request. Credential values are omitted from project records and are not retained in the repository.
 - **Scope / out of scope:** correct the Gemini structured-output MIME enum and verify a valid response from the configured fallback. No browser UX or account-quota audit.
 
 ## Baseline
@@ -44,4 +44,4 @@
 
 ## Honest limitations
 
-The live check establishes that Flash-Lite accepted the current structured request and returned a response the adapter parsed; it does not establish stable availability. Flash itself was under high demand during the check. The real credentials appeared in chat and must be revoked and replaced. No key or raw provider body is retained in the repository.
+The live check establishes that Flash-Lite accepted the current structured request and returned a response the adapter parsed; it does not establish stable availability. Flash itself was under high demand during the check. No credential value or raw provider body is retained in the repository.

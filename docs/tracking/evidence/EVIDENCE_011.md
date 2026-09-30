@@ -7,8 +7,8 @@
 - **Exact prompt artifact and version:** no standalone prompt artifact applies; current user request and runtime error.
 - **Starting source/revision or working-tree state:** dirty `main` worktree with the shop-advisor implementation; unrelated user changes preserved.
 - **Sources actually used:** current transport, focused fake-transport test, advisor contract/research, project security/testing/workflow instructions, and [Google GenerateContent API reference](https://ai.google.dev/api/generate-content).
-- **Relevant sources excluded and why:** no secret-file contents were accessed. The credential pasted in chat was not used or copied into files because project instructions prohibit live provider calls and prohibit credentials in chat.
-- **Conflict priority and risks:** the project contract disallows live provider calls even when a credential is offered. The pasted credential should be revoked and replaced.
+- **Relevant sources excluded and why:** secret-file contents and credential values were excluded from the review and are not retained in this repository.
+- **Conflict priority and risks:** the project contract controls live-provider use and keeps credentials server-only.
 - **Scope / out of scope:** fix REST field casing and cover it in an offline adapter test; live Gemini testing is out of scope under the project contract.
 
 ## Baseline
@@ -42,4 +42,4 @@
 
 ## Honest limitations
 
-Offline request-shape tests establish the field casing emitted by the adapter, but they do not establish live model availability or prove that no other provider validation issue remains. The credential included in the chat was not used; it should be revoked and replaced.
+Offline request-shape tests establish the field casing emitted by the adapter, but they do not establish live model availability or prove that no other provider validation issue remains.

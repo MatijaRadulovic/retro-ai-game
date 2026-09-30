@@ -79,9 +79,9 @@ The relevant lesson still applies offline: fake first, explicit contracts, stric
 
 ## Review result
 
-- **Review date:**
-- **Reviewer:**
-- **Verified sections/items:**
-- **Failures or gaps:**
-- **Evidence link(s):**
-- **Decision / next step:**
+- **Review date:** 2026-09-30
+- **Reviewer:** Codex, repository audit
+- **Verified sections/items:** Current core/game and shop-advisor implementation reviewed against the supplied project instructions, checked-in specs, source, and evidence. Automated project gates passed at review: `npm run typecheck`, `npm test` (55/55), `npm run build`, `npm run security:scan`, and `git diff --check`. The HTTP suite and security scan required reruns with sandbox restrictions lifted (`EPERM` otherwise).
+- **Failures or gaps:** Sections A–E above preserve the older movement-Hint checklist and are superseded by the current shop-advisor contract. Current evidence is in Evidence 009–012. The user manually checked gameplay, shop behavior, and the live provider flow in the browser and reported that they work correctly.
+- **Evidence link(s):** [Evidence 009](../evidence/EVIDENCE_009.md), [Evidence 010](../evidence/EVIDENCE_010.md), [Evidence 011](../evidence/EVIDENCE_011.md), [Evidence 012](../evidence/EVIDENCE_012.md), [V2 plan](../../specs/GEMINI_HINT_CHANGES_V2.md), [XP/perks task list](../../../specs/001-powerups-perks/tasks.md).
+- **Decision / next step:** Project gates pass and the current implementation is ready for submission. Keep historical movement-Hint rows explicitly scoped as superseded.

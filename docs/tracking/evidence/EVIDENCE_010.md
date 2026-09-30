@@ -54,4 +54,4 @@
 
 ## Honest limitations
 
-Offline fake-provider tests do not establish real Gemma availability, response quality, latency, or this account's rate limits. The selected `gemma-4-26b-a4b-it` model and free-tier availability are supported by official Google documentation as of 2026-09-30. The pre-push scanner detects known patterns and cannot prove the absence of every possible secret format.
+Offline fake-provider tests do not establish real Gemma availability, response quality, latency, or this account's rate limits. The user reports a successful manual end-to-end provider check through the browser. That confirms the exercised live path, while forced provider failures and the full fallback chain remain covered by offline fake tests rather than manual testing. The selected `gemma-4-26b-a4b-it` model and free-tier availability are supported by official Google documentation as of 2026-09-30. The pre-push scanner detects known patterns and cannot prove the absence of every possible secret format.

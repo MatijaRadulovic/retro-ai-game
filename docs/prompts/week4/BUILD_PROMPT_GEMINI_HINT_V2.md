@@ -4,7 +4,7 @@
 
 ## Goal
 
-Replace the browser movement-Hint mock with read-only advice in the paused perk shop. The player asks whether to buy Extra XP, Luck, +1 Life, or wait. Implement the approved two-model Gemini flow and validated structured response in [feature 002](../../../specs/002-shop-advisor/spec.md).
+Replace the browser movement-Hint mock with read-only advice in the paused perk shop. The player asks whether to buy Extra XP, Luck, +1 Life, or wait. Implement the approved three-model Google flow and validated structured response in [feature 002](../../../specs/002-shop-advisor/spec.md).
 
 ## Context and source priority
 
@@ -13,9 +13,9 @@ Follow the current user request, [project instructions](../../../AGENTS.md), [sh
 ## Scope and constraints
 
 - Keep the game and purchases server-authoritative. Advice is read-only; no model output can buy a perk or change a run.
-- Use only server-owned Gemini 3.8 Flash then 3.5 Flash-Lite. Never put `GEMINI_API_KEY` in browser code, Vite configuration, public data, logs, tests, evidence, or prompts. Never read secret-file contents.
+- Use only the server-owned allowlist Gemini 3.8 Flash, Gemini 3.5 Flash-Lite, then Gemma 4. Never put `GEMINI_API_KEY` in browser code, Vite configuration, public data, logs, tests, evidence, or prompts. Never read secret-file contents.
 - Request only the sanitized shop context. Require structured `decision` and `reasonCode`; validate exact shape and current legal meaning before display.
-- Allow at most two Gemini 3.8 Flash attempts followed by at most three Gemini 3.5 Flash-Lite attempts, with 10 seconds per call and one 65-second overall deadline. Use stepped backoff delays of 1, 3, 5, then 5 seconds. After two transient Flash failures, mark Flash congested in server memory for 15 minutes; requests during that window start with Flash-Lite. Retry/switch only classified transient failures; terminal failures produce unavailable with no recommendation.
+- Allow one Gemini 3.8 Flash attempt, then at most two Gemini 3.5 Flash-Lite attempts, then at most three Gemma 4 attempts, with 10 seconds per call and one bounded overall deadline. Use stepped backoff delays of 1, 3, 5, 5, then 5 seconds. After two transient Flash failures across requests, mark Flash congested in server memory for 15 minutes; requests during that window start with Flash-Lite. Retry/switch only classified transient or confirmed capability failures; terminal failures produce unavailable with no recommendation.
 - Keep the shop and game controls responsive. Discard stale results after shop close, purchase, restart, resume, or revision change.
 - Use fake transport for all automatic tests. Do not require a real key or live request.
 

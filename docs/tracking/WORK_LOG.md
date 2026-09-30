@@ -2,6 +2,21 @@
 
 Append one concise entry for each substantive implementation, review, or documentation task. Every entry links the prompt/specification that guided the work and the evidence used or created. If there was no standalone prompt artifact, say so. Keep results factual and do not rewrite history.
 
+## 2026-09-30 — Prepare Week 4 learner report
+
+- **Goal:** prepare the Week 4 report from the learner's confirmed identity, team, contribution, and next step, cross-checked against project tracking records.
+- **Prompt/spec/evidence:** no standalone prompt applies; used the [Week 4 report](reports/WEEKLY_REPORT_week04.md), [AI usage log](AI_USAGE_LOG.md), [Evidence 005–007](evidence/), and [Evidence 009–012](evidence/).
+- **Outcome:** saved the confirmed Serbian report with links to relevant prompts and evidence. The report distinguishes recorded automated results from learner-reported manual testing and retains known limitations.
+- **Verification:** reviewed the saved Markdown structure and links; no code checks run because this was a report-only change.
+
+## 2026-09-30 — Audit repository completion and Week 3/4 checklists
+
+- **Goal:** check current implementation, documentation, tracked tasks, and validation status; review both weekly checklists.
+- **Prompt/spec/evidence:** current user request; no standalone prompt applies. Reviewed `AGENTS.md`, `docs/INSTRUCTIONS.md`, instructions 04–05, current feature specs/plans, task lists, tracking records, and source/tests.
+- **Outcome:** appended dated audit results to the [Week 3 review](checklists/WEEK03_EXERCISE_REVIEW.md) and [Week 4 checklist](checklists/WEEK04_RELIABLE_AI_INTEGRATION_CHECKLIST.md). Automated implementation tasks are checked off in the owning feature plans; the current browser and shop flow were subsequently confirmed by the user. Week 3 movement-Hint and Week 4 movement-Hint checklist rows are historical/superseded.
+- **Verification:** `npm run typecheck`, `npm test` (55/55), `npm run build`, `npm run security:scan`, and `git diff --check` passed. The HTTP integration tests and security scan first encountered sandbox `EPERM` restrictions and passed on rerun with the required local binding / `git` process access.
+- **Limitations / next step:** no implementation changes were made in this audit; current behavior and evidence are ready for submission.
+
 ## 2026-09-30 — Fix Gemini structured-output MIME enum
 
 - **Goal:** diagnose the recurring HTTP 400 and verify the structured Gemini request against the live API.
@@ -191,3 +206,11 @@ Append one concise entry for each substantive implementation, review, or documen
 - **Outcome:** completed the [V2 plan](../specs/GEMINI_HINT_CHANGES_V2.md). The server now uses Flash ×1, Flash-Lite ×2, then Gemma 4 ×3; Gemma has a separate text-JSON capability branch; long `Retry-After` values skip same-model retries; two transient Flash failures accumulate across requests; and every attempt produces a sanitized structured JSON log with normalized usage when available.
 - **Verification:** `npm run typecheck`, `npm test` (55/55), `npm run build`, `npm run security:scan`, `git diff --check`, the configured pre-push guard, and a 57-file Markdown link scan passed. Detailed scenario results are in [Evidence 010](evidence/EVIDENCE_010.md).
 - **Remaining limits:** no live provider or browser manual check was run. Model availability, generated advice quality, real latency, and account-specific limits remain unverified.
+
+## 2026-09-30 — Final review cleanup and verification
+
+- **Goal:** remove credential-exposure wording from project records, keep the approved private identity/contribution record, and reconcile active model allowlist documentation with the implemented chain.
+- **Files updated:** the active Gemini build prompt, shop-advisor plan/evidence, AI usage log, and browser model label. Credential values and claims about credentials appearing in chat were removed from project records; no secret files were opened.
+- **Verification:** `git diff --check`, `npm run typecheck`, `npm test` (55/55), `npm run build`, and `npm run security:scan` all passed with elevated local-server/git permissions. The earlier HTTP test and security failures were sandbox permission failures, not application assertion failures.
+- **Outcome:** documentation now consistently describes Flash ×1 → Flash-Lite ×2 → Gemma ×3; Gemma is displayed with its own label; runtime allowlist tests and safe failure tests remain green.
+- **Manual verification update:** the user manually checked gameplay, shop behavior, and the live provider flow in the browser and reported that they work correctly. This closes the browser and exercised-live-path gaps as user-reported evidence. Forced provider failures and full fallback reliability remain covered by offline fake tests.

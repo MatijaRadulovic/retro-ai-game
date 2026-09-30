@@ -8,7 +8,7 @@ This document summarizes the supplied Week 3 Session 1 material and weekly assig
 - The Week 3 course documents are exercise guidance. They do not override the project specifications or authorize adding a new product feature.
 - The exercise's `Ticket` classification examples (`category`, `matchId`, replay messages) are instructional examples from the course package. RETRO SNAKE currently specifies a Snake game, runtime-validated `GameConfig`, and local read-only AI Hint. Do not add replay lookup, ticket classification, or a replay AI feature just to copy those examples.
 - The general learning goals still apply: explicit scope, curated context, a runtime-checked structured contract, baseline/evaluation, a controlled change, and evidence.
-- Checklist status is **Pending review**. Existing evidence documents report past results, but this file does not independently verify the current working tree.
+- Checklist status is **Reviewed**. Current automated results and user-reported browser verification are recorded in the evidence and work log.
 
 ## Exercise summary
 
@@ -133,3 +133,15 @@ The material also requires a deliberately wrong but parseable result to be rejec
 - `week-03-session-01-session-material.md`
 
 These are course materials and examples. Project-specific implementation decisions remain governed by the repository specifications listed above.
+
+## Current repository review — 2026-09-30
+
+This checklist's implementation-specific sections B and D describe the retired local movement-Hint feature. The current approved AI feature is paused shop advice; use [Evidence 009](../evidence/EVIDENCE_009.md), [Evidence 010](../evidence/EVIDENCE_010.md), and the [V2 plan](../../specs/GEMINI_HINT_CHANGES_V2.md) for its present contract and verification. The historical Hint checklist is retained as a record of the Week 3 exercise, not as the current product acceptance checklist.
+
+- **Scope/specification:** reviewed against the project instructions, base game spec, current feature specs, and source. The 20 × 20 game and server authority remain; no ticket/replay classifier, autonomous loop, extra provider, or write-capable AI action was found. The active model allowlist is documented consistently across the implementation and current specifications.
+- **Runtime contracts and AI boundary:** current game config and snapshot validation are covered by protocol and session tests. The old `get_game_state`/`HintResponse` rows are superseded by the read-only shop contract and its exact decision validation; see Evidence 009–010.
+- **Baseline/evals:** historical core and Hint results are recorded in Evidence 003–004, with their missing raw per-case output and lack of a preserved pre-AI revision stated there. Current feature evals are in Evidence 006–010.
+- **Verification at review:** `npm run typecheck` passed; `npm test` passed 55/55; `npm run build` passed; `npm run security:scan` passed; `git diff --check` passed. In the restricted sandbox, the HTTP tests and security scanner initially hit `EPERM`; they passed when rerun with local binding / `git` process access permitted.
+- **Manual verification:** the user manually checked gameplay, shop behavior, and the live provider flow in the browser and reported that they work correctly.
+
+**Review decision:** automated current checks pass. The old movement-Hint rows are historical/superseded, not evidence of current shop-advisor coverage. The current implementation and user-reported browser check are ready for submission.

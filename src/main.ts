@@ -433,7 +433,7 @@ askAdvice.addEventListener("click", async () => {
     if (controller.signal.aborted || !game || game.id !== gameId || game.revision !== revision || !shopVisible
       || game.state.status !== "paused" || result.revision !== revision) return;
     adviceMessage.textContent = result.status === "advice"
-      ? `${result.message} · ${result.model === "gemini-3.8-flash" ? "GEMINI FLASH" : "GEMINI FLASH-LITE"}`
+      ? `${result.message} · ${result.model === "gemini-3.8-flash" ? "GEMINI FLASH" : result.model === "gemini-3.5-flash-lite" ? "GEMINI FLASH-LITE" : "GEMMA 4"}`
       : result.message;
   } catch {
     if (!controller.signal.aborted && game?.id === gameId && game.revision === revision && shopVisible) {
