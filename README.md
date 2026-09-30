@@ -90,6 +90,14 @@ npm run build
 npm run security:scan
 ```
 
+Browser E2E za ASK SHOP AI (fake provider, bez ključa i bez poziva ka Google-u; jednom pokreni `npx playwright install chromium`):
+
+```bash
+npm run test:e2e
+```
+
+Pokreće backend sa lažnim providerom (Flash vraća 503, Flash-Lite odgovara) i Vite klijent na portu 3001/5199, pa u headless Chromium-u proverava savet, fallback, da savet ne kupuje, zatvaranje prodavnice tokom zahteva i poruku bez ključa. Rezultati: [Evidence 013](docs/tracking/evidence/EVIDENCE_013.md).
+
 ## Week 3 baseline i Week 4 proširenje
 
 | | Week 3 (baseline) | Week 4 (proširenje) |
@@ -104,8 +112,8 @@ Dokazni lanac za Week 4 (redom):
 1. Spec: [`specs/002-shop-advisor/spec.md`](specs/002-shop-advisor/spec.md) i [plan](specs/002-shop-advisor/plan.md)
 2. Ugovor: [`contracts/shop-advice-api.md`](specs/002-shop-advisor/contracts/shop-advice-api.md) i [`docs/specs/TOOL_CONTRACT.md`](docs/specs/TOOL_CONTRACT.md)
 3. Politika pouzdanosti: [Reliability V2](specs/002-shop-advisor/research.md) i [GEMINI_HINT_CHANGES_V2](docs/specs/GEMINI_HINT_CHANGES_V2.md)
-4. Testovi: `tests/shopAdvice.test.ts`, `tests/httpServer.test.ts`
-5. Evidence: [009](docs/tracking/evidence/EVIDENCE_009.md), [010](docs/tracking/evidence/EVIDENCE_010.md), [011](docs/tracking/evidence/EVIDENCE_011.md), [012](docs/tracking/evidence/EVIDENCE_012.md), [013 — smoke i ručni browser scenario](docs/tracking/evidence/EVIDENCE_013.md)
+4. Testovi: `tests/shopAdvice.test.ts`, `tests/httpServer.test.ts`, browser E2E `scripts/e2e/shopAdvisor.e2e.ts`
+5. Evidence: [009](docs/tracking/evidence/EVIDENCE_009.md), [010](docs/tracking/evidence/EVIDENCE_010.md), [011](docs/tracking/evidence/EVIDENCE_011.md), [012](docs/tracking/evidence/EVIDENCE_012.md), [013 — HTTP smoke i browser E2E](docs/tracking/evidence/EVIDENCE_013.md)
 6. Ko je šta radio: [CONTRIBUTIONS_WEEK04](docs/tracking/CONTRIBUTIONS_WEEK04.md)
 
 ## Dokumentacija
