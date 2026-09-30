@@ -3,34 +3,67 @@
 // Run: npx playwright install chromium   (once)
 //      npm run test:e2e
 import { spawn, type ChildProcess } from "node:child_process";
+import { createRequire } from "node:module";
+import { createServer } from "node:net";
+import { dirname, join } from "node:path";
 import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 
-const API_PORT = 3001; // fixed by the Vite proxy in vite.config.ts
-const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 5199);
-const WEB_URL = `http://127.0.0.1:${WEB_PORT}`;
+type Server = { name: string; proc: ChildProcess; output: string[] };
 
-type Server = { proc: ChildProcess; output: string[] };
+const require = createRequire(import.meta.url);
 
-function start(command: string, args: string[], env: NodeJS.ProcessEnv, ready: RegExp): Promise<Server> {
-  const proc = spawn(command, args, { env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
-  const output: string[] = [];
+// Resolve a package's CLI entry so it can run under the current Node binary: no npx, no shell,
+// and no .cmd shim on Windows. The spawned PID is then the real server process.
+function cliPath(pkg: string, bin: string): string {
+  const manifestPath = require.resolve(`${pkg}/package.json`);
+  const manifest = require(manifestPath) as { bin: string | Record<string, string> };
+  return join(dirname(manifestPath), typeof manifest.bin === "string" ? manifest.bin : manifest.bin[bin]);
+}
+
+function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`${command} ${args.join(" ")} did not start`)), 30_000);
-    const onData = (chunk: Buffer) => {
-      for (const line of chunk.toString().split("\n")) if (line.trim()) output.push(line);
-      if (ready.test(output.join("\n"))) { clearTimeout(timer); resolve({ proc, output }); }
-    };
-    proc.stdout?.on("data", onData);
-    proc.stderr?.on("data", onData);
-    proc.once("exit", (code) => { clearTimeout(timer); reject(new Error(`${command} exited with ${code}: ${output.join("\n")}`)); });
+    const probe = createServer();
+    probe.once("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      const { port } = probe.address() as { port: number };
+      probe.close(() => resolve(port));
+    });
   });
 }
 
-function stop(server: Server | undefined): void {
-  server?.proc.removeAllListeners("exit");
-  server?.proc.kill("SIGTERM");
+function start(name: string, args: string[], env: NodeJS.ProcessEnv, ready: RegExp): Promise<Server> {
+  const proc = spawn(process.execPath, args, { env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+  const output: string[] = [];
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${name} did not start: ${output.join("\n")}`)), 30_000);
+    const onData = (chunk: Buffer) => {
+      for (const line of chunk.toString().split(/\r?\n/)) if (line.trim()) output.push(line);
+      if (ready.test(output.join("\n"))) { clearTimeout(timer); resolve({ name, proc, output }); }
+    };
+    proc.stdout?.on("data", onData);
+    proc.stderr?.on("data", onData);
+    proc.once("error", (error) => { clearTimeout(timer); reject(error); });
+    proc.once("exit", (code) => { clearTimeout(timer); reject(new Error(`${name} exited with ${code}: ${output.join("\n")}`)); });
+  });
 }
+
+// Resolves only after the server process has actually exited, so its port is released before
+// the next server starts. Escalates to SIGKILL if a graceful stop takes too long.
+async function stop(server: Server | undefined): Promise<void> {
+  if (!server) return;
+  const { proc } = server;
+  proc.removeAllListeners("exit");
+  if (proc.exitCode !== null || proc.signalCode !== null) return;
+  const exited = new Promise<void>((resolve) => proc.once("exit", () => resolve()));
+  proc.kill("SIGTERM");
+  const timer = setTimeout(() => proc.kill("SIGKILL"), 5_000);
+  await exited;
+  clearTimeout(timer);
+}
+
+const startApi = (port: number, env: NodeJS.ProcessEnv = {}) =>
+  start("fake API", ["--import", "tsx", "scripts/e2e/fakeAdvisorServer.ts"], { PORT: String(port), ...env }, /listening/);
 
 function telemetry(server: Server): Array<Record<string, unknown>> {
   return server.output.filter((line) => line.startsWith("{")).map((line) => JSON.parse(line) as Record<string, unknown>);
@@ -51,8 +84,10 @@ async function progression(page: Page) {
   };
 }
 
+let webUrl = "";
+
 async function openFreshShop(page: Page): Promise<void> {
-  await page.goto(WEB_URL);
+  await page.goto(webUrl);
   await page.waitForSelector('#server-connection[data-connection="online"]');
   await page.keyboard.press("ArrowUp");
   await page.waitForSelector("#shop-toggle:not([disabled])");
@@ -61,28 +96,26 @@ async function openFreshShop(page: Page): Promise<void> {
   await page.waitForSelector("#shop-advice-button:not([disabled])");
 }
 
-class Skip extends Error {}
-const results: Array<[string, "PASS" | "SKIP"]> = [];
+let passed = 0;
 async function check(id: string, name: string, body: () => Promise<void>): Promise<void> {
-  try {
-    await body();
-    results.push([id, "PASS"]);
-    console.log(`PASS ${id} ${name}`);
-  } catch (error) {
-    if (!(error instanceof Skip)) throw error;
-    results.push([id, "SKIP"]);
-    console.log(`SKIP ${id} ${name} — ${error.message}`);
-  }
+  await body();
+  passed += 1;
+  console.log(`PASS ${id} ${name}`);
 }
 
 async function main(): Promise<void> {
   let api: Server | undefined;
   let web: Server | undefined;
+  const apiPort = Number(process.env.E2E_API_PORT ?? await freePort());
+  const webPort = Number(process.env.E2E_WEB_PORT ?? await freePort());
+  webUrl = `http://127.0.0.1:${webPort}`;
   const browser = await chromium.launch();
   try {
-    web = await start("npx", ["vite", "--host", "127.0.0.1", "--port", String(WEB_PORT), "--strictPort"], {}, /Local:/);
+    web = await start("Vite", [cliPath("vite", "vite"), "--host", "127.0.0.1", "--port", String(webPort), "--strictPort"],
+      { API_PORT: String(apiPort) }, /Local:/);
 
-    api = await start("npx", ["tsx", "scripts/e2e/fakeAdvisorServer.ts"], { PORT: String(API_PORT) }, /listening/);
+    // Seeded so the first pause of each game has one perk point: M5 is then always runnable.
+    api = await startApi(apiPort, { E2E_SEED_PERK_POINTS: "1" });
     const page = await browser.newPage();
 
     await check("M1", "ASK SHOP AI shows a pending state, then validated advice", async () => {
@@ -128,7 +161,7 @@ async function main(): Promise<void> {
     });
 
     await check("M4b", "A client disconnect aborts the provider call on the backend", async () => {
-      const api_ = `http://127.0.0.1:${API_PORT}/api/games`;
+      const api_ = `http://127.0.0.1:${apiPort}/api/games`;
       const post = (path: string, body: unknown = {}, signal?: AbortSignal) => fetch(`${api_}${path}`, {
         method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal,
       });
@@ -147,17 +180,18 @@ async function main(): Promise<void> {
     await check("M5", "Buying a perk while advice is pending discards the stale answer", async () => {
       await openFreshShop(page);
       const buyable = await page.$("#perk-shop button[id^=buy-]:not([disabled])");
-      if (!buyable) {
-        throw new Skip("no affordable perk in a fresh run; stale-revision discard is covered by tests/shopAdvice.test.ts");
-      }
+      if (!buyable) throw new Error("seeded fixture should leave an affordable perk");
+      const pointsBefore = await text(page, "#perk-points-value");
       await page.click("#shop-advice-button");
+      assert.match(await text(page, "#shop-advice-output"), /CHECKING/);
       await buyable.click();
-      await page.waitForTimeout(2500);
+      await page.waitForFunction((before) => document.querySelector("#perk-points-value")?.textContent?.trim() !== before, pointsBefore);
+      await page.waitForTimeout(2500); // longer than the fake provider's answer delay
       assert.doesNotMatch(await text(page, "#shop-advice-output"), /GEMINI|GEMMA/);
     });
 
-    stop(api);
-    api = await start("npx", ["tsx", "scripts/e2e/fakeAdvisorServer.ts"], { PORT: String(API_PORT), FAKE_PROVIDER: "off" }, /listening/);
+    await stop(api);
+    api = await startApi(apiPort, { FAKE_PROVIDER: "off" });
 
     await check("M6", "No provider configured: safe unavailable message, game state unchanged", async () => {
       await openFreshShop(page);
@@ -168,12 +202,11 @@ async function main(): Promise<void> {
       assert.deepEqual(await progression(page), before);
     });
 
-    const passed = results.filter(([, status]) => status === "PASS").length;
-    console.log(`\n${passed} passed, ${results.length - passed} skipped, 0 failed.`);
+    console.log(`\n${passed} passed, 0 skipped, 0 failed.`);
   } finally {
     await browser.close();
-    stop(api);
-    stop(web);
+    await stop(api);
+    await stop(web);
   }
 }
 
