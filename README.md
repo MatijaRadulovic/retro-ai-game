@@ -90,6 +90,24 @@ npm run build
 npm run security:scan
 ```
 
+## Week 3 baseline i Week 4 proširenje
+
+| | Week 3 (baseline) | Week 4 (proširenje) |
+|---|---|---|
+| Igra | Snake engine, validacija konfiguracije, CRT polish | Server drži stanje igre; XP, perkovi, Lucky pickup, prodavnica |
+| AI | Lokalni read-only Hint (bez pravog AI-ja) | ASK SHOP AI: Gemini savet u pauziranoj prodavnici, ne menja stanje |
+| Pouzdanost | — | Flash ×1 → Flash-Lite ×2 → Gemma ×3, rok 85 s, Retry-After, terminalne greške bez fallback-a |
+| Izveštaj | [WEEKLY_REPORT_week03](docs/tracking/reports/WEEKLY_REPORT_week03.md) | [WEEKLY_REPORT_week04](docs/tracking/reports/WEEKLY_REPORT_week04.md) |
+
+Dokazni lanac za Week 4 (redom):
+
+1. Spec: [`specs/002-shop-advisor/spec.md`](specs/002-shop-advisor/spec.md) i [plan](specs/002-shop-advisor/plan.md)
+2. Ugovor: [`contracts/shop-advice-api.md`](specs/002-shop-advisor/contracts/shop-advice-api.md) i [`docs/specs/TOOL_CONTRACT.md`](docs/specs/TOOL_CONTRACT.md)
+3. Politika pouzdanosti: [Reliability V2](specs/002-shop-advisor/research.md) i [GEMINI_HINT_CHANGES_V2](docs/specs/GEMINI_HINT_CHANGES_V2.md)
+4. Testovi: `tests/shopAdvice.test.ts`, `tests/httpServer.test.ts`
+5. Evidence: [009](docs/tracking/evidence/EVIDENCE_009.md), [010](docs/tracking/evidence/EVIDENCE_010.md), [011](docs/tracking/evidence/EVIDENCE_011.md), [012](docs/tracking/evidence/EVIDENCE_012.md), [013 — smoke i ručni browser scenario](docs/tracking/evidence/EVIDENCE_013.md)
+6. Ko je šta radio: [CONTRIBUTIONS_WEEK04](docs/tracking/CONTRIBUTIONS_WEEK04.md)
+
 ## Dokumentacija
 
 - `AGENTS.md` — kratak, uvek važeći projektni ugovor.
@@ -99,6 +117,6 @@ npm run security:scan
 - `specs/002-shop-advisor/` — Spec Kit specifikacija, plan, API ugovor, zadaci i quickstart za shop savet.
 - `docs/specs/REFACTOR_PLAN.md` — refactor odluke, Definition of Done, out-of-scope i ček-lista provera.
 - `docs/prompts/` — build promptovi, uključujući server refactor.
-- `docs/tracking/` — work log, AI usage log, task-specific evidence, Week 3/4 checklists and guides, i weekly reports.
+- `docs/tracking/` — work log, [Week 4 contribution record](docs/tracking/CONTRIBUTIONS_WEEK04.md), AI usage log, task-specific evidence, Week 3/4 checklists and guides, i weekly reports.
 
 Za promene prati obavezni workflow u `docs/instructions/05-workflow-tracking-and-reporting.md`. Njegov cilj je da stvarni rad i rezultati ostanu zabeleženi i da nedeljni izveštaj može da se sastavi iz tih zapisa.
