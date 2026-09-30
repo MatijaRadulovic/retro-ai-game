@@ -2,6 +2,14 @@
 
 Append one concise entry for each substantive implementation, review, or documentation task. Every entry links the prompt/specification that guided the work and the evidence used or created. If there was no standalone prompt artifact, say so. Keep results factual and do not rewrite history.
 
+## 2026-09-30 — Address Week 4 review feedback
+
+- **Goal:** resolve the reviewer's Week 4 remarks: stale research record, contribution evidence, smoke/manual scenario, README navigation.
+- **Prompt/spec/evidence:** reviewer feedback on the Week 4 submission; no standalone prompt applies. See [Evidence 013](evidence/EVIDENCE_013.md) and [CONTRIBUTIONS_WEEK04](CONTRIBUTIONS_WEEK04.md).
+- **Outcome:** collapsed the superseded reliability policy in `specs/002-shop-advisor/research.md` to a pointer to Reliability V2 (85 s, Flash ×1 → Flash-Lite ×2 → Gemma ×3); aligned task T013 in `tasks.md`; added the Week 4 contribution record; added Evidence 013 (real-server HTTP smoke S1–S3 executed, manual browser scenario M1–M6 documented, not executed); added a Week 3 vs Week 4 section and evidence chain to the README.
+- **Verification:** `npm run typecheck`, `npm test` (55/55), `npm run build`, `npm run security:scan`, and `git diff --check` passed; HTTP smoke S1–S3 in Evidence 013.
+- **Limitations:** browser scenario M1–M6 not run; attribution rows for Uroš's local work come from the team reports, not from Git authorship.
+
 ## 2026-09-30 — Prepare Week 4 learner report
 
 - **Goal:** prepare the Week 4 report from the learner's confirmed identity, team, contribution, and next step, cross-checked against project tracking records.
