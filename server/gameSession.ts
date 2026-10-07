@@ -24,6 +24,8 @@ type Session = {
   gameState: GameState;
   timer?: NodeJS.Timeout;
   listeners: Set<(snapshot: GameSnapshot) => void>;
+  history: RunHistoryEntry[];
+  runRecorded: boolean;
 };
 
 export type SessionErrorCode = "game_not_found" | "invalid_status" | "insufficient_perk_points" | "perk_at_cap";
@@ -69,6 +71,8 @@ export class GameSessionManager {
       playerId: this.makeId(),
       gameState: createInitialState(result.config, this.random),
       listeners: new Set(),
+      history: [],
+      runRecorded: false,
     };
     this.sessions.set(session.id, session);
     return this.toSnapshot(session);
@@ -76,6 +80,11 @@ export class GameSessionManager {
 
   get(id: string): GameSnapshot {
     return this.toSnapshot(this.requireSession(id));
+  }
+
+  /** Last finished games of this container, newest first (in memory, at most five). */
+  getRunHistory(id: string): RunHistoryEntry[] {
+    return structuredClone(this.requireSession(id).history);
   }
 
   subscribe(id: string, listener: (snapshot: GameSnapshot) => void): () => void {
@@ -127,6 +136,9 @@ export class GameSessionManager {
   restart(id: string): GameSnapshot {
     const session = this.requireSession(id);
     this.clearTimer(session);
+    const { status } = session.gameState;
+    if (status === "playing" || status === "paused") this.recordRun(session, "restart");
+    session.runRecorded = false;
     session.gameState = createInitialState(session.config, this.random);
     this.publish(session);
     return this.toSnapshot(session);
@@ -193,8 +205,24 @@ export class GameSessionManager {
 
   private publish(session: Session): void {
     session.revision += 1;
+    const { status } = session.gameState;
+    if (!session.runRecorded && (status === "game_over" || status === "won")) {
+      this.recordRun(session, status);
+      session.runRecorded = true;
+    }
     const snapshot = this.toSnapshot(session);
     for (const listener of session.listeners) listener(snapshot);
+  }
+
+  private recordRun(session: Session, endedBy: RunHistoryEntry["endedBy"]): void {
+    const { score, level, extraXpLevel, luckLevel, extraLives } = session.gameState;
+    session.history.unshift({
+      score,
+      level,
+      perksAtEnd: { extraXp: extraXpLevel, luck: luckLevel, extraLife: extraLives },
+      endedBy,
+    });
+    session.history.length = Math.min(session.history.length, 5);
   }
 
   private clearTimer(session: Session): void {
