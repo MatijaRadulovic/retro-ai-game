@@ -115,8 +115,22 @@ async function main(): Promise<void> {
       { API_PORT: String(apiPort) }, /Local:/);
 
     // Seeded so the first pause of each game has one perk point: M5 is then always runnable.
-    api = await startApi(apiPort, { E2E_SEED_PERK_POINTS: "1" });
+    api = await startApi(apiPort, { E2E_SEED_PERK_POINTS: "1", FAKE_PLAN_DELAY_MS: "200" });
     const page = await browser.newPage();
+
+    await check("STARTUP-RETRY", "a temporary game creation failure recovers without reloading", async () => {
+      let attempts = 0;
+      await page.route("**/api/games", async (route) => {
+        if (route.request().method() === "POST" && ++attempts === 1) await route.abort("failed");
+        else await route.continue();
+      });
+      await page.goto(webUrl);
+      await page.waitForSelector('#server-connection[data-connection="reconnecting"]');
+      await page.waitForSelector('#server-connection[data-connection="online"]');
+      assert.equal(attempts, 2);
+      assert.equal(await text(page, "#status"), "READY");
+      await page.unroute("**/api/games");
+    });
 
     await check("M1", "ASK SHOP AI shows a pending state, then validated advice", async () => {
       await openFreshShop(page);
@@ -135,6 +149,30 @@ async function main(): Promise<void> {
       assert.equal(attempts[1]?.model, "gemini-3.5-flash-lite");
       assert.equal(attempts[1]?.status, "success");
       assert.equal(attempts[1]?.fallbackUsed, true);
+    });
+
+    await check("W05-UI", "life-plan button shows a concise comparison without changing the game", async () => {
+      await openFreshShop(page);
+      const before = await progression(page);
+      await page.click("#life-plan-button");
+      assert.match(await text(page, "#life-plan-output"), /PLANNING YOUR NEXT \+1 LIFE/);
+      await page.waitForFunction(() => /SAVE: \d+ FOODS/.test(document.querySelector("#life-plan-output")?.textContent ?? ""));
+      const message = await text(page, "#life-plan-output");
+      assert.match(message, /^(SAVE YOUR POINTS|BUY ONE EXTRA XP LEVEL, THEN SAVE)\./);
+      assert.doesNotMatch(message, /BOUNDED PROJECTION|NOT A GUARANTEE|RED FOOD ONLY|NO COLLISIONS|NO FUTURE LUCKY|NO OTHER PURCHASES/);
+      assert.deepEqual(await progression(page), before);
+      assert.match(await text(page, "#status"), /PAUSED/);
+    });
+
+    await check("W05-STALE", "closing the shop during life-plan work suppresses a late result", async () => {
+      await openFreshShop(page);
+      await page.click("#life-plan-button");
+      assert.match(await text(page, "#life-plan-output"), /PLANNING YOUR NEXT \+1 LIFE/);
+      await page.click("#shop-close");
+      await page.waitForSelector("#perk-shop", { state: "hidden" });
+      await page.waitForTimeout(1200);
+      assert.doesNotMatch(await text(page, "#life-plan-output"), /BOUNDED PROJECTION|SAVE YOUR POINTS|BUY ONE EXTRA XP/);
+      await openFreshShop(page);
     });
 
     await check("M2", "Advice never buys: score, XP, points and perk levels are unchanged", async () => {

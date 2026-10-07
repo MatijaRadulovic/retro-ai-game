@@ -19,6 +19,8 @@ const overlayMessage = document.getElementById("overlay-message");
 const overlayActionButton = document.getElementById("overlay-action");
 const adviceButton = document.getElementById("shop-advice-button") as HTMLButtonElement | null;
 const adviceOutput = document.getElementById("shop-advice-output");
+const lifePlanButton = document.getElementById("life-plan-button") as HTMLButtonElement | null;
+const lifePlanOutput = document.getElementById("life-plan-output");
 const xpValue = document.getElementById("xp-value");
 const levelValue = document.getElementById("level-value");
 const perkPointsValue = document.getElementById("perk-points-value");
@@ -45,7 +47,7 @@ const buyLuck = document.getElementById("buy-luck") as HTMLButtonElement | null;
 const shopClose = document.getElementById("shop-close") as HTMLButtonElement | null;
 const shopMessage = document.getElementById("shop-message");
 
-if (!board || !gameCard || !scoreElement || !bestScoreElement || !statusElement || !paceElement || !connectionElement || !pauseButton || !restartButton || !overlay || !overlayTitle || !overlayMessage || !overlayActionButton || !adviceButton || !adviceOutput || !xpValue || !levelValue || !perkPointsValue || !extraXpValue || !luckValue || !lifeValue || !extraXpCubes || !luckCubes || !lifeCubes || !shopToggle || !perkShop || !shopXp || !shopLevel || !shopPoints || !shopExtraXpValue || !shopLuckValue || !shopLifeValue || !shopExtraXpCubes || !shopLuckCubes || !shopLifeCubes || !buyExtraXp || !buyLuck || !buyExtraLife || !shopClose || !shopMessage) {
+if (!board || !gameCard || !scoreElement || !bestScoreElement || !statusElement || !paceElement || !connectionElement || !pauseButton || !restartButton || !overlay || !overlayTitle || !overlayMessage || !overlayActionButton || !adviceButton || !adviceOutput || !lifePlanButton || !lifePlanOutput || !xpValue || !levelValue || !perkPointsValue || !extraXpValue || !luckValue || !lifeValue || !extraXpCubes || !luckCubes || !lifeCubes || !shopToggle || !perkShop || !shopXp || !shopLevel || !shopPoints || !shopExtraXpValue || !shopLuckValue || !shopLifeValue || !shopExtraXpCubes || !shopLuckCubes || !shopLifeCubes || !buyExtraXp || !buyLuck || !buyExtraLife || !shopClose || !shopMessage) {
   throw new Error("Snake UI nije kompletno inicijalizovan.");
 }
 
@@ -63,6 +65,8 @@ const gameOverlayMessage = overlayMessage;
 const gameOverlayActionButton = overlayActionButton;
 const askAdvice = adviceButton;
 const adviceMessage = adviceOutput;
+const planButton = lifePlanButton;
+const planMessage = lifePlanOutput;
 const runXpValue = xpValue;
 const runLevelValue = levelValue;
 const runPerkPointsValue = perkPointsValue;
@@ -96,13 +100,20 @@ let displayedScore = 0;
 let previousStatus = "ready";
 let best = 0;
 let disconnectEvents: (() => void) | undefined;
+let initialCreateInFlight = false;
+let initialRetryTimer: number | undefined;
+let initialRetryDelayMs = 500;
 let shopVisible = false;
 let adviceAbort: AbortController | null = null;
+let lifePlanAbort: AbortController | null = null;
 
 function clearAdvice(message = "ASK WHETHER TO BUY A PERK OR WAIT."): void {
   adviceAbort?.abort();
   adviceAbort = null;
+  lifePlanAbort?.abort();
+  lifePlanAbort = null;
   adviceMessage.textContent = message;
+  planMessage.textContent = "";
 }
 
 function readBestScore(): number {
@@ -269,7 +280,9 @@ function render(next: GameSnapshot): void {
   gameOverlayActionButton.hidden = state.status === "ready";
   pause.textContent = state.status === "paused" ? "RESUME" : "PAUSE";
   pause.disabled = state.status === "ready" || state.status === "game_over" || state.status === "won";
-  askAdvice.disabled = state.status !== "paused" || !shopVisible || adviceAbort !== null;
+  const aiBusy = adviceAbort !== null || lifePlanAbort !== null;
+  askAdvice.disabled = state.status !== "paused" || !shopVisible || aiBusy;
+  planButton.disabled = state.status !== "paused" || !shopVisible || aiBusy;
 
   if (state.status === "ready") {
     gameOverlayTitle.textContent = "READY?";
@@ -427,6 +440,7 @@ askAdvice.addEventListener("click", async () => {
   const controller = new AbortController();
   adviceAbort = controller;
   askAdvice.disabled = true;
+  planButton.disabled = true;
   adviceMessage.textContent = "CHECKING YOUR CURRENT SHOP OPTIONS…";
   try {
     const result = await gameClient.shopAdvice(gameId, controller.signal);
@@ -446,6 +460,38 @@ askAdvice.addEventListener("click", async () => {
     }
   }
 });
+
+planButton.addEventListener("click", async () => {
+  if (!game || game.state.status !== "paused" || !shopVisible || adviceAbort || lifePlanAbort) return;
+  const gameId = game.id;
+  const revision = game.revision;
+  const controller = new AbortController();
+  lifePlanAbort = controller;
+  planButton.disabled = true;
+  askAdvice.disabled = true;
+  planMessage.textContent = "PLANNING YOUR NEXT +1 LIFE…";
+  try {
+    const result = await gameClient.lifePlan(gameId, controller.signal);
+    if (controller.signal.aborted || !game || game.id !== gameId || game.revision !== revision || !shopVisible
+      || game.state.status !== "paused" || result.revision !== revision) return;
+    if (result.status === "completed") {
+      const compare = result.comparison?.map((entry) => entry.status === "reached"
+        ? `${entry.strategy === "save_for_life" ? "SAVE" : "BUY EXTRA XP"}: ${entry.foodsToGoal} FOODS`
+        : `${entry.strategy === "save_for_life" ? "SAVE" : "BUY EXTRA XP"}: NOT WITHIN 100`).join(" · ");
+      planMessage.textContent = `${result.message}${compare ? ` ${compare}.` : ""}`;
+    } else planMessage.textContent = result.message;
+  } catch {
+    if (!controller.signal.aborted && game?.id === gameId && game.revision === revision && shopVisible) {
+      planMessage.textContent = "LIFE PLAN IS UNAVAILABLE. NO PURCHASE WAS MADE.";
+    }
+  } finally {
+    if (lifePlanAbort === controller) {
+      lifePlanAbort = null;
+      if (game) render(game);
+    }
+  }
+});
+
 document.querySelectorAll<HTMLButtonElement>("[data-direction]").forEach((button) => {
   button.addEventListener("click", () => {
     const direction = button.dataset.direction;
@@ -454,23 +500,42 @@ document.querySelectorAll<HTMLButtonElement>("[data-direction]").forEach((button
 });
 
 async function initializeGame(): Promise<void> {
-  connection.textContent = "CONNECTING";
-  connection.dataset.connection = "connecting";
+  if (game || initialCreateInFlight) return;
+  if (initialRetryTimer !== undefined) window.clearTimeout(initialRetryTimer);
+  initialRetryTimer = undefined;
+  initialCreateInFlight = true;
   best = readBestScore();
   try {
     const initial = await gameClient.create();
+    initialRetryDelayMs = 500;
     applySnapshot(initial);
     disconnectEvents?.();
     disconnectEvents = connectGameEvents(initial.id, applySnapshot, (connected) => {
       connection.textContent = connected ? "SERVER ONLINE" : "RECONNECTING";
       connection.dataset.connection = connected ? "online" : "reconnecting";
     });
-    const fresh = await gameClient.get(initial.id);
-    applySnapshot(fresh);
   } catch (error) {
-    reportError(error);
+    if (error instanceof GameApiError && error.code === "server_unavailable") {
+      connection.textContent = "RECONNECTING";
+      connection.dataset.connection = "reconnecting";
+      status.textContent = "WAITING FOR SERVER";
+      status.dataset.state = "offline";
+      gameOverlay.hidden = false;
+      gameOverlayTitle.textContent = "WAITING FOR SERVER";
+      gameOverlayMessage.textContent = "START THE GAME SERVER. THIS PAGE WILL RETRY AUTOMATICALLY.";
+      gameOverlayActionButton.hidden = true;
+      initialRetryTimer = window.setTimeout(() => { void initializeGame(); }, initialRetryDelayMs);
+      initialRetryDelayMs = Math.min(initialRetryDelayMs * 2, 2_000);
+    } else {
+      reportError(error);
+    }
+  } finally {
+    initialCreateInFlight = false;
   }
 }
 
-window.addEventListener("beforeunload", () => disconnectEvents?.());
+window.addEventListener("beforeunload", () => {
+  if (initialRetryTimer !== undefined) window.clearTimeout(initialRetryTimer);
+  disconnectEvents?.();
+});
 void initializeGame();

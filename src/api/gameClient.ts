@@ -1,6 +1,7 @@
 import { validateGameSnapshot, type GameSnapshot } from "../game/gameProtocol.ts";
 import type { Direction } from "../game/snakeEngine.ts";
 import { validateShopAdviceResult, type ShopAdviceResult } from "../ai/shopAdvice.ts";
+import { validateLifePlanResult, type LifePlanResult } from "../ai/lifePlan.ts";
 
 export class GameApiError extends Error {
   constructor(readonly code: string, message: string, readonly status: number) {
@@ -73,6 +74,25 @@ async function requestShopAdvice(gameId: string, signal?: AbortSignal): Promise<
   return advice;
 }
 
+async function requestLifePlan(gameId: string, signal?: AbortSignal): Promise<LifePlanResult> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/games/${encodeURIComponent(gameId)}/life-plan`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}", signal });
+  } catch {
+    throw new GameApiError(signal?.aborted ? "cancelled" : "server_unavailable", "LIFE PLAN IS UNAVAILABLE.", 0);
+  }
+  let result: unknown;
+  try { result = await response.json() as unknown; } catch { throw new GameApiError("invalid_server_response", "LIFE PLAN IS UNAVAILABLE.", response.status); }
+  if (!response.ok) {
+    const error = isRecord(result) && isRecord(result.error) ? result.error : null;
+    throw new GameApiError(typeof error?.code === "string" ? error.code : "request_failed", "LIFE PLAN IS UNAVAILABLE.", response.status);
+  }
+  if (!isRecord(result) || Object.keys(result).length !== 1) throw new GameApiError("invalid_server_response", "LIFE PLAN IS UNAVAILABLE.", response.status);
+  const plan = validateLifePlanResult(result.plan);
+  if (!plan) throw new GameApiError("invalid_server_response", "LIFE PLAN IS UNAVAILABLE.", response.status);
+  return plan;
+}
+
 export const gameClient = {
   create: () => request("/api/games", "POST", {}),
   get: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}`),
@@ -82,6 +102,7 @@ export const gameClient = {
   restart: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}/restart`, "POST", {}),
   purchasePerk: (gameId: string, perk: "extra_xp" | "extra_life" | "luck") => request(`/api/games/${encodeURIComponent(gameId)}/perks`, "POST", { perk }),
   shopAdvice: requestShopAdvice,
+  lifePlan: requestLifePlan,
 };
 
 export function connectGameEvents(gameId: string, onSnapshot: (snapshot: GameSnapshot) => void, onConnection: (connected: boolean) => void): () => void {

@@ -22,9 +22,9 @@ Add a separate paused-shop action that uses a bounded four-step workflow to coll
 
 **Project Type**: Existing single-player browser game with server-owned state and API
 
-**Performance Goals**: Each local tool completes within 100 ms; each result is at most 8 KiB; one run stops within 30 s and uses no more than six provider attempts.
+**Performance Goals**: Each local tool completes within 100 ms; each result is at most 8 KiB; one run stops within 60 s and uses no more than six provider attempts.
 
-**Constraints**: Four agent steps; three executed tools; six provider attempts across the whole run; each attempt at most 10 s and clipped to remaining deadline. Only the existing server-selected Google model chain. Tools are exactly `get_shop_context` and `evaluate_plan`. No game mutation, free-form goal, second provider, new dependencies or broad refactor. Existing advisor retains its own 85 s behavior.
+**Constraints**: Four agent steps; three executed tools; six provider attempts across the whole run; each attempt at most 10 s and clipped to remaining deadline. Only the existing server-selected Google model chain; a successful fallback becomes the next step's starting model. Tools are exactly `get_shop_context` and `evaluate_plan`. No game mutation, free-form goal, second provider, new dependencies or broad refactor. Existing advisor retains its own 85 s behavior.
 
 **Scale/Scope**: One active AI operation per game across both shop actions; one user-triggered in-memory run, two strategies, at most 100 red-food projection iterations.
 
@@ -75,7 +75,7 @@ The model never invokes a function directly. Invalid messages, rejected tool pro
 3. **Model-step adapter boundary:** normalize one model step into one proposal or one final object; preserve approved Google adapter behavior and classification. Do not put provider SDK details in the run state machine.
 4. **Orchestrator/state machine:** add phase allowlists, one proposal at a time, context/evidence binding, semantic checks, repeated-call signatures, global attempt/tool/step/time budgets, cancellation/stale checks, safe errors and cleanup. Add one shared per-game AI gate so advisor and life plan cannot overlap.
 5. **HTTP and client contract:** add a separate empty-body life-plan route and strict public response validator. Keep the current `shop-advice` route and DTO unchanged. Return direct `already_affordable`/`life_cap` application outcomes with zero provider calls.
-6. **UI:** add the second button in the current shop; disable both AI actions while either is in flight; show one honest generic progress line. Render safe status, comparison, generated numbers and projection assumptions from validated values only.
+6. **UI:** add the second button in the current shop; disable both AI actions while either is in flight; show one concise progress line. Render safe status, recommendation and generated food-count comparison from validated values. Keep technical projection assumptions in the response contract for validation but omit them from the player-facing shop text, per the later user request.
 7. **Verification and evidence:** run each frozen case using fake transport and deterministic time, full typecheck/test/build, security scan, API/browser E2E and state invariance checks. Record exact outputs and limits. Live calls require separate explicit authorization; none are planned for automatic tests.
 
 ## Constitution Check — after design

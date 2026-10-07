@@ -22,11 +22,11 @@
 
 ## Decision 3 — Keep the provider allowlist and use a single-step internal contract
 
-**Decision:** Reuse only the server-selected Google chain Flash → Flash-Lite → Gemma 4 and existing error classifications. Add an internal model-step request/response interface for one proposal or final result at a time. Enforce the existing per-model retry rules within one stricter W05 total budget of six provider attempts and 30 seconds. Keep W04 shop advice at its current 85-second behavior.
+**Decision (revised 2026-10-07 at user request):** Reuse only the server-selected Google chain Flash → Flash-Lite → Gemma 4 and existing error classifications. Add an internal model-step request/response interface for one proposal or final result at a time. Enforce the existing per-model retry rules within one W05 total budget of six provider attempts and 60 seconds. Reuse a successful fallback model for subsequent steps of the same run so repeated primary timeouts do not exhaust the global budget. Keep W04 shop advice at its current 85-second behavior.
 
 **Rationale:** Provider SDK details remain outside the workflow logic. A whole-run attempt counter prevents a four-step agent multiplied by the existing six attempts per request. A separate endpoint and DTO preserve feature 002 compatibility.
 
-**Alternatives considered:** Add a second provider; prohibited by project contract. Reuse `createShopAdvisor` as-is; rejected because it returns only a shop decision and has no proposal/tool protocol. Increase the W05 total budget to 85 seconds; rejected because the feature prompt sets 30 seconds.
+**Alternatives considered:** Add a second provider; prohibited by project contract. Reuse `createShopAdvisor` as-is; rejected because it returns only a shop decision and has no proposal/tool protocol. Increase the W05 total budget to 85 seconds; rejected because the user requested 60 seconds. The original prompt specified 30 seconds; this later user request supersedes that limit.
 
 ## Decision 4 — Validate semantic evidence and use deterministic backend outcome selection
 

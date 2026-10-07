@@ -15,7 +15,7 @@
 
 HTTP 200 with exactly `{ "plan": PublicLifePlanResult }`. Client validates exact keys and compares `revision` with the current game snapshot before display.
 
-`completed` contains backend-selected recommendation, trusted reason code, valid evidence IDs, optional bounded comparison and controlled assumptions/message. If already affordable, `source: "application"` and `recommendation: "buy_now"`. A model-assisted outcome uses `source: "validated_plan"`.
+`completed` contains backend-selected recommendation, trusted reason code, valid evidence IDs, optional bounded comparison and controlled assumptions/message. The client validates the assumption fields but does not append their technical text to the player-facing shop message. If already affordable, `source: "application"` and `recommendation: "buy_now"`. A model-assisted outcome uses `source: "validated_plan"`.
 
 `incomplete` means no strategy reached the goal within 100 projected red foods; it never means impossible. `unavailable`, `stale` and `cancelled` include stable safe codes and no recommendation. Provider/tool internals and raw model text are never public.
 

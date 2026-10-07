@@ -49,6 +49,18 @@ export function getLevelForXp(xp: number): number {
   return level;
 }
 
+export function getExtraXpPerkCost(level: number): number | null {
+  return Number.isSafeInteger(level) && level >= 0 && level < 5 ? level + 1 : null;
+}
+
+export function getExtraLifePerkCost(charges: number): 5 | 8 | null {
+  return charges === 0 ? 5 : charges === 1 ? 8 : null;
+}
+
+export function getRedFoodXp(extraXpLevel: number): number {
+  return Number.isSafeInteger(extraXpLevel) && extraXpLevel >= 0 && extraXpLevel <= 5 ? 10 + 2 * extraXpLevel : 10;
+}
+
 export function awardXp(state: GameState, amount: number): GameState {
   if (!Number.isSafeInteger(amount) || amount < 0 || !Number.isSafeInteger(state.xp + amount)) return state;
   const xp = state.xp + amount;
@@ -60,7 +72,7 @@ export function purchasePerk(state: GameState, perk: PerkType): PerkPurchaseResu
   if (state.status !== "paused") return { ok: false, error: "invalid_status" };
   const atCap = perk === "extra_xp" ? state.extraXpLevel >= 5 : perk === "luck" ? state.luckLevel >= 5 : state.extraLives >= 2;
   if (atCap) return { ok: false, error: "perk_at_cap" };
-  const cost = perk === "extra_xp" ? state.extraXpLevel + 1 : perk === "luck" ? state.luckLevel + 1 : state.extraLives === 0 ? 5 : 8;
+  const cost = perk === "extra_xp" ? getExtraXpPerkCost(state.extraXpLevel)! : perk === "luck" ? state.luckLevel + 1 : getExtraLifePerkCost(state.extraLives)!;
   if (state.perkPoints < cost) return { ok: false, error: "insufficient_perk_points" };
   return {
     ok: true,
@@ -145,7 +157,7 @@ export function step(state: GameState, config: GameConfig, random: () => number 
   const nextScore = eatsFood ? state.score + config.scorePerFood : state.score;
   const eatsLucky = state.luckyPickup !== null && samePoint(nextHead, state.luckyPickup);
   const nextFood = eatsFood ? spawnFood(nextSnake, config, random, [state.luckyPickup]) : state.food;
-  const progression = eatsFood ? awardXp(state, 10 + 2 * state.extraXpLevel) : state;
+  const progression = eatsFood ? awardXp(state, getRedFoodXp(state.extraXpLevel)) : state;
   let luckyPickup = eatsLucky ? null : state.luckyPickup;
   let perkPoints = progression.perkPoints + (eatsLucky ? 1 : 0);
   if (eatsFood && luckyPickup === null && nextFood !== null && random() < getLuckySpawnChance(state.luckLevel)) {

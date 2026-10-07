@@ -5,11 +5,13 @@ import { WebSocket } from "ws";
 import { createGameHttpServer } from "../server/httpServer.ts";
 import { GameSessionManager } from "../server/gameSession.ts";
 import { createShopAdvisor, type ShopAdvisor } from "../server/ai/shopAdvice.ts";
+import { createLifePlanAgent, type LifePlanAgent } from "../server/ai/lifePlan.ts";
+import { comparePlanEvaluations, type PlanEvaluation } from "../src/ai/lifePlan.ts";
 
-async function startServer(random: () => number = () => 0, advisor: ShopAdvisor = createShopAdvisor(null)) {
+async function startServer(random: () => number = () => 0, advisor: ShopAdvisor = createShopAdvisor(null), planner: LifePlanAgent = createLifePlanAgent(null)) {
   let id = 0;
   const manager = new GameSessionManager(random, () => `api-${++id}`);
-  const server = createGameHttpServer(manager, advisor);
+  const server = createGameHttpServer(manager, advisor, planner);
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
@@ -237,6 +239,76 @@ test("WebSocket sends initial and changed authoritative snapshots", async () => 
     assert.ok(changed.game.revision > initial.game.revision);
   } finally {
     socket?.close();
+    await app.close();
+  }
+});
+
+
+test("life-plan route is a separate empty-body read-only flow", async () => {
+  let step = 0;
+  const planner = createLifePlanAgent(async (_model, prompt) => {
+    step += 1;
+    if (step === 1) return { value: { kind: "tool_request", name: "get_shop_context", arguments: {} } };
+    if (step === 2) return { value: { kind: "tool_request", name: "evaluate_plan", arguments: { strategy: "save_for_life", foodLimit: 100 } } };
+    const marker = "Validated evaluations: ";
+    const evaluations = JSON.parse(prompt.slice(prompt.indexOf(marker) + marker.length).split("\n")[0]) as PlanEvaluation[];
+    const compared = comparePlanEvaluations(evaluations);
+    return { value: { kind: "final", result: { recommendation: compared.recommendation ?? "no_recommendation", reasonCode: evaluations.length === 1 && compared.recommendation === "save_for_life" ? "extra_xp_unavailable" : compared.reasonCode, evidenceIds: evaluations.map((item) => item.evidenceId) } } };
+  });
+  const app = await startServer(() => 0, createShopAdvisor(null), planner);
+  try {
+    const created = await fetch(`${app.baseUrl}/api/games`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    const { game } = await json(created);
+    const missing = await fetch(`${app.baseUrl}/api/games/unknown/life-plan`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    assert.equal(missing.status, 404);
+    const notPaused = await fetch(`${app.baseUrl}/api/games/${game.id}/life-plan`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    assert.equal(notPaused.status, 409);
+    assert.equal(step, 0);
+    await fetch(`${app.baseUrl}/api/games/${game.id}/move`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ direction: "up" }) });
+    const paused = await fetch(`${app.baseUrl}/api/games/${game.id}/pause`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    const before = (await json(paused)).game;
+    const malformed = await fetch(`${app.baseUrl}/api/games/${game.id}/life-plan`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ strategy: "save_for_life" }) });
+    assert.equal(malformed.status, 400);
+    assert.equal(step, 0);
+    const response = await fetch(`${app.baseUrl}/api/games/${game.id}/life-plan`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    const result = await json(response);
+    assert.equal(response.status, 200);
+    assert.equal(result.plan.status, "completed");
+    assert.equal(step, 3);
+    assert.deepEqual(app.manager.get(game.id), before);
+  } finally {
+    await app.close();
+  }
+});
+
+test("life plan and shop advice share one per-game in-flight gate", async () => {
+  let startedResolve: (() => void) | undefined;
+  let providerSignal: AbortSignal | undefined;
+  const started = new Promise<void>((resolve) => { startedResolve = resolve; });
+  const planner = createLifePlanAgent((_model, _prompt, signal) => new Promise((_resolve, reject) => {
+    providerSignal = signal;
+    startedResolve?.();
+    signal.addEventListener("abort", () => reject(new Error("cancelled")), { once: true });
+  }));
+  const app = await startServer(() => 0, createShopAdvisor(null), planner);
+  const clientAbort = new AbortController();
+  try {
+    const { game } = await (await fetch(`${app.baseUrl}/api/games`, { method: "POST", body: "{}" })).json() as { game: { id: string } };
+    await fetch(`${app.baseUrl}/api/games/${game.id}/move`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ direction: "up" }) });
+    await fetch(`${app.baseUrl}/api/games/${game.id}/pause`, { method: "POST", body: "{}" });
+    const pending = fetch(`${app.baseUrl}/api/games/${game.id}/life-plan`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}", signal: clientAbort.signal });
+    await started;
+    const overlap = await fetch(`${app.baseUrl}/api/games/${game.id}/shop-advice`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    const body = await overlap.json() as { advice: { status: string; code: string } };
+    assert.equal(body.advice.status, "unavailable");
+    assert.equal(body.advice.code, "busy");
+    clientAbort.abort();
+    await pending.catch(() => undefined);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    assert.equal(providerSignal?.aborted, true);
+  } finally {
+    clientAbort.abort();
+    app.server.closeAllConnections();
     await app.close();
   }
 });

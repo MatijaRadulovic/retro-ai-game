@@ -200,6 +200,7 @@ kbd { display: inline-grid; min-width: 1.45em; place-items: center; border: 1px 
 }
 .shop-kicker { margin: 0 0 5px; color: #ffd166; font-size: 0.66rem; letter-spacing: 0.13em; }
 .advisor-output { max-width: 360px; margin: 0; color: var(--text-muted); font-size: 0.68rem; line-height: 1.55; letter-spacing: 0.04em; }
+.advisor-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .advisor-panel button { flex: 0 0 auto; border: 2px solid #ffd166; padding: 10px 12px; color: var(--background); background: #ffd166; font-weight: 700; font-size: 0.69rem; letter-spacing: 0.07em; }
 .advisor-panel button:hover:not(:disabled) { color: #ffd166; background: transparent; }
 .advisor-panel button:disabled { cursor: not-allowed; opacity: 0.45; }
@@ -273,6 +274,7 @@ kbd { display: inline-grid; min-width: 1.45em; place-items: center; border: 1px 
   .shop-perk { align-items: stretch; flex-direction: column; }
   .shop-perk button { width: 100%; }
   .advisor-panel { align-items: stretch; flex-direction: column; }
+  .advisor-actions { width: 100%; flex-direction: column; }
   .advisor-panel button { width: 100%; }
   .touch-controls { display: grid; }
   .score-cluster { gap: 10px; }

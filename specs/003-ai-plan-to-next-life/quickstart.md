@@ -23,7 +23,7 @@ Expected: all commands exit 0; existing tests pass; W05 tests use injected fake 
 
 1. Run the pure evaluator tests for level thresholds, multiple level-ups in one award, life costs 5/8, Extra XP effect, equal results, exactly 100 food, and not reached within limit.
 2. Run orchestrator tests for success (4 model steps/3 tool calls), Extra XP unavailable (3/2), invalid tool/result/final, unknown phase, repeat signature and evidence binding.
-3. Run provider-policy tests for terminal errors, allowed transient retry/fallback, six attempts across all steps, ten-second attempt timeout, 30-second deadline, cancellation and cleanup.
+3. Run provider-policy tests for terminal errors, allowed transient retry/fallback, reuse of a successful fallback model, six attempts across all steps, ten-second attempt timeout, 60-second deadline, cancellation and cleanup.
 4. Run API tests for exact empty body, missing/not-paused game, already-affordable direct response, life cap, cross-action busy, stale revision and zero calls on preflight rejections.
 5. Compare before/after game snapshot, revision, RNG-call counter and timer behavior for every successful or failed analysis; verify existing ASK SHOP AI cases unchanged.
 6. Run the fake-server browser E2E. Confirm the button exists only while the shop UI is open, both AI buttons share busy state, progress text is generic, and stale output is discarded.

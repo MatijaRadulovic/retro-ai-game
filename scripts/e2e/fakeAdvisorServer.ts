@@ -14,6 +14,8 @@ import {
   type AdviceTransport,
 } from "../../server/ai/shopAdvice.ts";
 import { ADVICE_MODELS } from "../../src/ai/shopAdvice.ts";
+import { createLifePlanAgent } from "../../server/ai/lifePlan.ts";
+import { comparePlanEvaluations, type PlanEvaluation } from "../../src/ai/lifePlan.ts";
 
 const port = Number(process.env.PORT ?? 3001);
 const answerDelayMs = Number(process.env.FAKE_ANSWER_DELAY_MS ?? 1500);
@@ -30,6 +32,25 @@ const fallbackTransport: AdviceTransport = async (model, context, signal) => {
       ? { decision: "buy_extra_xp", reasonCode: "faster_xp" }
       : { decision: "wait", reasonCode: "cannot_afford" },
   };
+};
+
+
+const lifePlanTransport = async (_model: string, prompt: string, signal: AbortSignal) => {
+  if (process.env.FAKE_PROVIDER === "off") throw new ProviderFailure("terminal", undefined, undefined, "provider_error");
+  const delayMs = Math.max(0, Number(process.env.FAKE_PLAN_DELAY_MS ?? 0));
+  if (delayMs > 0) await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => { signal.removeEventListener("abort", onAbort); resolve(); }, delayMs);
+    const onAbort = () => { clearTimeout(timer); reject(new Error("cancelled")); };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+  const phase = /Current phase: ([a-z_]+)/.exec(prompt)?.[1];
+  if (phase === "context") return { value: { kind: "tool_request", name: "get_shop_context", arguments: {} } };
+  if (phase === "evaluate_first") return { value: { kind: "tool_request", name: "evaluate_plan", arguments: { strategy: "save_for_life", foodLimit: 100 } } };
+  if (phase === "evaluate_second") return { value: { kind: "tool_request", name: "evaluate_plan", arguments: { strategy: "buy_extra_xp_then_save", foodLimit: 100 } } };
+  const marker = "Validated evaluations: ";
+  const evaluations = JSON.parse(prompt.slice(prompt.indexOf(marker) + marker.length).split("\n")[0]) as PlanEvaluation[];
+  const comparison = comparePlanEvaluations(evaluations);
+  return { value: { kind: "final", result: { recommendation: comparison.recommendation ?? "no_recommendation", reasonCode: comparison.reasonCode, evidenceIds: evaluations.filter((item) => item.status !== "unavailable").map((item) => item.evidenceId) } } };
 };
 
 const advisor = createShopAdvisor(process.env.FAKE_PROVIDER === "off" ? null : fallbackTransport, {
@@ -58,7 +79,8 @@ class SeededSessionManager extends GameSessionManager {
 }
 
 const manager = process.env.E2E_SEED_PERK_POINTS === "1" ? new SeededSessionManager() : new GameSessionManager();
-const server = createGameHttpServer(manager, advisor);
+const planner = createLifePlanAgent(process.env.FAKE_PROVIDER === "off" ? null : lifePlanTransport);
+const server = createGameHttpServer(manager, advisor, planner);
 server.listen(port, "127.0.0.1", () => {
   console.log(`E2E fake-provider server listening on http://127.0.0.1:${port}`);
 });

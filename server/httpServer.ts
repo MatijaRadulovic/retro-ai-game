@@ -3,6 +3,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { GameSessionManager, SessionError } from "./gameSession.ts";
 import type { Direction } from "../src/game/snakeEngine.ts";
 import { createShopAdvisor, type ShopAdvisor } from "./ai/shopAdvice.ts";
+import { createLifePlanAgent, type LifePlanAgent } from "./ai/lifePlan.ts";
+import { createAiRequestGate, type AiRequestGate } from "./ai/aiRequestGate.ts";
 
 type ApiError = { error: { code: string; message: string } };
 
@@ -55,7 +57,7 @@ function asHttpError(error: unknown): HttpError {
   return new HttpError(500, "internal_error", "The server could not complete the request.");
 }
 
-async function handleRequest(request: IncomingMessage, response: ServerResponse, manager: GameSessionManager, advisor: ShopAdvisor): Promise<void> {
+async function handleRequest(request: IncomingMessage, response: ServerResponse, manager: GameSessionManager, advisor: ShopAdvisor, lifePlanner: LifePlanAgent, aiGate: AiRequestGate): Promise<void> {
   try {
     const url = new URL(request.url ?? "/", "http://localhost");
     const path = url.pathname.split("/").filter(Boolean);
@@ -82,6 +84,36 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
     }
     if (request.method === "POST" && path.length === 4) {
       const action = path[3];
+      if (action === "life-plan") {
+        const body = await readJson(request);
+        if (!isRecord(body) || Object.keys(body).length !== 0) {
+          throw new HttpError(400, "invalid_request", "Life plan does not accept request fields.");
+        }
+        const snapshot = manager.get(gameId);
+        if (snapshot.state.status !== "paused") {
+          throw new HttpError(409, "invalid_status", "Life plan is available only while paused.");
+        }
+        const releaseAi = aiGate.acquire(gameId);
+        if (!releaseAi) {
+          sendJson(response, 200, { plan: { status: "unavailable", revision: snapshot.revision, code: "busy", message: "LIFE PLAN IS UNAVAILABLE. NO PURCHASE WAS MADE." } });
+          return;
+        }
+        const controller = new AbortController();
+        const onClose = () => { if (!response.writableEnded) controller.abort(); };
+        const unsubscribe = manager.subscribe(gameId, (latest) => {
+          if (latest.revision !== snapshot.revision || latest.state.status !== "paused") controller.abort();
+        });
+        response.once("close", onClose);
+        try {
+          const plan = await lifePlanner.plan(manager, gameId, controller.signal);
+          if (!response.destroyed) sendJson(response, 200, { plan });
+        } finally {
+          response.removeListener("close", onClose);
+          unsubscribe();
+          releaseAi();
+        }
+        return;
+      }
       if (action === "shop-advice") {
         const body = await readJson(request);
         if (!isRecord(body) || Object.keys(body).length !== 0) {
@@ -91,14 +123,25 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
         if (snapshot.state.status !== "paused") {
           throw new HttpError(409, "invalid_status", "Shop advice is available only while paused.");
         }
+        const releaseAi = aiGate.acquire(gameId);
+        if (!releaseAi) {
+          const advice = { status: "unavailable", revision: snapshot.revision, code: "busy", message: "SHOP ADVICE IS UNAVAILABLE. NO PURCHASE WAS MADE." };
+          if (!response.destroyed) sendJson(response, 200, { advice });
+          return;
+        }
         const controller = new AbortController();
         const onClose = () => { if (!response.writableEnded) controller.abort(); };
+        const unsubscribe = manager.subscribe(gameId, (latest) => {
+          if (latest.revision !== snapshot.revision || latest.state.status !== "paused") controller.abort();
+        });
         response.once("close", onClose);
         try {
           const advice = await advisor.advise(manager, gameId, controller.signal);
           if (!response.destroyed) sendJson(response, 200, { advice });
         } finally {
           response.removeListener("close", onClose);
+          unsubscribe();
+          releaseAi();
         }
         return;
       }
@@ -142,9 +185,11 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
 export function createGameHttpServer(
   manager: GameSessionManager = new GameSessionManager(),
   advisor: ShopAdvisor = createShopAdvisor(null),
+  lifePlanner: LifePlanAgent = createLifePlanAgent(null),
 ): Server {
+  const aiGate = createAiRequestGate();
   const server = createServer((request, response) => {
-    void handleRequest(request, response, manager, advisor);
+    void handleRequest(request, response, manager, advisor, lifePlanner, aiGate);
   });
   const webSockets = new WebSocketServer({ noServer: true });
 

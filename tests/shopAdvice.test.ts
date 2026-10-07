@@ -10,9 +10,9 @@ import {
   type AdviceAttemptTelemetry,
   type ProviderResponse,
 } from "../server/ai/shopAdvice.ts";
-import { createGeminiTransport } from "../server/ai/geminiTransport.ts";
+import { createGeminiLifePlanTransport, createGeminiTransport } from "../server/ai/geminiTransport.ts";
 import { SHOP_ADVISOR_SYSTEM_PROMPT } from "../server/ai/shopPrompt.ts";
-import { validateShopAdviceResult } from "../src/ai/shopAdvice.ts";
+import { ADVICE_MODELS, validateShopAdviceResult } from "../src/ai/shopAdvice.ts";
 
 const VALID_DECISION = { decision: "wait", reasonCode: "cannot_afford" } as const;
 
@@ -498,4 +498,21 @@ test("public result parser accepts Gemma model and rejects extra fields", () => 
   assert.deepEqual(validateShopAdviceResult(base), base);
   assert.equal(validateShopAdviceResult({ ...base, apiKey: "placeholder-only" }), null);
   assert.equal(validateShopAdviceResult({ ...base, reasonCode: "faster_xp" }), null);
+});
+
+
+test("life-plan Gemini adapter returns one normalized structured step without adding private game data", async () => {
+  let capturedUrl = "";
+  let capturedBody: Record<string, any> = {};
+  const fetchImpl: typeof fetch = async (input, init) => {
+    capturedUrl = String(input);
+    capturedBody = JSON.parse(String(init?.body)) as Record<string, any>;
+    return new Response(providerEnvelope(JSON.stringify({ kind: "tool_request", name: "get_shop_context", arguments: {} })), { status: 200 });
+  };
+  const transport = createGeminiLifePlanTransport("placeholder-only", fetchImpl);
+  const response = await transport(ADVICE_MODELS[0], "Current phase: context", new AbortController().signal);
+  assert.equal(response.value && (response.value as { name: string }).name, "get_shop_context");
+  assert.match(capturedUrl, /gemini-3\.8-flash:generateContent$/);
+  assert.equal(capturedBody.generationConfig.responseFormat.text.mimeType, "APPLICATION_JSON");
+  assert.equal(JSON.stringify(capturedBody).includes("private-game-id"), false);
 });

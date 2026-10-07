@@ -40,4 +40,4 @@ The backend owns the allowlist. The model can name a tool only in its proposal; 
 6. Validate exact output variant, safe integer values, projection math, assumptions, size and evidence-ID uniqueness before returning output to the model.
 7. App decides next phase, retry/fallback eligibility and terminal stop; model cannot direct any of these.
 
-Every rejected proposal has zero execution count for that proposal. Invalid deterministic tool output is not retried or sent to the provider as trusted evidence. Eligible provider transport failures follow feature 002's classification/Google ordering but share the W05 run-wide six-attempt and 30-second limits.
+Every rejected proposal has zero execution count for that proposal. Invalid deterministic tool output is not retried or sent to the provider as trusted evidence. Eligible provider transport failures follow feature 002's classification/Google ordering but share the W05 run-wide six-attempt and 60-second limits.
