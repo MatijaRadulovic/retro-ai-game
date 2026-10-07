@@ -63,12 +63,12 @@ Run from the repository root on branch `week05-shop-agent` after the last code c
 | Command | Exit | Result |
 |---|---|---|
 | `npm run typecheck` | 0 | no errors |
-| `npm test` | 0 | tests 118, pass 118, fail 0 |
+| `npm test` | 0 | tests 119, pass 119, fail 0 |
 | `npm run build` | 0 | Vite build succeeded |
 | `npm run security:scan` | 0 | "Pre-push security scan passed: no known credential patterns or client secret references found." |
 | `npm run agent:live` (without `AGENT_LIVE=1`) | 2 | refuses to run: "Set AGENT_LIVE=1 to run one live agent run" |
 
-Per-file new test counts: `agentPerkRules` 6, `runHistory` 5, `agentTools` 5, `agentFinal` 9, `agentOrchestrator` 14, `agentReliability` 12, `agentGoogleTransport` 4, `agentHttp` 5, `shopAgentClient` 3 (63 new tests; the W04 suite was untouched and still passes).
+Per-file new test counts: `agentPerkRules` 6, `runHistory` 5, `agentTools` 5, `agentFinal` 9, `agentOrchestrator` 14, `agentReliability` 12, `agentGoogleTransport` 5, `agentHttp` 5, `shopAgentClient` 3 (64 new tests; the W04 suite was untouched and still passes).
 
 Each task also followed red/green: every new test file was run first and failed for the expected reason (module or method missing, or retry logic absent) before the implementation was written; the one test defect found is a ledgered ruling in the work log.
 
@@ -84,6 +84,8 @@ Each task also followed red/green: every new test file was run first and failed 
 
 - Everything above is fake-provider testing. It shows orchestration, validation, limits and failure handling, not live model quality, latency or free-tier quota behaviour.
 - The prompt and the JSON-envelope request have never been sent to a real Google model; live output may be refused, fenced differently, or exceed `maxOutputTokens: 512`. L01 is the first real evidence.
+- After the whole-branch review, `maxOutputTokens` was raised from 512 to 2048 (test `agentGoogleTransport` → output-token budget, RED then GREEN) because thinking tokens count against the cap; whether 2048 is enough for the real models is still to be confirmed by L01.
+- Review findings deliberately not fixed (model prose is not checked against tool results, per FR-020; disconnect race window; busy-message wording; trivial restarts recorded in history; bidi/C1 characters pass the text filter) are listed in the work log.
 - The tool-time check (200 ms) is an elapsed-time guard after a synchronous call; synchronous pure tools cannot be interrupted.
 - Run history is in memory, per container, last five, and lost on server restart.
 - No browser E2E was added for the Strategist panel; UI behaviour is covered by typecheck, build and the pure validator tests only.

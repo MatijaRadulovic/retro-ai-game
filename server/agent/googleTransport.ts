@@ -15,7 +15,8 @@ function buildBody(request: AgentStepRequest): Record<string, unknown> {
   return {
     systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT }] },
     contents: [{ role: "user", parts: [{ text: JSON.stringify(request) }] }],
-    generationConfig: { maxOutputTokens: 512, temperature: 0.2 },
+    // A full final envelope is ~300 tokens; the rest is headroom for model thinking, which counts against the cap.
+    generationConfig: { maxOutputTokens: 2048, temperature: 0.2 },
   };
 }
 

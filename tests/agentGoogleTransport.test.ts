@@ -49,6 +49,14 @@ test("sends one server-side request with the key only in a header", async () => 
   assert.ok(body.includes("plan_next_purchases"));
 });
 
+test("the output-token budget leaves room for a full final envelope and any model thinking", async () => {
+  let body = "";
+  const fetchImpl: typeof fetch = async (_url, init) => { body = String(init?.body); return reply('{"kind":"final","result":{}}'); };
+  await createGoogleAgentTransport(KEY, fetchImpl)(ADVICE_MODELS[0], request, new AbortController().signal);
+  const { generationConfig } = JSON.parse(body) as { generationConfig: { maxOutputTokens: number } };
+  assert.ok(generationConfig.maxOutputTokens >= 1024, `maxOutputTokens ${generationConfig.maxOutputTokens} is too small`);
+});
+
 test("Markdown-fenced JSON is accepted; prose, oversized or unfinished output is invalid", async () => {
   const fenced = await createGoogleAgentTransport(KEY, async () => reply('```json\n{"kind":"final","result":{}}\n```'))(ADVICE_MODELS[2], request, new AbortController().signal);
   assert.deepEqual(fenced.value, { kind: "final", result: {} });
