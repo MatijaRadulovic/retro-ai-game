@@ -31,9 +31,11 @@ The precedence for product behavior is: current user request → `AGENTS.md` pro
 | Base game specification | [`specs/BASE_GAME_SPEC.md`](specs/BASE_GAME_SPEC.md) | Existing core rules, configuration, Definition of Done, and base-game scope |
 | XP, perks, and Lucky pickup feature | [`../specs/001-powerups-perks/`](../specs/001-powerups-perks/) | Phase 1 requirements, plan, data model, API contract, quickstart, and tasks; see Evidence 006–007 for implementation status |
 | Shop AI Advisor feature | [`../specs/002-shop-advisor/`](../specs/002-shop-advisor/) | Shop advice specification, model research, contract, implementation plan, quickstart, and tasks |
+| W05 AI Plan to Next Life feature | [`../specs/003-ai-plan-to-next-life/`](../specs/003-ai-plan-to-next-life/) | User-approved bounded read-only agent workflow, application authority, contracts, plan, and validation guide |
 | Server refactor plan | [`specs/REFACTOR_PLAN.md`](specs/REFACTOR_PLAN.md) | Accepted client/server architecture, task checklist, and validation record |
 | Shop state contract | [`specs/TOOL_CONTRACT.md`](specs/TOOL_CONTRACT.md) | Read-only shop context, structured decision, and failure policy |
 | Gemini shop advisor plan | [`specs/GEMINI_HINT_CHANGES_V2.md`](specs/GEMINI_HINT_CHANGES_V2.md) | Current approved model chain, telemetry, retry/fallback policy, tasks, and acceptance criteria |
+| Week 5 life-plan feature | [`../specs/003-ai-plan-to-next-life/`](../specs/003-ai-plan-to-next-life/) | User-approved Spec Kit feature spec, research, implementation plan, data model, contracts, and quickstart |
 | Build prompts and template | [`prompts/`](prompts/) | Versioned task prompts; use [`prompts/PROMPT_TEMPLATE.md`](prompts/PROMPT_TEMPLATE.md) for new artifacts |
 | Work log | [`tracking/WORK_LOG.md`](tracking/WORK_LOG.md) | Chronological work, decisions, checks, and next steps |
 | Context manifest | [`tracking/CONTEXT_MANIFEST.md`](tracking/CONTEXT_MANIFEST.md) | Actual repository source map, task selection guidance, source priority, and default exclusions |
@@ -45,11 +47,14 @@ The precedence for product behavior is: current user request → `AGENTS.md` pro
 | Luck/Lucky pickup evidence | [`tracking/evidence/EVIDENCE_007.md`](tracking/evidence/EVIDENCE_007.md) | Luck perk, orange pickup, deterministic spawn/reward cases, and implementation checks |
 | Gemini security/integration evidence | [`tracking/evidence/EVIDENCE_008.md`](tracking/evidence/EVIDENCE_008.md) | Gemini plan, security checks, pre-push guard, and current implementation limits |
 | Shop advisor implementation evidence | [`tracking/evidence/EVIDENCE_009.md`](tracking/evidence/EVIDENCE_009.md) | Shop advice baseline, frozen scenarios, implementation checks, and limitations |
+| Week 5 planning evidence | [`tracking/evidence/EVIDENCE_014.md`](tracking/evidence/EVIDENCE_014.md) | Exact prompt traceability, pre-implementation baseline, frozen W05 eval scenarios, and planning limitations |
 | Evidence template | [`tracking/evidence/EVIDENCE_TEMPLATE.md`](tracking/evidence/EVIDENCE_TEMPLATE.md) | Reusable record format for baseline, frozen evals, controlled iterations, actual checks, and limitations |
 | Future task evidence | [`tracking/evidence/`](tracking/evidence/) | Use the common baseline → frozen evals → controlled iteration → same before/after evals → limitations structure |
 | Exercise review | [`tracking/checklists/WEEK03_EXERCISE_REVIEW.md`](tracking/checklists/WEEK03_EXERCISE_REVIEW.md) | Week 3 audit checklist; items remain pending until checked |
 | Week 4 checklist | [`tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_CHECKLIST.md`](tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_CHECKLIST.md) | Project-adapted Week 4 acceptance checklist |
 | Week 4 task guide | [`tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_GUIDE.md`](tracking/checklists/WEEK04_RELIABLE_AI_INTEGRATION_GUIDE.md) | Detailed course extraction, project mapping, work plan, and evidence instructions |
+| Week 5 guide | [`tracking/checklists/WEEK05_BOUNDED_AGENTIC_WORKFLOWS_GUIDE.md`](tracking/checklists/WEEK05_BOUNDED_AGENTIC_WORKFLOWS_GUIDE.md) | Course extraction, stateful workflow concepts, project scope, and implementation/evidence plan |
+| Week 5 checklist | [`tracking/checklists/WEEK05_BOUNDED_AGENTIC_WORKFLOWS_CHECKLIST.md`](tracking/checklists/WEEK05_BOUNDED_AGENTIC_WORKFLOWS_CHECKLIST.md) | Pending acceptance and final-review checks for the proposed W05 milestone |
 | Weekly reports | [`tracking/reports/`](tracking/reports/) | Existing report and reusable report template |
 | Detailed instructions | [`instructions/`](instructions/) | Focused agent guidance by subject |
 

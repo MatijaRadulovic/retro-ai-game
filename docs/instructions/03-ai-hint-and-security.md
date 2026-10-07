@@ -1,6 +1,6 @@
 # Shop AI Advice and Security
 
-The sole active AI flow is the read-only shop advisor in [feature 002](../../specs/002-shop-advisor/spec.md). The [shop state contract](../specs/TOOL_CONTRACT.md) and [Gemini integration plan](../specs/GEMINI_HINT_INTEGRATION.md) define its inputs, validation, and failure policy. The earlier movement Hint and its Week 3 mock prompt are historical.
+The active AI features are the read-only shop advisor in [feature 002](../../specs/002-shop-advisor/spec.md) and the separately approved read-only [W05 life-plan flow](../../specs/003-ai-plan-to-next-life/spec.md). The [shop state contract](../specs/TOOL_CONTRACT.md) and [Gemini integration plan](../specs/GEMINI_HINT_INTEGRATION.md) continue to define feature 002; feature 003 owns its own contracts. The earlier movement Hint and its Week 3 mock prompt are historical.
 
 ## Allowed behavior
 
@@ -10,10 +10,13 @@ The sole active AI flow is the read-only shop advisor in [feature 002](../../spe
 - Never open, read, print, copy, or inspect secret-file contents (`.env*` except safe placeholder-only `.env.example`, hosting secret files, credential stores, or equivalent). Checking filenames, ignore status, and staged/committed paths is permitted. Do not ask the user to paste a key into chat.
 - Before every push, run the configured `.githooks/pre-push` guard. It checks reachable commits, accessible non-secret worktree files, and existing client build output for known credential patterns and browser exposure. It must skip secret-file contents entirely. New checkouts need `git config core.hooksPath .githooks`.
 - Keep automatic tests offline with fake provider transport. Live checks are opt-in and must not print or record a credential.
+- Feature 003 keeps the fixed `PLAN DO +1 LIFE` goal, two named read-only tools, two named strategies, and its stricter whole-run budget. The model can propose only one action from the set the backend permits for the current phase.
 
 ## Trust boundaries
 
 - The server is authoritative for game state and purchases. Advice never buys a perk or changes the game. Only the existing purchase route may make a purchase after the player's separate click.
+- For the W05 life-plan flow, the backend is also the workflow authority: a model proposal is not an approval or command. Validate exact message format, current phase, allowlist, arguments, game/revision scope, repeated-call signature and remaining budget before executing a tool. The backend decides whether to continue, recover, retry, fall back or stop.
+- Validate a tool result for exact structure, size, values, freshness, privacy and domain meaning before returning it to the model. Invalid results are discarded and cannot support a final recommendation. Validate final evidence IDs and recompute comparison rules server-side; the model cannot select an outcome that contradicts those checks.
 - Send Gemini only the sanitized shop context: score, XP, level, actual unspent points, owned perk levels or charges, next costs, and documented effects. Do not send the game ID, full snake, board, other sessions, environment, source code, or private browser data.
 - Treat model output as untrusted. Require exactly the allowed decision and reason code, validate their pairing and current affordability/cap, then generate display wording from trusted values. Re-check paused status and revision before returning advice.
 - Keep the call asynchronous and outside the game loop. Cap attempts and total time. Retry or switch model only for classified transient transport, timeout, 408/429/5xx errors. Authentication/configuration failures, invalid requests, refusal, cancellation, and deterministic invalid output are terminal.

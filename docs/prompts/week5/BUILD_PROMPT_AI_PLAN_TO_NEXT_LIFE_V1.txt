@@ -1,0 +1,358 @@
+Radiš u repozitorijumu /home/matija/retro-ai-game-team.
+
+Implementiraj jednu ograničenu W05 agentic funkcionalnost za postojeću RETRO SNAKE igru: „AI plan do sledećeg života“.
+
+Prvo pročitaj AGENTS.md, docs/INSTRUCTIONS.md i relevantne dokumente na koje oni upućuju. Pročitaj i zadatak:
+ /home/matija/Downloads/weekly-assignment.md
+
+Ako zadatak nije dostupan, prijavi to i nastavi prema ovom promptu; nemoj izmišljati njegov sadržaj.
+
+1. CILJ I OPSEG
+
+U pauziranoj prodavnici igrač može da pokrene analizu sa fiksnim ciljem:
+
+„Želim da što pre skupim poene za kupovinu sledećeg +1 Life. Da li da štedim ili prvo kupim jedan Extra XP nivo?“
+
+Agent treba da:
+- pročita dozvoljeni kontekst prodavnice;
+- izabere strategiju koju želi da proveri;
+- dobije rezultat determinističkog lokalnog evaluatora;
+- proveri drugu strategiju ako je dostupna;
+- vrati validiranu preporuku zasnovanu na rezultatima alata.
+
+„Što pre“ ovde znači najmanji broj dodatno pojedenih crvenih hrana, pod definisanim pretpostavkama. Ne znači realno vreme niti procenu verovatnoće preživljavanja.
+
+Postojeći ASK SHOP AI ostaje dostupan i funkcionalan. Dodaj zasebnu akciju „PLAN DO +1 LIFE“ u istoj prodavnici. Koristi postojeći vizuelni stil.
+
+Ovo je read-only funkcionalnost. Agent nikada ne kupuje perk i ne menja autoritativno stanje igre.
+
+2. PRVO ISTRAŽI POSTOJEĆI PROJEKAT
+
+Pre izmena proveri:
+- trenutni git status i postojeće korisničke izmene;
+- pravila XP-a, nivoa, poena, Extra XP i +1 Life;
+- postojeći shop-advice endpoint, validaciju i provider apstrakciju;
+- retry/fallback politiku i otkazivanje zahteva;
+- pravila privatnosti, zastarelosti odgovora i telemetry-ja;
+- postojeće testove i tracking workflow.
+
+Ne pretpostavljaj strukturu koda na osnovu ovog prompta. Pronađi stvarne implementacije.
+
+Pre implementacije ukratko navedi cilj, obuhvaćene fajlove/module, pretpostavke, planirane provere i šta je van opsega.
+
+Koristi repozitorijumski SpecKit/SDD workflow i odgovarajuće dostupne skills. Napravi zaseban feature sa specifikacijom, planom, ugovorima alata, agent flow-om i zadacima. Ne dupliraj dokumente koji već pokrivaju isti sadržaj.
+
+Ovaj prompt odobrava dodavanje ovog read-only toka u prodavnici i potrebna uska ažuriranja postojećih ugovora. Ne odobrava druge AI funkcionalnosti ili proširenje dozvoljenog konteksta.
+
+3. KORISNIČKI ULAZ
+
+Cilj je fiksan. Ne uvodi slobodan chat, proizvoljan prompt ili izbor modela.
+
+Browser šalje game ID prema postojećem API obrascu i prazan request body. Sve podatke o igri backend izvodi iz autoritativnog stanja.
+
+Pre prvog provider poziva odbij:
+- nepoznatu partiju;
+- partiju koja nije pauzirana;
+- neispravan ili neprazan body;
+- nedozvoljen paralelni zahtev;
+- već dostignut maksimum broja života.
+
+Ako igrač već ima dovoljno poena za sledeći život, vrati deterministički rezultat „Možeš sada da kupiš +1 Life“, bez provider poziva. Prikaži ga kao direktan rezultat aplikacije.
+
+Ako je jedan život već kupljen, cilj je sledeća dozvoljena kupovina po njenoj stvarnoj ceni.
+
+4. DOZVOLJENE STRATEGIJE
+
+Podrži tačno dve strategije:
+
+A) save_for_life
+- Ne troši trenutne poene.
+- Zadržava trenutni Extra XP nivo.
+- Skuplja poene kroz naredne level-up događaje do cene sledećeg života.
+
+B) buy_extra_xp_then_save
+- Hipotetički kupuje tačno jedan sledeći Extra XP nivo odmah.
+- Oduzima njegovu stvarnu cenu u lokalnoj projekciji.
+- Zatim skuplja poene do cene sledećeg života.
+- Nije dostupna ako nema dovoljno poena ili je Extra XP na maksimumu.
+
+Ne uvodi strategije sa više uzastopnih kupovina.
+Ne uvodi Luck ulaganje ili druge perkove u ovaj feature.
+
+5. ALATI
+
+Agent ima samo sledeća dva alata.
+
+Alat 1: get_shop_context
+
+Input:
+{}
+
+Odbij dodatna polja.
+
+Output:
+Sanitizovan, konzistentan kontekst sa početka agent run-a:
+- kumulativni XP i nivo;
+- raspoloživi perk poeni;
+- postojeći Extra XP nivo, efekat i sledeća cena;
+- postojeći broj života, maksimum i sledeća cena;
+- dozvoljene relevantne informacije o pravilima napredovanja.
+
+Prilagodi konkretne nazive polja postojećim ugovorima.
+
+Ne vraćaj game ID, reviziju, koordinate, telo zmije, board, druge partije, tajne ili interne objekte. Game ID i revizija ostaju samo u backend stanju run-a.
+
+Kontekst se dobija iz snimka napravljenog na početku run-a; ne mešaj podatke iz različitih revizija.
+
+Alat 2: evaluate_plan
+
+Input:
+{
+  "strategy": "save_for_life" | "buy_extra_xp_then_save",
+  "foodLimit": 100
+}
+
+Za ovu verziju foodLimit mora biti tačno 100. Odbij druge vrednosti i dodatna polja.
+
+Model ne prosleđuje XP, cene, stanje igre, game ID ili proizvoljne formule. Evaluator koristi isključivo backend kontekst vezan za taj run.
+
+Output treba da uključi:
+- server-generisan evidence ID;
+- strategiju;
+- status: reached / unavailable / not_reached_within_limit;
+- kod razloga za nedostupnost, kada je primenljiv;
+- cenu hipotetičke kupovine sada;
+- poene nakon hipotetičke kupovine;
+- XP po crvenoj hrani;
+- broj hrana do cilja, samo ako je cilj dostignut;
+- projektovani XP, nivo i poene na kraju evaluacije;
+- primenjeni limit i kodove pretpostavki.
+
+Tačnu diskriminisanu šemu definiši pre implementacije.
+Ne vraćaj dugu istoriju svih 100 koraka.
+
+Oba alata:
+- rade bez mreže i pristupa fajlovima;
+- ne menjaju canonical game state, reviziju, RNG ili tajmere;
+- imaju validiran input i output;
+- koriste eksplicitnu allowlist-u;
+- imaju ograničenu veličinu rezultata, najviše 8 KiB po rezultatu;
+- imaju lokalni vremenski budžet od 100 ms i ograničen račun.
+
+Nepoznat alat ili neispravni argumenti moraju biti odbijeni pre izvršenja. Broj izvršavanja za takav predlog mora biti 0.
+
+6. EVALUATOR I PRETPOSTAVKE
+
+Evaluator je čista deterministička TypeScript funkcija.
+
+Koristi stvarna pravila igre:
+- postojeće formule XP-a i pragove nivoa;
+- tačne cene perkova;
+- svaki level-up dodeljuje odgovarajuće poene;
+- obradi i situaciju u kojoj jedan XP događaj pređe više pragova.
+
+Projekcija pretpostavlja:
+- igrač nastavlja da jede crvenu hranu;
+- nema sudara ni potrošnje života tokom projekcije;
+- nema Lucky nagrada;
+- nema drugih kupovina;
+- postojeći perkovi i pravila ostaju isti, osim jedne hipotetičke Extra XP kupovine u strategiji B.
+
+Ove pretpostavke prikaži korisniku sažeto.
+Nemoj tvrditi da je projekcija garancija ishoda ili realnog vremena.
+
+Ako cilj nije dostignut za 100 hrana, rezultat ne sme tvrditi da je strategija nemoguća. Znači samo da cilj nije dostignut unutar limita.
+
+Podeli postojeće čiste proračune gde je praktično. Ne pravi širok refaktor i ne dupliraj formule koje mogu bezbedno da se ponovo upotrebe.
+
+7. AGENT TOK
+
+Normalan tok sa obe dostupne strategije:
+
+Model korak 1:
+- Model bira get_shop_context.
+- Backend validira predlog, izvršava alat i validira rezultat.
+
+Model korak 2:
+- Model bira jednu dostupnu strategiju i traži evaluate_plan.
+- Backend vraća validiran rezultat.
+
+Model korak 3:
+- Na osnovu prvog rezultata model traži evaluate_plan za drugu strategiju.
+- Backend vraća validiran rezultat.
+
+Model korak 4:
+- Model vraća strukturisan finalni rezultat sa referencama na evidence.
+
+Ako je Extra XP strategija nedostupna, dozvoli finalni odgovor nakon evaluacije štednje. Razlog nedostupnosti mora biti potkrepljen kontekstom.
+
+Model mora stvarno da predloži alat i njegove argumente. Nemoj izvršiti sve alate unapred i predstaviti fiksni backend tok kao modelov izbor alata.
+
+Backend ograničava dozvoljene sledeće korake:
+- prvo kontekst;
+- zatim evaluacije;
+- zatim finalni odgovor kada postoje potrebni dokazi.
+
+Jedan model korak vraća tačno jedan tool proposal ili finalni rezultat. Ne uvodi paralelne tool pozive.
+
+Nemoj dodavati model pozive kada je run već završen.
+
+8. STANJE I GRANICE RUN-A
+
+Stanje čuvaj privremeno na backendu:
+- anoniman run ID;
+- game ID i početnu reviziju, samo interno;
+- fiksni cilj;
+- status/fazu;
+- sanitizovan kontekst;
+- validirane rezultate alata;
+- potpise već izvršenih poziva;
+- broj model koraka, provider pokušaja i izvršavanja alata;
+- početno vreme, deadline i stop reason;
+- cancellation signal.
+
+Bez baze podataka i memorije između partija.
+
+Granice:
+- maxAgentSteps: 4;
+- maxToolCalls: 3;
+- maxProviderAttempts: 6 za ceo run, uključujući retry i fallback;
+- totalDeadline: 30 sekundi;
+- perProviderAttemptTimeout: najviše 10 sekundi i nikada preko preostalog ukupnog vremena.
+
+Retry nije novi agent korak.
+Svi provider pokušaji troše isti globalni budžet run-a.
+Ne resetuj budžet pri fallback-u ili novom model koraku.
+
+Zadrži serverom odobren Google model chain i postojeće klasifikacije retry/terminalnih grešaka iz projekta. Poštuj i postojeća ograničenja pokušaja; primeni strožu granicu kada se ograničenja preklapaju.
+
+Ako postojeći adapter ima duže timeout-e, dodaj usko podešavanje za ovaj feature, bez promene ponašanja starog Help-a.
+
+Ponovljen isti alat sa istim normalizovanim argumentima:
+- odbij pre izvršenja;
+- kontrolisano završi run;
+- ne pokreći novi retry radi popravljanja takvog predloga.
+
+Kupovina, nastavak igre, zatvaranje prodavnice, restart, promenjena revizija ili otkazivanje zahteva čine odgovor nevažećim. Zaustavi dalji rad gde je moguće i nikada ne prikaži zastarelu preporuku.
+
+Očisti privremeno stanje i zaključavanje zahteva i kod uspeha i kod greške.
+
+9. FINALNI REZULTAT
+
+Finalni model output mora biti strogo strukturisan, bez dodatnih polja.
+
+Definiši šemu koja najmanje sadrži:
+- preporučenu strategiju ili no_recommendation;
+- reasonCode;
+- evidenceIds.
+
+Korisnički tekst, broj hrane i tabelu poređenja formiraj iz validiranih podataka i kontrolisanih tekstualnih šablona. Ne oslanjaj se na slobodan model tekst za numeričke tvrdnje.
+
+Backend proverava:
+- da svi evidence ID-jevi postoje u trenutnom run-u;
+- da se odnose na relevantne evaluacije;
+- da je preporučena strategija dostupna;
+- da rezultat odgovara izračunatim vrednostima;
+- da su proverene obe strategije kada su obe dostupne;
+- da partija i dalje ima početnu reviziju i odgovarajući status.
+
+Pravila izbora:
+- Kada obe strategije dostignu cilj, prednost ima manje hrane.
+- Ako su izjednačene, prednost ima save_for_life.
+- Ako samo jedna dostigne cilj unutar limita, preporuči nju uz jasno navedeni limit.
+- Ako nijedna ne dostigne cilj, vrati incomplete bez pobedničke preporuke.
+- Ako je B nedostupna, preporuči A samo ako evaluacija A dostigne cilj.
+
+Modelov finalni rezultat koji protivreči ovim pravilima odbij. Ne prikazuj ga kao uspeh.
+
+Razlikuj completed, incomplete, unavailable i stale/cancelled prema postojećem API stilu. Ne prikazuj sirove provider greške.
+
+10. UI
+
+Dodaj u postojeću prodavnicu:
+- dugme „PLAN DO +1 LIFE“;
+- sažet status napretka;
+- rezultat sa preporukom;
+- poređenje dve strategije kada postoje obe evaluacije;
+- broj crvenih hrana do cilja ili „nije dostignuto unutar 100“;
+- kratke pretpostavke projekcije;
+- razumljivo stanje neuspeha ili nedostupnosti.
+
+Onemogući preklapajuće AI zahteve prema pravilima projekta.
+
+UI ne prikazuje raw prompt, raw tool payload, interni game ID, privatni chain-of-thought ili stack trace.
+
+Ne uvodi streaming infrastrukturu samo radi statusa. Ako projekat nema prenos pojedinačnih koraka, prikaži generičko „Analiziram plan…“. Ne prikazuj izmišljene faze preko tajmera.
+
+11. BEZBEDNOST I ZABRANE
+
+Ne smeš:
+- automatski kupovati perk ili menjati igru;
+- uvoditi write alate, proizvoljan tool dispatcher, shell, filesystem ili web alate;
+- dodavati drugi AI provider ili proizvoljne model ID-jeve;
+- slati modelu celu tablu, zmiju ili podatke drugih partija;
+- otvarati, čitati, ispisivati ili kopirati .env i druge secret fajlove;
+- slati credential u browser, prompt, log, test ili tracking dokument;
+- dodavati framework, bazu, multiplayer, nove perkove ili široke refaktore;
+- pokretati live provider pozive bez eksplicitne autorizacije;
+- deployovati, pushovati ili objavljivati rezultat.
+
+Prati postojeću telemetry politiku. Beleži samo dozvoljene metapodatke: anoniman run ID, brojače, naziv alata, bezbedan status, trajanje i stop reason. Ne loguj sirove kontekste, promptove i rezultate.
+
+12. TESTOVI I VERIFIKACIJA
+
+Većinu ponašanja proveri fake provider-om, bez mreže i ključeva.
+
+Obavezno pokrij:
+- normalan run: 4 model koraka i 3 izvršavanja alata;
+- nedostupnu Extra XP strategiju;
+- već dovoljno poena za život: 0 provider poziva;
+- maksimum života: 0 provider poziva;
+- tačnost evaluatora na pragovima nivoa i sa različitim cenama;
+- tačnu jednakost rezultata i prednost štednje;
+- cilj dostignut tačno na 100. hrani;
+- cilj nije dostignut unutar limita;
+- unknown tool: 0 izvršavanja tog predloga;
+- dodatna ili neispravna polja argumenata;
+- malformed model output;
+- neispravan tool output;
+- ponovljen tool poziv;
+- prerani finalni odgovor;
+- izmišljeni evidence ID;
+- finalnu preporuku koja protivreči evaluatoru;
+- provider timeout i terminalnu grešku;
+- globalni limit pokušaja kroz više koraka i fallback-a;
+- ukupni deadline i maksimalan broj koraka;
+- kupovinu, resume ili restart tokom analize;
+- otkazivanje i čišćenje aktivnog run-a;
+- nepromenjen game state, reviziju, RNG i tajmere nakon read-only analize;
+- regresiju postojećeg ASK SHOP AI toka.
+
+Koristi kontrolisano vreme i fake transport gde je potrebno. Ne piši testove koji samo ponavljaju implementaciju bez provere ponašanja.
+
+Pokreni relevantne projektne testove, typecheck i build prema repozitorijumskim instrukcijama. Nemoj oslabiti postojeće testove da bi prošli.
+
+13. EVIDENCIJA I PREDAJA
+
+Prati docs/instructions/05-workflow-tracking-and-reporting.md.
+
+Sačuvaj:
+- spec, plan, tool contracts i dijagram toka;
+- stvarne rezultate provera;
+- primer fake success run-a;
+- primer odbijenog alata sa dokazom da nije izvršen;
+- primer failure/deadline run-a;
+- poznata ograničenja;
+- ažuriran work log i relevantan AI usage zapis.
+
+Ne izmišljaj live evidence, rezultate testova ili ljudski pregled.
+
+Na kraju prijavi:
+- šta je implementirano;
+- ključne promenjene fajlove;
+- kako rade alati i agent loop;
+- koje provere su stvarno prošle;
+- šta nije provereno i zašto;
+- gde se nalaze dokumentacija i evidence.
+
+Radi do završetka ovog ograničenog feature-a. Rutinske odluke rešavaj prema postojećem projektu i ovom promptu. Ako naiđeš na stvarnu kontradikciju ili blokadu, precizno je prijavi; nemoj sam širiti opseg.

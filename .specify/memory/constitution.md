@@ -1,9 +1,10 @@
 <!--
 Sync Impact Report
-- Version change: 1.1.0 → 1.2.0
-- Amended principle V to cover the user-approved three-model Google chain and privacy-safe attempt telemetry.
-- Impacted sources: AGENTS.md, TOOL_CONTRACT.md, AI security instructions, Gemini plan, feature 002.
-- Follow-up TODOs: none
+- Version change: 1.2.0 → 1.3.0
+- Amended principle V and AI scope references for the user-approved, read-only Week 5 "AI Plan to Next Life" flow alongside the paused-shop advisor.
+- Added the application-authority rule: model outputs are proposals; only backend validation/policy authorizes tools, continuation, final selection, and termination.
+- Impacted sources: AGENTS.md, docs/instructions/03-ai-hint-and-security.md, docs/INSTRUCTIONS.md, specs/003-ai-plan-to-next-life/*, W05 tracking guidance and evidence.
+- Follow-up TODOs: implement only from the accepted feature 003 spec and plan; keep both AI flows read-only and preserve advisor contract.
 -->
 # RETRO SNAKE Constitution
 
@@ -41,15 +42,19 @@ be recorded honestly; skipped or unavailable checks MUST include a reason. Compl
 traceable evidence rather than unchecked plan items.
 
 ### V. Narrow Read-Only AI Boundary
-The only active AI behavior is the paused-shop advisor governed by
-`specs/002-shop-advisor/`, `docs/specs/TOOL_CONTRACT.md`, and
-`docs/instructions/03-ai-hint-and-security.md`. It MUST remain read-only, allowlisted, sanitized,
-and unable to mutate game state. The current user request approves three server-selected Google models
-within one provider, with bounded retries, provider-specific capability branches, privacy-safe attempt
-telemetry, and safe fallback. No browser-held credential, arbitrary
-model ID, write-capable tool, autonomous loop, or game-state mutation may be introduced. Invalid
-inputs and outputs MUST fail safely without exposing private data or invoking another model after a
-terminal failure.
+The only active AI features are the paused-shop advisor governed by
+`specs/002-shop-advisor/` and the separately approved "AI Plan to Next Life" flow governed by
+`specs/003-ai-plan-to-next-life/`. Both MUST remain read-only, allowlisted, sanitized, and unable to
+mutate game state. The approved three-model Google chain remains server-selected under the shop
+advisor's V2 policy; the W05 flow additionally applies its stricter run-wide limits. Model output is
+always an untrusted proposal. The backend MUST validate message shape and semantics, authorize every
+tool against the current phase, arguments, game revision, repetition state, and remaining budget,
+validate tool results before reuse, and independently choose the final recommendation and stop
+reason. A model MUST NOT authorize its own action, add tools, widen context, set limits, choose the
+application's final outcome, or continue after the application stops the run. No browser-held
+credential, arbitrary model ID/provider, write-capable tool, open-ended loop, or game-state mutation
+may be introduced. Invalid inputs, proposals, results and finals MUST fail safely without exposing
+private data; terminal failures MUST NOT trigger another provider attempt.
 
 ## Product and Technology Constraints
 
@@ -93,4 +98,4 @@ principle incompatibly, a MINOR version adds or materially expands governance, a
 clarifies wording without changing obligations. Feature planning and final handoff MUST include a
 constitution compliance review; unjustified complexity or exceptions block completion.
 
-**Version**: 1.2.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-09-30
+**Version**: 1.3.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-10-07
