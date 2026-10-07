@@ -247,3 +247,13 @@ Append one concise entry for each substantive implementation, review, or documen
 - **Outcome:** spec drafted from an interactive design session (approach A: new `server/agent/` module, JSON envelope for all models, fixed-enum goal, layered Core + `get_recent_runs` + one revise). Awaiting review before the implementation plan.
 - **Verification:** documentation only; code checks not applicable. No key was read or used.
 - **Limitations:** history hook points in `GameSessionManager` and initial limit values are unconfirmed until the plan; live provider quality is unverified.
+
+## 2026-10-07 — Week 05 Shop Strategist implemented (fake-provider verified)
+
+- **Goal:** implement the approved spec and plan in `specs/003-shop-agent/`.
+- **Outcome:** `server/agent/` module (types, perk evaluator, tool registry, final-result validation, orchestrator with budgets and retry/fallback, Google transport, facade), `POST /api/games/:id/shop-agent`, per-container run history, Shop Strategist panel, `AGENTS.md` and `TOOL_CONTRACT.md` updated, README section, `npm run agent:live` smoke script.
+- **Prompt/spec/evidence:** [spec](../../specs/003-shop-agent/spec.md), [plan](../../specs/003-shop-agent/plan.md), [Evidence 014](evidence/EVIDENCE_014.md). No standalone prompt artifact.
+- **Verification:** `npm run typecheck`, `npm test` (118/118, 63 new), `npm run build`, `npm run security:scan` all exit 0; live script refuses to run without `AGENT_LIVE=1`.
+- **Rulings:** (1) the history entry stores `perksAtEnd` instead of `perksBought` because the engine does not track purchases per game; (2) `completed:false` is rejected as an unusable final; (3) the plan test compared W04 `extractUsage` output with `deepEqual`, but it returns undefined-valued keys, so the test compares the three token fields individually; (4) spec/contract wording updated to match.
+- **Limitations:** no live provider run and no browser check yet (needs the user's free-tier key); no browser E2E for the new panel.
+- **Next step:** user runs L01 and the manual browser check, then records them in Evidence 014; then push the branch to the user's fork and open a PR if wanted.
