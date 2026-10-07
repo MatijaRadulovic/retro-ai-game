@@ -238,3 +238,12 @@ Append one concise entry for each substantive implementation, review, or documen
 - **Verification:** `git diff --check`, `npm run typecheck`, `npm test` (55/55), `npm run build`, and `npm run security:scan` all passed with elevated local-server/git permissions. The earlier HTTP test and security failures were sandbox permission failures, not application assertion failures.
 - **Outcome:** documentation now consistently describes Flash ×1 → Flash-Lite ×2 → Gemma ×3; Gemma is displayed with its own label; runtime allowlist tests and safe failure tests remain green.
 - **Manual verification update:** the user manually checked gameplay, shop behavior, and the live provider flow in the browser and reported that they work correctly. This closes the browser and exercised-live-path gaps as user-reported evidence. Forced provider failures and full fallback reliability remain covered by offline fake tests.
+
+## 2026-10-07 — Start Week 05 Shop Strategist (spec)
+
+- **Goal:** extend the W04 shop advisor into a bounded agentic run (read-only tools, validated proposals, step/tool/deadline limits) per the W05 assignment and addendum.
+- **Starting state:** `main` at `4c99cc3` (W04 review-fix PR merged); new branch `week05-shop-agent`; no W05 code yet.
+- **Prompt/spec/evidence:** [spec](../../specs/003-shop-agent/spec.md), [flow](../../specs/003-shop-agent/agent-flow.md), [tool contracts](../../specs/003-shop-agent/contracts/tool-contracts.md), [HTTP contract](../../specs/003-shop-agent/contracts/shop-agent-api.md), [frozen evals](../../specs/003-shop-agent/evals.md). No standalone prompt artifact yet; no evidence record yet.
+- **Outcome:** spec drafted from an interactive design session (approach A: new `server/agent/` module, JSON envelope for all models, fixed-enum goal, layered Core + `get_recent_runs` + one revise). Awaiting review before the implementation plan.
+- **Verification:** documentation only; code checks not applicable. No key was read or used.
+- **Limitations:** history hook points in `GameSessionManager` and initial limit values are unconfirmed until the plan; live provider quality is unverified.
