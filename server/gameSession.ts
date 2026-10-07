@@ -38,6 +38,13 @@ export class SessionError extends Error {
   }
 }
 
+export type RunHistoryEntry = {
+  score: number;
+  level: number;
+  perksAtEnd: { extraXp: number; luck: number; extraLife: number };
+  endedBy: "game_over" | "won" | "restart";
+};
+
 function cloneSnapshot(snapshot: GameSnapshot): GameSnapshot {
   return structuredClone(snapshot);
 }
