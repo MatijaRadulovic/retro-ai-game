@@ -9,7 +9,7 @@ import {
 } from "./shopAdvice.ts";
 import { SHOP_ADVISOR_SYSTEM_PROMPT } from "./shopPrompt.ts";
 
-const GEMINI_ORIGIN = "https://generativelanguage.googleapis.com";
+export const GEMINI_ORIGIN = "https://generativelanguage.googleapis.com";
 const MAX_RESPONSE_BYTES = 16_384;
 const MAX_MODEL_TEXT_LENGTH = 4_096;
 const MAX_RETRY_AFTER_MS = 5 * 60_000;
@@ -38,7 +38,7 @@ function nonNegativeInt(value: unknown): number | undefined {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }
 
-function retryAfterMs(header: string | null): number | undefined {
+export function retryAfterMs(header: string | null): number | undefined {
   if (!header) return undefined;
   const seconds = Number(header);
   if (Number.isFinite(seconds) && seconds >= 0) {
@@ -48,7 +48,7 @@ function retryAfterMs(header: string | null): number | undefined {
   return Number.isFinite(date) ? Math.min(MAX_RETRY_AFTER_MS, Math.max(0, date - Date.now())) : undefined;
 }
 
-async function readLimitedResponse(response: Response): Promise<unknown> {
+export async function readLimitedResponse(response: Response): Promise<unknown> {
   const reader = response.body?.getReader();
   if (!reader) throw new ProviderFailure("invalid_output", undefined, undefined, "empty_output");
   const parts: Uint8Array[] = [];
@@ -78,7 +78,7 @@ async function readLimitedResponse(response: Response): Promise<unknown> {
   }
 }
 
-function extractUsage(payload: unknown): ProviderUsage | undefined {
+export function extractUsage(payload: unknown): ProviderUsage | undefined {
   if (!isRecord(payload) || !isRecord(payload.usageMetadata)) return undefined;
   const metadata = payload.usageMetadata;
   const usage: ProviderUsage = {
@@ -91,7 +91,7 @@ function extractUsage(payload: unknown): ProviderUsage | undefined {
   return Object.values(usage).some((value) => value !== undefined) ? usage : undefined;
 }
 
-function extractCandidateText(payload: unknown): string {
+export function extractCandidateText(payload: unknown): string {
   if (!isRecord(payload)) throw new ProviderFailure("invalid_output", undefined, undefined, "schema_invalid");
   if (isRecord(payload.promptFeedback) && payload.promptFeedback.blockReason) {
     throw new ProviderFailure("invalid_output", undefined, undefined, "refusal");
@@ -167,7 +167,7 @@ function gemmaRequest(context: ShopAdviceContext): Record<string, unknown> {
   };
 }
 
-function classifyStatus(status: number): { kind: ProviderFailureKind; errorClass?: ConstructorParameters<typeof ProviderFailure>[3] } {
+export function classifyStatus(status: number): { kind: ProviderFailureKind; errorClass?: ConstructorParameters<typeof ProviderFailure>[3] } {
   if (status === 404) return { kind: "capability", errorClass: "model_unavailable" };
   if (status === 408) return { kind: "transient", errorClass: "timeout" };
   if (status === 429) return { kind: "transient", errorClass: "rate_limited" };
