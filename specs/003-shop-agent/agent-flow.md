@@ -65,7 +65,7 @@ Backoff between transient failures reuses the W04 jitter style (1 s, 3 s, ...), 
 
 | Stop reason | Trigger | Tool executed? | User-facing text |
 |---|---|---|---|
-| `completed` | validated final | n/a | Analysis completed. |
+| `completed` | validated final | n/a | Server-built plan line, e.g. PLAN: EXTRA XP → LUCK · COST 4 PT · 1 PT LEFT. |
 | `invalid_model_proposal` | bad envelope, premature/invalid final | no | Analysis could not be completed safely. |
 | `unknown_tool` | tool not in allowlist | no | same |
 | `invalid_tool_arguments` | schema/bounds violation | no | same |

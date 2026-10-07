@@ -29,10 +29,12 @@ Completed:
       "confidence": "medium",
       "completed": true
     },
-    "message": "ANALYSIS COMPLETED."
+    "message": "PLAN: EXTRA XP → EXTRA XP · COST 3 PT · 0 PT LEFT."
   }
 }
 ```
+
+The completed `message` is the server-built plan line from the validated plan and its evaluation (never model prose).
 
 Stopped or failed (never contains `result`):
 

@@ -1,6 +1,6 @@
 # Read-Only Shop State Contract
 
-The current shop advisor replaces the historical `get_game_state` movement-Hint tool. Gemini does not propose or execute tool calls. The backend derives one sanitized shop state from the authoritative paused game, then sends only its allowed fields to Gemini. The [feature data model](../../specs/002-shop-advisor/data-model.md) and [HTTP contract](../../specs/002-shop-advisor/contracts/shop-advice-api.md) provide exact shapes.
+The current shop advisor replaces the historical `get_game_state` movement-Hint tool. In the W04 advice flow Gemini does not propose or execute tool calls; the W05 Shop Strategist uses the separate bounded proposal flow defined in [specs/003-shop-agent](../../specs/003-shop-agent/contracts/tool-contracts.md), where the application validates and executes only allowlisted read-only tools. The backend derives one sanitized shop state from the authoritative paused game, then sends only its allowed fields to Gemini. The [feature data model](../../specs/002-shop-advisor/data-model.md) and [HTTP contract](../../specs/002-shop-advisor/contracts/shop-advice-api.md) provide exact shapes.
 
 ## Caller and effect
 

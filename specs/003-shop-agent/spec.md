@@ -99,7 +99,7 @@ Every failure ends in a classified stop reason, a safe user message, and an unch
 
 **Final result**
 
-- **FR-019**: The final result is `{summary, plan, evidence, confidence, completed}` (see [tool contracts](contracts/tool-contracts.md#final-result)). The backend validates: schema, `plan` ⊆ evaluated-valid plan, every `evidence.source` is a tool executed in this run, `evidence.step` points to a real tool result, lengths are bounded, and `completed:true` is justified by evidence. Invalid final → `invalid_model_proposal`, never shown as success.
+- **FR-019**: The final result is `{summary, plan, evidence, confidence, completed}` (see [tool contracts](contracts/tool-contracts.md#final-result)). The backend validates: schema, `plan` ⊆ evaluated-valid plan, every `evidence.source` is a tool executed in this run, `evidence.step` points to a real tool result, lengths are bounded, and `completed:true` is justified by evidence. Invalid final → `invalid_model_proposal`, never shown as success. A final with `completed: false` is also rejected as an unusable result.
 - **FR-020**: Text shown to the player is rendered with `textContent`; `summary` and `evidence.finding` are bounded plain text from the model and are never interpreted as commands. The recommended plan line is built by the server from the validated plan and evaluator output.
 
 **Observability and privacy**
@@ -117,7 +117,7 @@ Every failure ends in a classified stop reason, a safe user message, and an unch
 
 - **AgentRun**: runId, goal, status (`running|completed|stopped|failed`), stepCount, toolCallCount, evaluatorCallCount, providerAttempts, startedAt, deadlineAt, recentActionKeys, stateVersion, stopReason, steps[].
 - **AgentStep**: index, model, decision (`tool_request|final|rejected`), tool, validation status, latency, usage.
-- **RunHistoryEntry** (layer 2, in memory, per game container, last 5): score, level, perksBought {extraXp, luck, extraLife}, endedBy (`game_over|won|restart`).
+- **RunHistoryEntry** (layer 2, in memory, per game container, last 5): score, level, perksAtEnd {extraXp level, luck level, +1 Life charges still held}, endedBy (`game_over|won|restart`).
 - **AgentResult**: see tool contracts.
 
 ## Success criteria

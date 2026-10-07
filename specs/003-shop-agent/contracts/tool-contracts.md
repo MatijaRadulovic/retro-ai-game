@@ -37,7 +37,7 @@ Perk rules used by tools come from the authoritative engine constants (Extra XP 
 - **Purpose**: return summaries of the last finished games of this game container so the plan can reflect how the player actually does.
 - **Mode**: READ ONLY, deterministic.
 - **Input**: `{ limit: integer 1..5 }`.
-- **Output**: `{ runs: Array<{ score:int, level:int, perksBought:{extraXp:int,luck:int,extraLife:int}, endedBy:"game_over"|"won"|"restart" }> }`, newest first, at most `limit` entries, may be empty.
+- **Output**: `{ runs: Array<{ score:int, level:int, perksAtEnd:{extraXp:int,luck:int,extraLife:int}, endedBy:"game_over"|"won"|"restart" }> }`, newest first, at most `limit` entries, may be empty. `perksAtEnd` holds the perk levels at the end of the game; `extraLife` is the number of charges still held.
 - **Authorization**: the game container of the run only. History is in memory, last 5 entries, lost on server restart.
 - **Forbidden**: other containers, raw event logs, timestamps/IDs, positions.
 - **Failure**: `invalid_arguments` for missing/non-integer/out-of-range `limit`.
@@ -69,7 +69,7 @@ Semantic validation (all required):
 3. Non-empty `plan` equals a plan that `evaluate_perk_plan` returned `valid: true` for in this run (same order).
 4. Empty `plan` requires evidence that justifies it (state shows nothing affordable, or every perk capped).
 5. If `get_recent_runs` returned `runs: []`, no evidence item may cite `get_recent_runs` as the basis for a claim about past games.
-6. `completed: true` requires at least one evidence item. `completed: false` is shown as incomplete, never as success.
+6. `completed` must be `true`; `completed: false` is rejected as an unusable final and never shown as success.
 7. The revision is still current and the game is still paused.
 
 Failing any rule is `invalid_model_proposal`. The UI shows a server-built plan line from the validated plan plus the bounded `summary`/`finding` text via `textContent`.

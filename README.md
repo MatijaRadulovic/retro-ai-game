@@ -128,3 +128,7 @@ Dokazni lanac za Week 4 (redom):
 - `docs/tracking/` — work log, [Week 4 contribution record](docs/tracking/CONTRIBUTIONS_WEEK04.md), AI usage log, task-specific evidence, Week 3/4 checklists and guides, i weekly reports.
 
 Za promene prati obavezni workflow u `docs/instructions/05-workflow-tracking-and-reporting.md`. Njegov cilj je da stvarni rad i rezultati ostanu zabeleženi i da nedeljni izveštaj može da se sastavi iz tih zapisa.
+
+## Shop Strategist (Week 5)
+
+U pauziranom shopu dugme **PLAN WITH AI** pokreće ograničen agentic run: model samo predlaže read-only alate (`get_shop_state`, `evaluate_perk_plan`, `get_recent_runs`), backend validira svaki predlog i rezultat, drži limite (5 koraka, 4 alata, 8 provider pokušaja, 45 s) i nikad ništa ne kupuje. Isti `GEMINI_API_KEY` iz runtime okruženja kao za shop advisor (vidi gore). Specifikacija, tokovi i ugovori: [specs/003-shop-agent](specs/003-shop-agent/spec.md). Brza provera bez ključa: `npm test`. Jedan live run: `AGENT_LIVE=1 npm run agent:live`.
