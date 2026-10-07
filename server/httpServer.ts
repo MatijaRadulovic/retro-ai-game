@@ -3,6 +3,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { GameSessionManager, SessionError } from "./gameSession.ts";
 import type { Direction } from "../src/game/snakeEngine.ts";
 import { createShopAdvisor, type ShopAdvisor } from "./ai/shopAdvice.ts";
+import { AGENT_GOAL } from "../src/ai/shopAgent.ts";
+import { createShopAgent, type ShopAgent } from "./agent/shopAgent.ts";
 
 type ApiError = { error: { code: string; message: string } };
 
@@ -55,7 +57,7 @@ function asHttpError(error: unknown): HttpError {
   return new HttpError(500, "internal_error", "The server could not complete the request.");
 }
 
-async function handleRequest(request: IncomingMessage, response: ServerResponse, manager: GameSessionManager, advisor: ShopAdvisor): Promise<void> {
+async function handleRequest(request: IncomingMessage, response: ServerResponse, manager: GameSessionManager, advisor: ShopAdvisor, agent: ShopAgent): Promise<void> {
   try {
     const url = new URL(request.url ?? "/", "http://localhost");
     const path = url.pathname.split("/").filter(Boolean);
@@ -102,6 +104,26 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
         }
         return;
       }
+      if (action === "shop-agent") {
+        const body = await readJson(request);
+        if (!isRecord(body) || Object.keys(body).length !== 1 || body.goal !== AGENT_GOAL) {
+          throw new HttpError(400, "invalid_request", `Shop agent expects exactly {"goal":"${AGENT_GOAL}"}.`);
+        }
+        const snapshot = manager.get(gameId);
+        if (snapshot.state.status !== "paused") {
+          throw new HttpError(409, "invalid_status", "Shop agent is available only while paused.");
+        }
+        const controller = new AbortController();
+        const onClose = () => { if (!response.writableEnded) controller.abort(); };
+        response.once("close", onClose);
+        try {
+          const run = await agent.run(manager, gameId, controller.signal);
+          if (!response.destroyed) sendJson(response, 200, { run });
+        } finally {
+          response.removeListener("close", onClose);
+        }
+        return;
+      }
       if (action === "move") {
         const body = await readJson(request);
         if (!isRecord(body) || Object.keys(body).length !== 1 || !isDirection(body.direction)) {
@@ -142,9 +164,10 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
 export function createGameHttpServer(
   manager: GameSessionManager = new GameSessionManager(),
   advisor: ShopAdvisor = createShopAdvisor(null),
+  agent: ShopAgent = createShopAgent(null),
 ): Server {
   const server = createServer((request, response) => {
-    void handleRequest(request, response, manager, advisor);
+    void handleRequest(request, response, manager, advisor, agent);
   });
   const webSockets = new WebSocketServer({ noServer: true });
 
