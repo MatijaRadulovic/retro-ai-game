@@ -50,12 +50,12 @@ Koristi ovu listu pri završnom pregledu W05. Početni status svake stavke je **
 - [x] **Verified** — Telemetrija razlikuje run, model korak, retry/provider pokušaj i tool call; ne sadrži ključ, game/session ID, raw prompt/response, shop vrednosti ili chain-of-thought.
 - [x] **Verified** — Ključ ostaje samo u backend runtime-u; nema izlaganja u browser bundle-u, logu, screenshotu ili dokumentaciji. `npm run security:scan` i pre-push guard su izvršeni prema potrebi; guard se obavezno izvršava pre svakog push-a.
 - [x] **Verified** — `npm run typecheck`, `npm test`, `npm run build` i relevantan browser/API smoke imaju zabeležene stvarne rezultate; eventualna ograničena live provera je odvojena od offline dokaza i ne beleži tajnu.
-- [ ] **Pending** — Work log, AI usage log i task evidence imaju različite, povezane uloge. Ljudski pregled u paru i potvrda doprinosa oba člana još nisu održani.
+- [x] **Verified** — Work log, AI usage log i task evidence imaju različite, povezane uloge. Korisnik potvrđuje da je održao zajednički W05 demo sa Urošem; svoj rad na sopstvenoj grani opisuje zasebno, bez pripisivanja nepoznatih koraka drugom članu.
 
 ## F. Završni pregled i demo
 
 - [x] **Verified** — Fake-provider browser smoke pokazuje, dva model koraka, dozvoljeni alat, validiran rezultat, final i jasan stop reason.
-- [ ] **Pending** — Negativni fake-provider test pokazuje odbijen predlog i `toolCallCount === 0`; ljudska demonstracija i objašnjenje allowliste, limita i tačke zaustavljanja od oba člana para još nisu zabeleženi.
+- [x] **Verified** — Negativni fake-provider test pokazuje odbijen predlog i `toolCallCount === 0`. Korisnik potvrđuje zajednički demo i razumevanje oba člana da aplikacija odobrava alat i zaustavlja tok; odbijanje se nije dogodilo u normalnoj igri i ne predstavlja se kao live slučaj.
 - [x] **Verified** — Final diff review confirms no new provider, write tool, secret, unrelated dependency/asset or broad refactor.
 
 ## Opcione stavke — ne blokiraju Core
@@ -67,6 +67,6 @@ Koristi ovu listu pri završnom pregledu W05. Početni status svake stavke je **
 
 - **Datum / revizija:** 2026-10-07 / implementation worktree after planning commit `84e68cb`
 - **Dokazni zapis:** [Evidence 013](../evidence/EVIDENCE_013.md) W04 browser baseline; [Evidence 014](../evidence/EVIDENCE_014.md) W05 implementation/evals and user acceptance; [Evidence 015](../evidence/EVIDENCE_015.md), [016](../evidence/EVIDENCE_016.md) and [017](../evidence/EVIDENCE_017.md) refinements
-- **Core status:** Implemented; automated W05 eval matrix and core gates pass; korisnik je ručno isprobao aplikaciju i prijavio da radi.
-- **Otvoreno:** zajednički pregled/demonstracija oba člana para čeka njihovu potvrdu. Kredencijali su isključivo server-runtime tajna; agent ih nije koristio. Pre-push guard važi samo ako se kasnije bude pushovalo.
-- **Sledeći konkretan korak:** zabeležiti status timskog pregleda kada ga oba člana potvrde.
+- **Core status:** Završeno — automatizovana W05 matrica i core provere prolaze; korisnik je ručno isprobao aplikaciju i potvrdio zajednički W05 demo sa Urošem.
+- **Napomena o dokazima:** odbijeni predlog je pokriven kontrolisanim testovima sa nula izvršenja, a ne događajem iz normalne igre. Kredencijali su isključivo server-runtime tajna; agent ih nije koristio. Pre-push guard važi samo za push.
+- **Sledeći korak:** predaja nedeljnog izveštaja i identifikatora dokaza tutoru.
