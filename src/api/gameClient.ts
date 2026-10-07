@@ -1,6 +1,7 @@
 import { validateGameSnapshot, type GameSnapshot } from "../game/gameProtocol.ts";
 import type { Direction } from "../game/snakeEngine.ts";
 import { validateShopAdviceResult, type ShopAdviceResult } from "../ai/shopAdvice.ts";
+import { AGENT_GOAL, validatePublicAgentRun, type PublicAgentRun } from "../ai/shopAgent.ts";
 
 export class GameApiError extends Error {
   constructor(readonly code: string, message: string, readonly status: number) {
@@ -73,6 +74,34 @@ async function requestShopAdvice(gameId: string, signal?: AbortSignal): Promise<
   return advice;
 }
 
+async function requestShopAgent(gameId: string, signal?: AbortSignal): Promise<PublicAgentRun> {
+  const unavailable = "SHOP STRATEGIST IS UNAVAILABLE.";
+  let response: Response;
+  try {
+    response = await fetch(`/api/games/${encodeURIComponent(gameId)}/shop-agent`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ goal: AGENT_GOAL }),
+      signal,
+    });
+  } catch {
+    throw new GameApiError(signal?.aborted ? "cancelled" : "server_unavailable", unavailable, 0);
+  }
+  let result: unknown;
+  try {
+    result = await response.json() as unknown;
+  } catch {
+    throw new GameApiError("invalid_server_response", unavailable, response.status);
+  }
+  if (!response.ok) {
+    const error = isRecord(result) && isRecord(result.error) ? result.error : null;
+    throw new GameApiError(typeof error?.code === "string" ? error.code : "request_failed", unavailable, response.status);
+  }
+  const run = isRecord(result) && Object.keys(result).length === 1 ? validatePublicAgentRun(result.run) : null;
+  if (!run) throw new GameApiError("invalid_server_response", unavailable, response.status);
+  return run;
+}
+
 export const gameClient = {
   create: () => request("/api/games", "POST", {}),
   get: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}`),
@@ -82,6 +111,7 @@ export const gameClient = {
   restart: (gameId: string) => request(`/api/games/${encodeURIComponent(gameId)}/restart`, "POST", {}),
   purchasePerk: (gameId: string, perk: "extra_xp" | "extra_life" | "luck") => request(`/api/games/${encodeURIComponent(gameId)}/perks`, "POST", { perk }),
   shopAdvice: requestShopAdvice,
+  shopAgent: requestShopAgent,
 };
 
 export function connectGameEvents(gameId: string, onSnapshot: (snapshot: GameSnapshot) => void, onConnection: (connected: boolean) => void): () => void {

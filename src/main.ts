@@ -19,6 +19,8 @@ const overlayMessage = document.getElementById("overlay-message");
 const overlayActionButton = document.getElementById("overlay-action");
 const adviceButton = document.getElementById("shop-advice-button") as HTMLButtonElement | null;
 const adviceOutput = document.getElementById("shop-advice-output");
+const agentButton = document.getElementById("shop-agent-button") as HTMLButtonElement | null;
+const agentOutput = document.getElementById("shop-agent-output");
 const xpValue = document.getElementById("xp-value");
 const levelValue = document.getElementById("level-value");
 const perkPointsValue = document.getElementById("perk-points-value");
@@ -45,7 +47,7 @@ const buyLuck = document.getElementById("buy-luck") as HTMLButtonElement | null;
 const shopClose = document.getElementById("shop-close") as HTMLButtonElement | null;
 const shopMessage = document.getElementById("shop-message");
 
-if (!board || !gameCard || !scoreElement || !bestScoreElement || !statusElement || !paceElement || !connectionElement || !pauseButton || !restartButton || !overlay || !overlayTitle || !overlayMessage || !overlayActionButton || !adviceButton || !adviceOutput || !xpValue || !levelValue || !perkPointsValue || !extraXpValue || !luckValue || !lifeValue || !extraXpCubes || !luckCubes || !lifeCubes || !shopToggle || !perkShop || !shopXp || !shopLevel || !shopPoints || !shopExtraXpValue || !shopLuckValue || !shopLifeValue || !shopExtraXpCubes || !shopLuckCubes || !shopLifeCubes || !buyExtraXp || !buyLuck || !buyExtraLife || !shopClose || !shopMessage) {
+if (!board || !gameCard || !scoreElement || !bestScoreElement || !statusElement || !paceElement || !connectionElement || !pauseButton || !restartButton || !overlay || !overlayTitle || !overlayMessage || !overlayActionButton || !adviceButton || !adviceOutput || !agentButton || !agentOutput || !xpValue || !levelValue || !perkPointsValue || !extraXpValue || !luckValue || !lifeValue || !extraXpCubes || !luckCubes || !lifeCubes || !shopToggle || !perkShop || !shopXp || !shopLevel || !shopPoints || !shopExtraXpValue || !shopLuckValue || !shopLifeValue || !shopExtraXpCubes || !shopLuckCubes || !shopLifeCubes || !buyExtraXp || !buyLuck || !buyExtraLife || !shopClose || !shopMessage) {
   throw new Error("Snake UI nije kompletno inicijalizovan.");
 }
 
@@ -63,6 +65,9 @@ const gameOverlayMessage = overlayMessage;
 const gameOverlayActionButton = overlayActionButton;
 const askAdvice = adviceButton;
 const adviceMessage = adviceOutput;
+const askAgent = agentButton;
+const agentMessage = agentOutput;
+const AGENT_IDLE = "PLAN YOUR NEXT PERK PURCHASES WITH AI.";
 const runXpValue = xpValue;
 const runLevelValue = levelValue;
 const runPerkPointsValue = perkPointsValue;
@@ -98,11 +103,15 @@ let best = 0;
 let disconnectEvents: (() => void) | undefined;
 let shopVisible = false;
 let adviceAbort: AbortController | null = null;
+let agentAbort: AbortController | null = null;
 
 function clearAdvice(message = "ASK WHETHER TO BUY A PERK OR WAIT."): void {
   adviceAbort?.abort();
   adviceAbort = null;
   adviceMessage.textContent = message;
+  agentAbort?.abort();
+  agentAbort = null;
+  agentMessage.textContent = AGENT_IDLE;
 }
 
 function readBestScore(): number {
@@ -270,6 +279,7 @@ function render(next: GameSnapshot): void {
   pause.textContent = state.status === "paused" ? "RESUME" : "PAUSE";
   pause.disabled = state.status === "ready" || state.status === "game_over" || state.status === "won";
   askAdvice.disabled = state.status !== "paused" || !shopVisible || adviceAbort !== null;
+  askAgent.disabled = state.status !== "paused" || !shopVisible || agentAbort !== null;
 
   if (state.status === "ready") {
     gameOverlayTitle.textContent = "READY?";
@@ -442,6 +452,32 @@ askAdvice.addEventListener("click", async () => {
   } finally {
     if (adviceAbort === controller) {
       adviceAbort = null;
+      if (game) render(game);
+    }
+  }
+});
+askAgent.addEventListener("click", async () => {
+  if (!game || game.state.status !== "paused" || !shopVisible || agentAbort) return;
+  const gameId = game.id;
+  const revision = game.revision;
+  const controller = new AbortController();
+  agentAbort = controller;
+  askAgent.disabled = true;
+  agentMessage.textContent = "AI ANALYSIS IN PROGRESS…";
+  try {
+    const run = await gameClient.shopAgent(gameId, controller.signal);
+    if (controller.signal.aborted || !game || game.id !== gameId || game.revision !== revision || !shopVisible
+      || game.state.status !== "paused" || run.revision !== revision) return;
+    agentMessage.textContent = run.status === "completed"
+      ? [run.message, run.result.summary, ...run.result.evidence.map((item) => `· ${item.finding}`)].join("\n")
+      : run.message;
+  } catch {
+    if (!controller.signal.aborted && game?.id === gameId && game.revision === revision && shopVisible) {
+      agentMessage.textContent = "SHOP STRATEGIST IS UNAVAILABLE. NO PURCHASE WAS MADE.";
+    }
+  } finally {
+    if (agentAbort === controller) {
+      agentAbort = null;
       if (game) render(game);
     }
   }
