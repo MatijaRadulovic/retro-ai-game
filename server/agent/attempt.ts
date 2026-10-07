@@ -1,0 +1,45 @@
+import { ProviderFailure, type ProviderResponse } from "../ai/shopAdvice.ts";
+import type { AdviceModel } from "../../src/ai/shopAdvice.ts";
+import type { AgentStepRequest, AgentTransport } from "./types.ts";
+
+/** Runs one provider attempt with a timeout and an external abort signal. */
+export async function runAttempt(
+  transport: AgentTransport,
+  model: AdviceModel,
+  request: AgentStepRequest,
+  timeoutMs: number,
+  externalSignal?: AbortSignal,
+): Promise<ProviderResponse> {
+  const controller = new AbortController();
+  const onExternalAbort = () => controller.abort();
+  externalSignal?.addEventListener("abort", onExternalAbort, { once: true });
+  if (externalSignal?.aborted) controller.abort();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    if (controller.signal.aborted) throw new ProviderFailure("terminal", undefined, undefined, "cancelled");
+    return await Promise.race([
+      transport(model, request, controller.signal),
+      new Promise<never>((_resolve, reject) => {
+        controller.signal.addEventListener("abort", () => reject(new ProviderFailure("transient", 408, undefined, "timeout")), { once: true });
+      }),
+    ]);
+  } catch (error) {
+    if (externalSignal?.aborted) throw new ProviderFailure("terminal", undefined, undefined, "cancelled");
+    if (controller.signal.aborted) throw new ProviderFailure("transient", 408, undefined, "timeout");
+    if (error instanceof ProviderFailure) throw error;
+    throw new ProviderFailure("transient", undefined, undefined, "network");
+  } finally {
+    clearTimeout(timer);
+    externalSignal?.removeEventListener("abort", onExternalAbort);
+  }
+}
+
+export async function waitFor(ms: number, signal?: AbortSignal): Promise<boolean> {
+  if (signal?.aborted) return false;
+  if (ms <= 0) return true;
+  return new Promise((resolve) => {
+    const onAbort = () => { clearTimeout(timer); resolve(false); };
+    const timer = setTimeout(() => { signal?.removeEventListener("abort", onAbort); resolve(true); }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
