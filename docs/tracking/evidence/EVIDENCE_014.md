@@ -1,6 +1,6 @@
 # Evidence 014 — Week 05 Shop Strategist (bounded agentic feature)
 
-Preserves the facts of this milestone. Anything not captured is marked **not recorded**. The live-provider run (L01) was **not run** when this record was written; it needs the user's own free-tier key.
+Preserves the facts of this milestone. Anything not captured is marked **not recorded**. One live-provider run (L01) was done on 2026-10-07 by the user with their own free-tier key; the manual browser check was not yet done when this record was written.
 
 ## Record and task context
 
@@ -45,7 +45,7 @@ Definitions are frozen in [evals.md](../../../specs/003-shop-agent/evals.md). Al
 | E19 | all perks capped | completed, empty plan | N/A | pass | `agentOrchestrator` → E18/E19 |
 | E20 | unknown game / not paused / extra body field / concurrent run | 404 / 409 / 400 / busy, 0 extra provider calls | N/A | pass | `agentHttp` → preflight, no provider, busy |
 | E21 | invariant: game unchanged by any run | revision and perk state identical | N/A | pass | asserted in every `agentOrchestrator` run (`run()` helper) and in `agentHttp` success test |
-| L01 | one live run on a seeded paused shop, free-tier key | recorded: date, status, duration, steps, tools, outcome | N/A | **not run** | see below |
+| L01 | one live run on a seeded paused shop, free-tier key | recorded: date, status, duration, steps, tools, outcome | N/A | pass (one run) | see L01 below |
 
 ## Controlled change — iteration 1
 
@@ -74,16 +74,22 @@ Each task also followed red/green: every new test file was run first and failed 
 
 ### L01 live run
 
-**Not run.** Run by the user with their own free-tier key held only in the terminal (`read -s ...; export GEMINI_API_KEY`, then `AGENT_LIVE=1 npm run agent:live`, then `unset GEMINI_API_KEY`). When run, record here only: date, status, stop reason, steps, tool calls, provider attempts, elapsed ms, model names. Budget: up to 15 live runs during development, 3 for the demo.
+Run by the user with their own free-tier key held only in the terminal (`AGENT_LIVE=1 npm run agent:live`). Recorded facts only (no key, no prompt):
+
+- **Date:** 2026-10-07. **Count against budget:** 2 of 15 development runs (the first attempt was rejected with HTTP 401 `unauthorized` after one provider call, ended `provider_failed` with 0 steps and no retry, as designed, because the pasted value was not a valid key).
+- **Successful run:** status `completed`, stop reason `completed`, 4 steps, 3 tool calls (`get_shop_state`, `evaluate_perk_plan`, `evaluate_perk_plan`), 6 provider attempts, 24 717 ms.
+- **Models:** `gemini-3.8-flash` timed out twice (HTTP 408 after the 10 s per-call limit), then the run fell back to `gemini-3.5-flash-lite`, which answered all 4 steps (latency 842, 1085, 890, 1006 ms) and stayed selected.
+- **Result:** plan `[extra_xp, extra_xp]`, plan line `PLAN: EXTRA XP → EXTRA XP · COST 3 PT · 0 PT LEFT.` The seeded game had 3 perk points, so the plan is valid. Final step used 111 output tokens (cap 2048).
+- **What it shows:** the JSON-envelope prompt, strict validation, evaluator-backed plan, fallback after provider timeouts and the shared budget all work against the real chain for this scenario.
 
 ### Manual browser check
 
-**Not run.** To do after L01: `npm run dev:server` (key exported in that terminal) and `npm run dev`, open the shop, press PLAN WITH AI, confirm a plan appears and no purchase was made.
+**Not run yet.** To do: `npm run dev:server` (key exported in that terminal) and `npm run dev`, open the shop, press PLAN WITH AI, confirm a plan appears and no purchase was made.
 
 ## Honest limitations
 
 - Everything above is fake-provider testing. It shows orchestration, validation, limits and failure handling, not live model quality, latency or free-tier quota behaviour.
-- The prompt and the JSON-envelope request have never been sent to a real Google model; live output may be refused, fenced differently, or exceed `maxOutputTokens: 512`. L01 is the first real evidence.
+- Live evidence is one successful run on one model (`gemini-3.5-flash-lite`) in one seeded scenario. `gemini-3.8-flash` timed out in that run, so its behaviour with this prompt is unobserved, and `gemma-4-26b-a4b-it` was never called live.
 - After the whole-branch review, `maxOutputTokens` was raised from 512 to 2048 (test `agentGoogleTransport` → output-token budget, RED then GREEN) because thinking tokens count against the cap; whether 2048 is enough for the real models is still to be confirmed by L01.
 - Review findings deliberately not fixed (model prose is not checked against tool results, per FR-020; disconnect race window; busy-message wording; trivial restarts recorded in history; bidi/C1 characters pass the text filter) are listed in the work log.
 - The tool-time check (200 ms) is an elapsed-time guard after a synchronous call; synchronous pure tools cannot be interrupted.

@@ -258,3 +258,8 @@ Append one concise entry for each substantive implementation, review, or documen
 - **Limitations:** no live provider run and no browser check yet (needs the user's free-tier key); no browser E2E for the new panel.
 - **Next step:** user runs L01 and the manual browser check, then records them in Evidence 014; then push the branch to the user's fork and open a PR if wanted.
 - **Whole-branch review (fresh reviewer):** no Critical findings. Fixed: output-token cap 512 → 2048. Deferred minors: disconnect-before-listener race (httpServer, same pattern in W04), busy message wording, score-0/level-1 restarts recorded in history, bidi/C1 characters pass the text filter. Accepted per spec: `summary`/`finding` are bounded model prose not checked against tool results (FR-020).
+
+## 2026-10-07 — Shop Strategist live run (L01)
+
+- **Outcome:** user ran `AGENT_LIVE=1 npm run agent:live` with their own free-tier key: `completed`, 4 steps, 3 tool calls, 6 provider attempts, 24 717 ms; `gemini-3.8-flash` timed out twice (408) and the run fell back to `gemini-3.5-flash-lite`; plan `extra_xp, extra_xp` (3 of 3 points). Details in [Evidence 014](evidence/EVIDENCE_014.md).
+- **Limitations:** one run, one scenario, one answering model; browser check still pending. No key was read or stored by the assistant; the user's earlier mis-pasted value caused one `unauthorized` run that stopped safely.
