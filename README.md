@@ -1,3 +1,5 @@
+Ovo je projekat za vežbanje primene i razvoja korišćenjem Ai alata i tehnika.
+
 # RETRO SNAKE
 
 Minimalna Snake igra sa 20 × 20 mrežom, retro izgledom, TypeScript browser klijentom i autoritativnim TypeScript serverom.
