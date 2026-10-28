@@ -1,6 +1,6 @@
 # W08 Secure the Arcade — plan rada i provera po sekcijama
 
-Ovaj dokument prevodi [W08 zadatak](02-Nedeljni-zadatak-Secure-the-Arcade.md) u redosled rada prilagođen RETRO SNAKE projektu. Ne predstavlja dokaz da je zaštita implementirana. Stvarni rezultati, izlazi komandi i ograničenja treba da budu zapisani u budućem `EVIDENCE_W08.md` tek nakon izvršenja.
+Ovaj dokument prevodi [W08 zadatak](02-Nedeljni-zadatak-Secure-the-Arcade.md) u redosled rada prilagođen RETRO SNAKE projektu. Ne predstavlja dokaz da je zaštita implementirana. Stvarni rezultati, izlazi komandi i ograničenja beleže se u [EVIDENCE_W08.md](EVIDENCE_W08.md) tek nakon izvršenja.
 
 ## Kako koristimo ovaj dokument
 
@@ -27,32 +27,35 @@ Ovaj dokument prevodi [W08 zadatak](02-Nedeljni-zadatak-Secure-the-Arcade.md) u 
 - [x] Izdvojena su tri prioriteta: session/ownership, resource governance i agent/browser assurance.
 - [x] Kreirani su SpecKit `spec.md`, `plan.md`, research, data model, ugovori i quickstart.
 - [x] Definisani su konkretni početni limiti.
-- [ ] Dodati posebnu normativnu sekciju I1–I8 direktno u `specs/004-secure-agent-boundaries/spec.md`.
-- [ ] Napraviti `specs/004-secure-agent-boundaries/tasks.md` sa dependency redosledom i test-first zadacima.
-- [ ] Napraviti skeleton `EVIDENCE_W08.md` pre promene koda; rezultati ostaju `NOT RUN` dok se stvarno ne izvrše.
-- [ ] U `EVIDENCE_W08.md` dodati stvarni Mermaid dijagram arhitekture i trust boundary-ja.
-- [ ] U `EVIDENCE_W08.md` dodati kompletan data-flow inventar: kontrolor, validacija, upotreba, model, čuvanje.
-- [ ] Zamrznuti očekivanja za T00–T17 i CSRF pre implementacije.
-- [ ] Zamrznuti tri BEFORE/AFTER scenarija: T03, T13 i T09/T10.
-- [ ] Svaki T scenario povezati sa fixture-om, test-fajlom, tipom testa i komandom.
+- [x] Potvrđeno: per-session limiti se vezuju za server scope koji identifikuje HttpOnly cookie (anonimna browser sesija, ne potvrđena osoba); dodatni fallback je najviše 100 aktivnih scope-ova i 20 uspešnih novih izdanja po procesu u kliznih 60 s. Usklađeno kroz spec, data model, ugovor, plan, tasks, audit i evidence.
+- [x] Verifier se čuva samo u `sessionStorage` trenutnog taba: opstaje kroz reload, briše se zatvaranjem taba; ne koristi se `localStorage` niti URL.
+- [x] Dodata normativna sekcija I1–I8 u `specs/004-secure-agent-boundaries/spec.md`.
+- [x] Napravljen `specs/004-secure-agent-boundaries/tasks.md` sa dependency redosledom i test-first zadacima.
+- [x] Napravljen je [skeleton `EVIDENCE_W08.md`](EVIDENCE_W08.md) pre promene koda; rezultati ostaju `NOT RUN` dok se stvarno ne izvrše.
+- [x] U evidence-u su dodati postojeća i ciljna Mermaid arhitektura sa trust boundary-jima.
+- [x] U evidence-u je dodat data-flow inventar: kontrolor, validacija, upotreba, model, čuvanje.
+- [x] Zamrznuta su očekivanja za T00–T17 i CSRF pre implementacije.
+- [x] Zamrznuta su tri BEFORE/AFTER scenarija: T03, T13 i T09/T10; stvarni BEFORE probe-ovi su zabeleženi, AFTER ostaje pending.
+- [x] Dodat je versioned implementation prompt za tri prioriteta: `docs/prompts/week8/BUILD_PROMPT_SECURE_AGENT_BOUNDARIES_V1.md`.
+- [x] Svaki T scenario povezati sa fixture-om, test-fajlom, tipom testa i ponovljivom komandom u `EVIDENCE_W08.md`.
 - [ ] Napisati osmomimutni demo scenario iz odeljka „Demo plan“.
 
 **Gate P — planiranje završeno:** sve stavke P1 su `[x]`; specifikacija, plan, tasks i evidence skeleton se međusobno ne sukobljavaju.
 
 ### Faza B — Baseline pre implementacije
 
-- [ ] Popraviti lokalni dependency/toolchain setup tako da koristi verzije iz repozitorijuma/lockfile-a.
-- [ ] Zabeležiti `git status`, branch, puni SHA, Node i npm verziju.
-- [ ] Pokrenuti i sačuvati zaseban izlaz `npm run typecheck`.
-- [ ] Pokrenuti i sačuvati zaseban izlaz `npm test`.
-- [ ] Pokrenuti i sačuvati zaseban izlaz `npm run build`.
+- [x] Popravljen je lokalni dependency/toolchain setup korišćenjem `npm ci` iz lockfile-a; manifest/lockfile nisu menjani.
+- [x] Zabeleženi su branch `main`, puni code/evidence SHA, Node/npm verzije i dokumentaciono stanje worktree-a.
+- [x] Pokrenut i sačuvan zaseban izlaz `npm run typecheck` (exit 0).
+- [x] Pokrenut i sačuvan zaseban izlaz `npm test` (119/119).
+- [x] Pokrenut i sačuvan zaseban izlaz `npm run build` (exit 0).
 - [x] Pokrenut je početni `npm run security:scan`; rezultat je uspešan.
 - [x] Pokrenut je početni `npm audit --json`; dva high zbirna nalaza su dokumentovana.
-- [ ] Pokrenuti normalni W05 fake tok i sačuvati: najmanje 2 model koraka, 1 stvarni tool poziv i validan final.
-- [ ] Sačuvati snapshot/revision i provider/tool brojače pre i posle W05 baseline-a.
-- [ ] Pokrenuti tri zamrznuta BEFORE scenarija i zapisati stvarne rezultate, uključujući postojeće zaštite.
+- [x] Pokrenut normalni W05 fake tok i sačuvano: 3 model koraka, 2 dozvoljena tool poziva i validan final.
+- [x] Sačuvana je testirana before/after revision jednakost i provider/tool rezultat za W05 baseline; test ne proverava full snapshot deep equality.
+- [x] Pokrenuti tri zamrznuta BEFORE scenarija T03, T13 i T09/T10; stvarni rezultati i postojeće zaštite zabeleženi u `EVIDENCE_W08.md`.
 
-**Gate B — baseline sačuvan:** nijedna aplikaciona izmena nije počela pre zabeleženih rezultata ili eksplicitnog `BLOCKED` zapisa.
+**Gate B — baseline sačuvan:** code baseline i T03/T13/T09/T10 pre-rezultati su zabeleženi pre prve aplikacione izmene. Puni Gate D/W08 closeout ostaje za kasnije.
 
 ### Faza I1 — Session, ownership i request provenance
 
@@ -271,6 +274,10 @@ Ovaj dokument prevodi [W08 zadatak](02-Nedeljni-zadatak-Secure-the-Arcade.md) u 
 | Novi agent run-ovi globalno | 20 u kliznih 60 s |
 | Aktivne partije po session scope-u | 3 |
 | Ukupne in-memory partije | 100, uz dokumentovano uklanjanje neaktivnih |
+| Aktivni session zapisi po procesu | 100 |
+| Uspešna nova session izdanja po procesu | 20 u kliznih 60 s |
+| WebSocket pretplate po partiji | 1 |
+| WebSocket pretplate po session scope-u / procesu | 3 / 100 |
 
 Vrednosti su plan, ne trenutna činjenica. Pre implementacije ih treba potvrditi u specifikaciji i testovima.
 
@@ -402,17 +409,17 @@ Ona ne sme zahtevati pravi provider ključ i mora pokrenuti W08 unit/integration
 
 Pre demonstracije oba člana moraju umeti da objasne gde se donosi odluka, koji efekat je zabranjen i koji test to dokazuje.
 
-## 12. Prvi sledeći korak
+## 12. Sledeći korak
 
-Prvi naredni radni korak je **P1.5 — napraviti skeleton `EVIDENCE_W08.md` i zamrznuti očekivanja pre bilo kakve aplikacione izmene**:
+Priprema i tri ciljna BEFORE proba su urađeni. Sledeće je **T005–T008 — foundational test/evidence helpers**, a zatim **T009–T021 — Priority 1 session/ownership**, test-first.
 
-1. Kreirati evidence iz projektnog template-a.
-2. Upisati code checkpoint `973daec6e526c2369347f43a2b68b3f529b8c53d` i trenutno poznatu toolchain blokadu.
-3. Dodati Mermaid dijagram i data-flow inventar.
-4. Preneti šest rizika/tri prioriteta linkovanjem, bez dupliranja celog audita.
-5. Unapred popuniti expected kolone za T00–T17/CSRF i tri BEFORE/AFTER scenarija; observed ostaviti `NOT RUN`.
+1. Uvesti test clock/provider/assertion helper-e i dogovorene limit konstante bez aplikacionih kontrola još.
+2. Dodati failing session bootstrap, cookie/verifier, expiry i T03 A/B API/WS testove; verifier ide u tab-scoped `sessionStorage`.
+3. Implementirati session scope, ownership i admission u HTTP/WS/agent tokovima.
+4. Ponoviti T03 AFTER i W05 normalni fake tok; proveriti 0 provider/tool poziva za rani reject i nepromenjeno B stanje.
+5. Nastaviti Priority 2 pa Priority 3, čuvajući T13 i T09/T10 BEFORE poređenja.
 
-Tek zatim zatvaramo preostalu normativnu I1–I8 sekciju u `spec.md`, generišemo `tasks.md`, popravljamo lokalni dependency setup i snimamo baseline. Implementacija počinje tek posle **Gate P** i **Gate B**.
+Posle tri story gate-a stajemo: dependency odluka, kompletan T00–T17/CSRF closeout, demo i konačna predaja ostaju za kasnije.
 
 ## Definition of Done
 

@@ -7,6 +7,7 @@ This is a planned reproducible validation guide. Do not mark a scenario passed u
 - Node.js 22 or newer.
 - Project-local dependencies installed from the lockfile.
 - No live provider key is required. Use deterministic fake transports only.
+- The request verifier is tab-scoped in `sessionStorage`: it survives reload in that tab and is cleared at tab close; never use `localStorage` or URLs for it.
 - Never open secret files. The only test marker is `W08_SERVER_SECRET_DO_NOT_EXPOSE` inside a dedicated fixture/runtime variable.
 
 ## Baseline gates
@@ -30,7 +31,7 @@ The implementation phase should add one documented offline command, for example 
 
 1. A/B session ownership for HTTP, both AI routes and WebSocket.
 2. Strict media/body/schema and zero provider/tool counters on early denial.
-3. Per-session/global rate, active-run, game and subscription limits with fake clock.
+3. Per-session/global rate, active-run, session-record/issuance (100 active, 20 successful creations/rolling 60 s), game and subscription (including one per game) limits with fake clock.
 4. Deadline/cancel/late-provider tracker and exact lease release.
 5. Unknown/inherited/write tool, invalid args/scope, normalized result and grounded final facts.
 6. Prompt-injection/malicious provider path and state invariance.

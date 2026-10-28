@@ -22,7 +22,7 @@ Harden the existing no-login, single-player Shop Strategist path in three contro
 
 **Project Type**: Browser client plus HTTP/WebSocket backend
 
-**Performance Goals**: Admission checks are synchronous bounded operations; at most 2 active agent runs, 100 games and 100 subscriptions per process; no unbounded per-session queues
+**Performance Goals**: Admission checks are synchronous bounded operations; at most 100 active session records and 20 successful session issuances/process/rolling 60 seconds; 2 active agent runs, 100 games and 100 subscriptions per process; at most 3 active games and subscriptions per session and 1 subscription per game; session expires after 30 minutes idle or 8 hours absolute, and a game after 30 minutes without authorized browser activity; no unbounded per-session queues
 
 **Constraints**: No login/accounts/database/new provider/write tool; exact W05 two-step/one-tool success remains; no secret-file access; server-only key; body 16 KiB, provider payload 16 KiB, model text 4,096 chars, tool result 4 KiB, run deadline 45 s
 
@@ -50,6 +50,7 @@ Post-design re-check: all gates still pass. New session/governor/event modules a
 specs/004-secure-agent-boundaries/
 ├── spec.md
 ├── plan.md
+├── tasks.md
 ├── research.md
 ├── data-model.md
 ├── quickstart.md
@@ -100,6 +101,8 @@ tests/
 
 **Structure Decision**: Retain the current flat browser/server repository. Add only three focused backend security modules because the same session, capacity and event rules must be shared by HTTP, WebSocket, game containers and agent admission.
 
+**Normative security rules**: `spec.md` defines I1–I8 and their FR/T-scenario traceability. `tasks.md` converts the three prioritized user stories into dependency-ordered, test-first work; all feature implementation remains gated on the recorded baseline and planning checks.
+
 ## Design Phases and Dependency Order
 
 ### Phase A — Freeze evidence and restore a reproducible baseline
@@ -114,11 +117,11 @@ tests/
 ### Phase B — Session bootstrap and ownership (Priority 1)
 
 1. Add `SessionStore` with random opaque token, stored hash, internal scope, verifier, expiry and injected clock/randomness.
-2. Add session bootstrap response/cookie and strict content-type/body/origin handling.
+2. Add session bootstrap response/cookie, process-wide 100-record capacity and 20-issuance/60-second rolling rate, and strict content-type/body/origin handling.
 3. Add internal owner scope to games and owned access methods; never serialize owner/session fields.
 4. Apply ordered request context checks to every game GET/POST, both AI routes, and WebSocket upgrade/subscribe.
 5. Pass immutable authorized scope to Shop Agent/orchestrator; re-check owned current snapshot/history before each tool execution and final acceptance.
-6. Update client bootstrap, verifier header and WebSocket subprotocol; keep both values out of localStorage and URLs.
+6. Update client bootstrap, verifier header and WebSocket subprotocol; keep the verifier only in tab-scoped sessionStorage (cleared at tab close), never localStorage or URLs.
 
 **Tests first:** missing/malformed/expired/mixed credentials; A→A positive and A→B/unknown indistinguishable denial across every route; WS origin/subprotocol; media type; oversize; no provider/tool/state effect.
 
@@ -127,7 +130,7 @@ tests/
 ### Phase C — Resource governor and lifecycle (Priority 2)
 
 1. Implement synchronous rolling-window and cap acquisition with idempotent leases and injected monotonic clock.
-2. Enforce game/session/process caps at create; add last authorized activity, pin/subscription counts, destroy and timer cleanup.
+2. Enforce session-record/issuance, game/session/process caps at create; enforce one subscription per game; add last authorized activity, pin/subscription counts, destroy and timer cleanup.
 3. Acquire WebSocket capacity before `handleUpgrade`; release once on failure/close/error/shutdown; add ping/pong liveness.
 4. Acquire per-session/global agent rate and concurrency before provider work. Rate rejections do not acquire capacity; accepted requests consume their timestamp even when cancelled.
 5. Track raw provider promises; seal at run end and release run capacity only after all started work settles. Never use a late result.

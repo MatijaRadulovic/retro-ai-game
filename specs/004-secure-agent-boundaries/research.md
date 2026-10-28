@@ -28,7 +28,7 @@ Istraživanje je zasnovano na trenutnom kodu, W05 specifikaciji/testovima, W08 z
 
 ## R4 — Rate, concurrency i cleanup semantika
 
-**Decision:** Rolling prozor je `(now - 60_000, now]`; odbijeni zahtevi ne troše timestamp. Limiti su 5/session/60 s, 20/global/60 s, 1 aktivan run/session, 2/global, 3 igre/session, 100 igara/global. Predlog subscription limita je 1/game, 3/session, 100/global. Igra može da istekne posle 30 minuta bez autorizovane browser aktivnosti, ali ne dok ima subscription ili agent pin. Cleanup je lazy pre admission-a, periodičan na 60 s i potpun pri shutdown-u.
+**Decision:** Rolling prozor je `(now - 60_000, now]`; odbijeni zahtevi ne troše timestamp. Limiti su 5 prihvaćenih run-ova/cookie-backed session scope/60 s, 20/global/60 s, 1 aktivan run/session, 2/global, 3 igre/session, 100 igara/global. HttpOnly cookie mapira na server-side scope koji nosi per-session kvote. SessionStore dodatno dopušta najviše 100 aktivnih zapisa i 20 uspešnih novih izdanja po procesu u rolling 60 s; ovo nije kvota po osobi jer nema pouzdanog identiteta. Subscription limit je 1/game, 3/session, 100/global. Igra može da istekne posle 30 minuta bez autorizovane browser aktivnosti, ali ne dok ima subscription ili agent pin. Cleanup je lazy pre admission-a, periodičan na 60 s i potpun pri shutdown-u.
 
 **Rationale:** Globalni backstop ostaje kada no-login requester obriše cookie. Bounded queues i eksplicitno odbijanje su predvidljiviji od automatskog izbacivanja aktivne igre.
 
