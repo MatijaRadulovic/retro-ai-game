@@ -391,6 +391,12 @@ test("WebSocket sends initial and changed authoritative snapshots", async () => 
     assert.equal(initial.type, "snapshot");
     assert.equal(initial.game.state.status, "ready");
 
+    const duplicateSocket = new WebSocket(`ws://${address.host}/api/games/${game.id}/events`, ["retro-snake", `retro-verifier.${app.verifier}`], {
+      headers: { cookie: app.cookie, origin: "http://localhost:5173" },
+    });
+    const [, duplicateResponse] = await once(duplicateSocket, "unexpected-response");
+    assert.equal((duplicateResponse as import("node:http").IncomingMessage).statusCode, 503);
+
     const changedMessage = once(socket, "message");
     await app.fetch(`${app.baseUrl}/api/games/${game.id}/move`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ direction: "up" }),

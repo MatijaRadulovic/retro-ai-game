@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_CONFIG } from "../src/game/snakeConfig.ts";
 import { GameSessionManager, SessionError } from "../server/gameSession.ts";
+import { createFakeClock } from "./helpers/securityFixtures.ts";
 
 function managerFixture(random: () => number = () => 0) {
   let id = 0;
@@ -112,5 +113,37 @@ test("invalid runtime config uses the existing visible safe fallback", () => {
   const created = manager.create({ gridSize: 9 });
   assert.equal(created.config.gridSize, 20);
   assert.match(created.configError ?? "", /Nevažeća konfiguracija/);
+  manager.close();
+});
+
+test("owned games expire after authorized inactivity but an active run pin keeps its game alive", () => {
+  const clock = createFakeClock(500);
+  let id = 0;
+  const manager = new GameSessionManager(() => 0, () => `expiry-${++id}`, clock.now);
+  const game = manager.createOwned("scope-a");
+  const release = manager.pinOwned(game.id, "scope-a");
+  clock.advance(31 * 60_000);
+  manager.cleanupExpired();
+  assert.equal(manager.get(game.id).id, game.id);
+  release();
+  manager.cleanupExpired();
+  assert.throws(() => manager.getOwned(game.id, "scope-a"), (error) => error instanceof SessionError && error.code === "game_not_found");
+  manager.close();
+});
+
+test("owned game and subscription capacity is bounded per scope, per game, and per process", () => {
+  let id = 0;
+  const manager = new GameSessionManager(() => 0, () => `capacity-${++id}`);
+  const games: Array<{ id: string; scopeId: string }> = [];
+  for (let index = 0; index < 100; index += 1) {
+    const scopeId = `scope-${Math.floor(index / 3)}`;
+    const game = manager.createOwned(scopeId);
+    games.push({ id: game.id, scopeId });
+  }
+  assert.throws(() => manager.createOwned("overflow"), (error) => error instanceof SessionError && error.code === "capacity_exhausted");
+  for (const game of games) manager.subscribeOwned(game.id, game.scopeId, () => {});
+  assert.equal(manager.subscriptionCount, 100);
+  assert.equal(manager.canSubscribeOwned(games[0]!.id, games[0]!.scopeId), false);
+  assert.throws(() => manager.subscribeOwned(games[0]!.id, games[0]!.scopeId, () => {}), (error) => error instanceof SessionError && error.code === "capacity_exhausted");
   manager.close();
 });

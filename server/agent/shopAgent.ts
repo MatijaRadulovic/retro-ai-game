@@ -3,6 +3,7 @@ import type { PublicAgentRun, StopReason } from "../../src/ai/shopAgent.ts";
 import type { GameSessionManager } from "../gameSession.ts";
 import { runAgent, type AgentDeps } from "./orchestrator.ts";
 import type { AgentLimits, AgentOutcome, AgentTelemetrySink, AgentTransport } from "./types.ts";
+import type { ResourceGovernor } from "../security/resourceGovernor.ts";
 
 export type ShopAgentOptions = { limits?: Partial<AgentLimits>; deps?: AgentDeps };
 
@@ -32,14 +33,23 @@ export function createShopAgent(transport: AgentTransport | null, options: ShopA
     runId: (options.deps?.runId ?? randomUUID)(), status: "failed", revision, steps: 0, toolCalls: 0, stopReason, message: SAFE_FAILURE,
   });
   return {
-    async run(manager: GameSessionManager, gameId: string, signal?: AbortSignal): Promise<PublicAgentRun> {
+    async run(manager: GameSessionManager, gameId: string, signal?: AbortSignal, scopeId?: string, governor?: ResourceGovernor): Promise<PublicAgentRun> {
       const snapshot = manager.get(gameId);
-      if (!transport || inFlight.has(gameId)) return failed(snapshot.revision, "provider_failed");
+      if (inFlight.has(gameId)) return failed(snapshot.revision, "provider_failed");
+      const lease = scopeId && governor ? governor.tryAcquireRun(scopeId) : undefined;
+      if (!transport) {
+        lease?.release();
+        return failed(snapshot.revision, "provider_failed");
+      }
       inFlight.add(gameId);
       try {
-        return toPublicRun(await runAgent({ manager, gameId, transport, limits: options.limits, deps: options.deps, signal }));
+        const trackedTransport: AgentTransport = lease
+          ? (model, request, providerSignal) => lease.trackProviderCall(transport(model, request, providerSignal))
+          : transport;
+        return toPublicRun(await runAgent({ manager, gameId, transport: trackedTransport, limits: options.limits, deps: options.deps, signal }));
       } finally {
         inFlight.delete(gameId);
+        lease?.release();
       }
     },
   };

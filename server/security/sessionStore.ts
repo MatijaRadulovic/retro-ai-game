@@ -45,6 +45,7 @@ export class SessionStore {
   get activeCount(): number { this.prune(); return this.records.size; }
 
   setExpiryHandler(handler: (scopeId: string) => void): void { this.onExpire = handler; }
+  sweep(): void { this.prune(); }
 
   create(existingToken?: string): IssuedSession {
     this.prune();

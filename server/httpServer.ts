@@ -8,6 +8,7 @@ import { createShopAgent, type ShopAgent } from "./agent/shopAgent.ts";
 import { SessionStore, SessionStoreError } from "./security/sessionStore.ts";
 import { W08_SECURITY_LIMITS } from "./security/securityLimits.ts";
 import { createRequestContext } from "./security/requestContext.ts";
+import { ResourceAdmissionError, ResourceGovernor } from "./security/resourceGovernor.ts";
 
 type ApiError = { error: { code: string; message: string } };
 
@@ -59,9 +60,14 @@ function isDirection(value: unknown): value is Direction {
 function asHttpError(error: unknown): HttpError {
   if (error instanceof HttpError) return error;
   if (error instanceof SessionError) {
-    return new HttpError(error.code === "game_not_found" ? 404 : 409, error.code, error.message);
+    const status = error.code === "game_not_found" ? 404 : error.code === "capacity_exhausted" ? 503 : 409;
+    return new HttpError(status, error.code, error.message);
   }
   if (error instanceof SessionStoreError) return new HttpError(error.code === "session_rate_limited" ? 429 : 503, error.code, "Session access is temporarily unavailable.");
+  if (error instanceof ResourceAdmissionError) {
+    const status = error.code === "agent_busy" ? 409 : error.code === "agent_rate_limited" ? 429 : 503;
+    return new HttpError(status, error.code, "The agent is temporarily unavailable.");
+  }
   return new HttpError(500, "internal_error", "The server could not complete the request.");
 }
 
@@ -75,7 +81,7 @@ function readCookie(request: IncomingMessage, name: string): string | undefined 
   return undefined;
 }
 
-async function handleRequest(request: IncomingMessage, response: ServerResponse, manager: GameSessionManager, advisor: ShopAdvisor, agent: ShopAgent, sessions: SessionStore, clientOrigin: string): Promise<void> {
+async function handleRequest(request: IncomingMessage, response: ServerResponse, manager: GameSessionManager, advisor: ShopAdvisor, agent: ShopAgent, sessions: SessionStore, governor: ResourceGovernor, clientOrigin: string): Promise<void> {
   try {
     const url = new URL(request.url ?? "/", "http://localhost");
     const path = url.pathname.split("/").filter(Boolean);
@@ -136,10 +142,12 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
         const controller = new AbortController();
         const onClose = () => { if (!response.writableEnded) controller.abort(); };
         response.once("close", onClose);
+        const releasePin = manager.pinOwned(gameId, scope.scopeId);
         try {
           const advice = await advisor.advise(manager, gameId, controller.signal);
           if (!response.destroyed) sendJson(response, 200, { advice });
         } finally {
+          releasePin();
           response.removeListener("close", onClose);
         }
         return;
@@ -156,10 +164,12 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
         const controller = new AbortController();
         const onClose = () => { if (!response.writableEnded) controller.abort(); };
         response.once("close", onClose);
+        const releasePin = manager.pinOwned(gameId, scope.scopeId);
         try {
-          const run = await agent.run(manager, gameId, controller.signal);
+          const run = await agent.run(manager, gameId, controller.signal, scope.scopeId, governor);
           if (!response.destroyed) sendJson(response, 200, { run });
         } finally {
+          releasePin();
           response.removeListener("close", onClose);
         }
         return;
@@ -197,6 +207,7 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
   } catch (error) {
     const apiError = asHttpError(error);
     if (error instanceof SessionStoreError && error.code === "session_rate_limited") response.setHeader("retry-after", "60");
+    if (error instanceof ResourceAdmissionError && error.code === "agent_rate_limited") response.setHeader("retry-after", "60");
     const body: ApiError = { error: { code: apiError.code, message: apiError.message } };
     if (!response.destroyed) sendJson(response, apiError.status, body);
   }
@@ -209,12 +220,21 @@ export function createGameHttpServer(
   options: { sessionStore?: SessionStore; clientOrigin?: string } = {},
 ): Server {
   const sessions = options.sessionStore ?? new SessionStore();
-  sessions.setExpiryHandler((scopeId) => manager.destroyOwnedScope(scopeId));
+  const governor = new ResourceGovernor();
+  sessions.setExpiryHandler((scopeId) => {
+    manager.destroyOwnedScope(scopeId);
+    governor.clearScope(scopeId);
+  });
   const clientOrigin = options.clientOrigin ?? process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
   const server = createServer((request, response) => {
-    void handleRequest(request, response, manager, advisor, agent, sessions, clientOrigin);
+    void handleRequest(request, response, manager, advisor, agent, sessions, governor, clientOrigin);
   });
   const webSockets = new WebSocketServer({ noServer: true });
+  const cleanupTimer = setInterval(() => {
+    sessions.sweep();
+    manager.cleanupExpired();
+  }, 60_000);
+  cleanupTimer.unref();
 
   server.on("upgrade", (request, socket, head) => {
     const url = new URL(request.url ?? "/", "http://localhost");
@@ -242,6 +262,13 @@ export function createGameHttpServer(
       socket.destroy();
       return;
     }
+    try {
+      if (!manager.canSubscribeOwned(gameId, scope.scopeId)) throw new Error("subscription capacity");
+    } catch {
+      socket.write("HTTP/1.1 503 Service Unavailable\r\n\r\n");
+      socket.destroy();
+      return;
+    }
     webSockets.handleUpgrade(request, socket, head, (client) => {
       webSockets.emit("connection", client, request, gameId, scope.scopeId);
     });
@@ -252,7 +279,7 @@ export function createGameHttpServer(
     try {
       unsubscribe = manager.subscribeOwned(gameId, scopeId, (game) => {
         if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "snapshot", game }));
-      });
+      }, () => client.close(1008, "Session expired"));
     } catch {
       client.close(1008, "Game session not found");
       return;
@@ -263,6 +290,7 @@ export function createGameHttpServer(
   });
 
   server.on("close", () => {
+    clearInterval(cleanupTimer);
     webSockets.close();
     manager.close();
   });

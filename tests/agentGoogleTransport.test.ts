@@ -64,6 +64,8 @@ test("Markdown-fenced JSON is accepted; prose, oversized or unfinished output is
   assert.equal((await failureOf(async () => reply(`{"a":"${"x".repeat(5000)}"}`))).errorClass, "response_too_large");
   const unfinished = async () => new Response(JSON.stringify({ candidates: [{ finishReason: "MAX_TOKENS", content: { parts: [{ text: "{" }] } }] }), { status: 200 });
   assert.equal((await failureOf(unfinished)).kind, "invalid_output");
+  const oversizedText = await failureOf(async () => reply(`{"kind":"final","result":{"text":"${"x".repeat(4_100)}"}}`));
+  assert.equal(oversizedText.errorClass, "response_too_large");
 });
 
 test("HTTP errors are classified like the W04 transport", async () => {

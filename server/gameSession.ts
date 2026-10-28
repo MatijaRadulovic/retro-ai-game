@@ -18,6 +18,9 @@ export type { GameSnapshot, PlayerState } from "../src/game/gameProtocol.ts";
 type Session = {
   id: string;
   ownerScopeId?: string;
+  lastAuthorizedActivityAt: number;
+  pinCount: number;
+  destroyWhenUnpinned: boolean;
   revision: number;
   config: GameConfig;
   configError: string | null;
@@ -25,11 +28,12 @@ type Session = {
   gameState: GameState;
   timer?: NodeJS.Timeout;
   listeners: Set<(snapshot: GameSnapshot) => void>;
+  subscriptionCloseHandlers: Set<() => void>;
   history: RunHistoryEntry[];
   runRecorded: boolean;
 };
 
-export type SessionErrorCode = "game_not_found" | "invalid_status" | "insufficient_perk_points" | "perk_at_cap" | "game_limit_reached";
+export type SessionErrorCode = "game_not_found" | "invalid_status" | "insufficient_perk_points" | "perk_at_cap" | "game_limit_reached" | "capacity_exhausted";
 
 export class SessionError extends Error {
   readonly code: SessionErrorCode;
@@ -57,10 +61,12 @@ export class GameSessionManager {
   private readonly ownedGameIds = new Map<string, Set<string>>();
   private readonly random: () => number;
   private readonly makeId: () => string;
+  private readonly now: () => number;
 
-  constructor(random: () => number = Math.random, makeId: () => string = randomUUID) {
+  constructor(random: () => number = Math.random, makeId: () => string = randomUUID, now: () => number = () => performance.now()) {
     this.random = random;
     this.makeId = makeId;
+    this.now = now;
   }
 
   create(configInput: unknown = DEFAULT_CONFIG): GameSnapshot {
@@ -68,8 +74,10 @@ export class GameSessionManager {
   }
 
   createOwned(scopeId: string, configInput: unknown = DEFAULT_CONFIG): GameSnapshot {
+    this.cleanupExpired();
     const owned = this.ownedGameIds.get(scopeId) ?? new Set<string>();
     if (owned.size >= 3) throw new SessionError("game_limit_reached", "Game session limit was reached.");
+    if (this.sessions.size >= 100) throw new SessionError("capacity_exhausted", "Game capacity was reached.");
     const snapshot = this.createInternal(configInput, scopeId);
     owned.add(snapshot.id);
     this.ownedGameIds.set(scopeId, owned);
@@ -78,7 +86,17 @@ export class GameSessionManager {
 
   getOwned(id: string, scopeId: string): GameSnapshot { this.assertOwner(id, scopeId); return this.get(id); }
   getRunHistoryOwned(id: string, scopeId: string): RunHistoryEntry[] { this.assertOwner(id, scopeId); return this.getRunHistory(id); }
-  subscribeOwned(id: string, scopeId: string, listener: (snapshot: GameSnapshot) => void): () => void { this.assertOwner(id, scopeId); return this.subscribe(id, listener); }
+  subscribeOwned(id: string, scopeId: string, listener: (snapshot: GameSnapshot) => void, onScopeExpired: () => void = () => {}): () => void {
+    if (!this.canSubscribeOwned(id, scopeId)) throw new SessionError("capacity_exhausted", "Subscription capacity was reached.");
+    const session = this.assertOwner(id, scopeId);
+    const unsubscribe = this.subscribe(id, listener);
+    session.subscriptionCloseHandlers.add(onScopeExpired);
+    return () => {
+      unsubscribe();
+      session.subscriptionCloseHandlers.delete(onScopeExpired);
+      if (session.destroyWhenUnpinned && session.pinCount === 0 && session.listeners.size === 0) this.destroyGame(id, scopeId);
+    };
+  }
   moveOwned(id: string, scopeId: string, direction: Direction): GameSnapshot { this.assertOwner(id, scopeId); return this.move(id, direction); }
   pauseOwned(id: string, scopeId: string): GameSnapshot { this.assertOwner(id, scopeId); return this.pause(id); }
   resumeOwned(id: string, scopeId: string): GameSnapshot { this.assertOwner(id, scopeId); return this.resume(id); }
@@ -86,15 +104,65 @@ export class GameSessionManager {
   purchasePerkOwned(id: string, scopeId: string, perk: "extra_xp" | "extra_life" | "luck"): GameSnapshot { this.assertOwner(id, scopeId); return this.purchasePerk(id, perk); }
   advanceOwned(id: string, scopeId: string): GameSnapshot { this.assertOwner(id, scopeId); return this.advance(id); }
 
+  canSubscribeOwned(id: string, scopeId: string): boolean {
+    this.cleanupExpired();
+    const session = this.assertOwner(id, scopeId);
+    return session.listeners.size < 1 && this.subscriptionCount < 100 && this.subscriptionCountFor(scopeId) < 3;
+  }
+
+  pinOwned(id: string, scopeId: string): () => void {
+    const session = this.assertOwner(id, scopeId);
+    session.pinCount += 1;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      session.pinCount = Math.max(0, session.pinCount - 1);
+      if (session.destroyWhenUnpinned && session.pinCount === 0 && session.listeners.size === 0 && session.ownerScopeId) {
+        this.destroyGame(id, session.ownerScopeId);
+      }
+    };
+  }
+
+  get subscriptionCount(): number {
+    let count = 0;
+    for (const session of this.sessions.values()) count += session.listeners.size;
+    return count;
+  }
+
+  cleanupExpired(now = this.now()): void {
+    for (const session of this.sessions.values()) {
+      if (!session.ownerScopeId || session.pinCount > 0 || session.listeners.size > 0 || now - session.lastAuthorizedActivityAt < 30 * 60_000) continue;
+      this.destroyGame(session.id, session.ownerScopeId);
+    }
+  }
+
+  private subscriptionCountFor(scopeId: string): number {
+    let count = 0;
+    for (const id of this.ownedGameIds.get(scopeId) ?? []) count += this.sessions.get(id)?.listeners.size ?? 0;
+    return count;
+  }
+
+  private destroyGame(id: string, scopeId: string): void {
+    const session = this.sessions.get(id);
+    if (session) this.clearTimer(session);
+    this.sessions.delete(id);
+    const ids = this.ownedGameIds.get(scopeId);
+    ids?.delete(id);
+    if (ids?.size === 0) this.ownedGameIds.delete(scopeId);
+  }
+
   destroyOwnedScope(scopeId: string): void {
     const ids = this.ownedGameIds.get(scopeId);
     if (!ids) return;
     for (const id of ids) {
       const session = this.sessions.get(id);
-      if (session) this.clearTimer(session);
-      this.sessions.delete(id);
+      if (!session) continue;
+      this.clearTimer(session);
+      session.destroyWhenUnpinned = true;
+      for (const close of session.subscriptionCloseHandlers) close();
+      if (session.pinCount === 0 && session.listeners.size === 0) this.destroyGame(id, scopeId);
     }
-    this.ownedGameIds.delete(scopeId);
   }
 
   private createInternal(configInput: unknown, ownerScopeId?: string): GameSnapshot {
@@ -102,12 +170,16 @@ export class GameSessionManager {
     const session: Session = {
       id: this.makeId(),
       ownerScopeId,
+      lastAuthorizedActivityAt: this.now(),
+      pinCount: 0,
+      destroyWhenUnpinned: false,
       revision: 0,
       config: result.config,
       configError: result.error ?? null,
       playerId: this.makeId(),
       gameState: createInitialState(result.config, this.random),
       listeners: new Set(),
+      subscriptionCloseHandlers: new Set(),
       history: [],
       runRecorded: false,
     };
@@ -116,8 +188,10 @@ export class GameSessionManager {
   }
 
   private assertOwner(id: string, scopeId: string): Session {
+    this.cleanupExpired();
     const session = this.sessions.get(id);
     if (!session || session.ownerScopeId !== scopeId) throw new SessionError("game_not_found", "Game session was not found.");
+    session.lastAuthorizedActivityAt = this.now();
     return session;
   }
 

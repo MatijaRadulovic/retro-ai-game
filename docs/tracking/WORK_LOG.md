@@ -335,6 +335,14 @@ Append one concise entry for each substantive implementation, review, or documen
 - **Verification:** focused Priority 1 suite passed 22/22; frozen T03/T00 focused subset passed 3/3. `npm run typecheck` passed; `npm test` passed 134/134; `npm run build` passed (Vite 6.4.3, 10 modules). The normal HTTP W05 fake path still returns 200/completed with 3 steps, 2 tools and unchanged revision. `docs/week8/EVIDENCE_W08.md` records actual T03 AFTER and T00 regression.
 - **Limitations / next step:** browser reload/tab-close and T04/T05 are not yet exercised; no complete T00–T17/CSRF suite exists yet. T13 and T09/T10 AFTER remain open. Next: Priority 2 resource governance across scopes/process, with fake time and delayed fake provider; run the exact T13 comparison and commit that priority separately.
 
+## 2026-10-28 — Implement W08 Priority 2 resource governance
+
+- **Goal:** prevent game-ID/session churn or parallel HTTP calls from bypassing shared resource budgets, and reproduce the frozen T13 AFTER result.
+- **Starting state:** Priority 1 commit `d1367e2`; T13 BEFORE had two provider calls active simultaneously across two games.
+- **Outcome:** added server-owned `ResourceGovernor` with 1 active run/scope, 2/process, 5 accepted starts/scope/rolling minute and 20/process/rolling minute. Provider promises are tracked past orchestration timeout; the idempotent run lease releases only after orchestration seals and the raw calls settle. Added game caps (3/scope, 100/process), 30-minute authorized-idle cleanup, run pins, 1/game + 3/scope + 100/process WebSocket subscriptions, expiry close/cleanup, periodic sweep, and centralized agent response/text/tool limits. Marked T022–T032 complete.
+- **Verification:** P2-focused suite passed 55/55; T13 exact AFTER HTTP probe passed 1/1. Same-scope parallel game request returns 409 with providerCalls=1; third global active run returns 503 with calls=2; sixth accepted scope run returns 429 + Retry-After 60 with calls unchanged at 15. Fake clock tests verify limits/window edges and delayed-provider release. `npm run typecheck` passed; `npm test` passed 143/143; `npm run build` passed (Vite 6.4.3, 10 modules). T11/T12/T13/T17 and T13 BEFORE/AFTER outcomes are recorded in [Evidence W08](../week8/EVIDENCE_W08.md).
+- **Limitations / next step:** the repeatable `npm run test:security` wrapper and browser matrix remain for final closeout; provider/model/live-service behavior is not claimed. Next: Priority 3 tool-result normalization, prompt-injection isolation, grounded final facts and safe operational events/HTTP headers; repeat the T09/T10 BEFORE probe and commit separately.
+
 ## 2026-10-28 — SpecKit implementation gate and first-commit checks
 
 - **Goal:** start the user-authorized sequence of commits and priority implementation.

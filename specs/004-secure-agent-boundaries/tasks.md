@@ -75,20 +75,20 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 
 ### Tests first — User Story 2
 
-- [ ] T022 [US2] Add rolling-window boundary, per-session/global rate, game cap, subscription cap, atomic acquire, and idempotent release tests in `tests/resourceGovernor.test.ts` (T13, T17).
-- [ ] T023 [US2] Add delayed-provider concurrency, per-scope/global active maximum, early 429/503 denial, and later legitimate admission tests in `tests/agentHttp.test.ts` and `tests/resourceGovernor.test.ts` (T13).
-- [ ] T024 [P] [US2] Add per-call timeout, total deadline, client disconnect race, provider ignoring abort, late-result suppression, and exact cleanup tests in `tests/agentReliability.test.ts` (T12).
-- [ ] T025 [US2] Add game/session/subscription expiry, active pin behavior, bounded cleanup, 100-active-session and 20-issuance/60-second process limits, one-subscription-per-game and new-session global-backstop tests in `tests/sessionSecurity.test.ts` and `tests/resourceGovernor.test.ts` (T13, T17).
+- [x] T022 [US2] Add rolling-window boundary, per-session/global rate, game cap, subscription cap, atomic acquire, and idempotent release tests in `tests/resourceGovernor.test.ts` (T13, T17).
+- [x] T023 [US2] Add delayed-provider concurrency, per-scope/global active maximum, early 429/503 denial, and later legitimate admission tests in `tests/agentHttp.test.ts` and `tests/resourceGovernor.test.ts` (T13).
+- [x] T024 [P] [US2] Add per-call timeout, total deadline, client disconnect race, provider ignoring abort, late-result suppression, and exact cleanup tests in `tests/agentReliability.test.ts` (T12).
+- [x] T025 [US2] Add game/session/subscription expiry, active pin behavior, bounded cleanup, 100-active-session and 20-issuance/60-second process limits, one-subscription-per-game and new-session global-backstop tests in `tests/sessionSecurity.test.ts` and `tests/resourceGovernor.test.ts` (T13, T17).
 
 ### Implementation — User Story 2
 
-- [ ] T026 [US2] Implement rolling per-scope/process acceptance windows and idempotent active-run/game/subscription leases with injected monotonic clock in `server/security/resourceGovernor.ts` per `specs/004-secure-agent-boundaries/data-model.md`.
-- [ ] T027 [US2] Enforce at most 3 games per scope and 100 per process; add bounded inactivity cleanup, active-run pinning, and exact timer/listener destruction in `server/gameSession.ts` and `server/security/resourceGovernor.ts`.
-- [ ] T028 [US2] Acquire WebSocket subscription capacity (maximum one per game, three per scope, 100 process-wide) before upgrade and release it exactly once on close/error/failure in `server/httpServer.ts` and `server/gameSession.ts`.
-- [ ] T029 [US2] Acquire the session/process agent budget before provider work; enforce 1 active run/scope, 2 active/process, 5 accepts/scope/60 seconds, and 20 accepts/process/60 seconds in `server/agent/shopAgent.ts` and `server/security/resourceGovernor.ts`.
-- [ ] T030 [US2] Track all started provider promises and retain run capacity until safe settlement/cleanup; suppress all post-deadline success in `server/agent/orchestrator.ts` and `server/agent/shopAgent.ts`.
-- [ ] T031 [US2] Keep retry/fallback within the shared 8-attempt, 2-fallback, 5-decision, 4-tool, 2-evaluator, 10-second call, 45-second run, 16 KiB provider response, 4 KiB tool result, and 4,096-character model text bounds in `server/agent/orchestrator.ts` and `server/security/securityLimits.ts`.
-- [ ] T032 [US2] Run focused governor/reliability tests and `npm test`; record T11–T13/T17 limits, counts, status, cleanup, and BEFORE/AFTER T13 outcomes in `docs/week8/EVIDENCE_W08.md`.
+- [x] T026 [US2] Implement rolling per-scope/process acceptance windows and idempotent active-run/game/subscription leases with injected monotonic clock in `server/security/resourceGovernor.ts` per `specs/004-secure-agent-boundaries/data-model.md`.
+- [x] T027 [US2] Enforce at most 3 games per scope and 100 per process; add bounded inactivity cleanup, active-run pinning, and exact timer/listener destruction in `server/gameSession.ts` and `server/security/resourceGovernor.ts`.
+- [x] T028 [US2] Acquire WebSocket subscription capacity (maximum one per game, three per scope, 100 process-wide) before upgrade and release it exactly once on close/error/failure in `server/httpServer.ts` and `server/gameSession.ts`.
+- [x] T029 [US2] Acquire the session/process agent budget before provider work; enforce 1 active run/scope, 2 active/process, 5 accepts/scope/60 seconds, and 20 accepts/process/60 seconds in `server/agent/shopAgent.ts` and `server/security/resourceGovernor.ts`.
+- [x] T030 [US2] Track all started provider promises and retain run capacity until safe settlement/cleanup; suppress all post-deadline success in `server/agent/orchestrator.ts` and `server/agent/shopAgent.ts`.
+- [x] T031 [US2] Keep retry/fallback within the shared 8-attempt, 2-fallback, 5-decision, 4-tool, 2-evaluator, 10-second call, 45-second run, 16 KiB provider response, 4 KiB tool result, and 4,096-character model text bounds in `server/agent/orchestrator.ts` and `server/security/securityLimits.ts`.
+- [x] T032 [US2] Run focused governor/reliability tests and `npm test`; record T11–T13/T17 limits, counts, status, cleanup, and BEFORE/AFTER T13 outcomes in `docs/week8/EVIDENCE_W08.md`.
 
 **Checkpoint**: No cross-game or cross-session request resets limits; active maximums and rolling-window values match the spec; rejected requests perform no provider/tool work; every completion/cancel/deadline releases exactly once.
 

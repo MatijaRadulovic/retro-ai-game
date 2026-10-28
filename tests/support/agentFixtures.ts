@@ -18,7 +18,7 @@ export function pausedGame(points: number, overrides: Partial<GameState> = {}) {
   manager.pause(game.id);
   const session = (manager as unknown as Internals).sessions.get(game.id)!;
   session.gameState = { ...session.gameState, perkPoints: points, ...overrides };
-  return { manager, id: game.id, sessions, cookie: issued.token, verifier: issued.verifier };
+  return { manager, id: game.id, scopeId: issued.scopeId, sessions, cookie: issued.token, verifier: issued.verifier };
 }
 
 /** Same, but the container already has one finished game in its history. */
@@ -35,7 +35,7 @@ export function pausedGameAfterLoss(points: number) {
   manager.pause(game.id);
   const session = (manager as unknown as Internals).sessions.get(game.id)!;
   session.gameState = { ...session.gameState, perkPoints: points };
-  return { manager, id: game.id, sessions, cookie: issued.token, verifier: issued.verifier };
+  return { manager, id: game.id, scopeId: issued.scopeId, sessions, cookie: issued.token, verifier: issued.verifier };
 }
 
 export type ScriptItem = { value: unknown } | { fail: ProviderFailure } | { hang: true } | { run: () => unknown };

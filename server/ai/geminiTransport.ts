@@ -8,9 +8,10 @@ import {
   type ShopAdviceContext,
 } from "./shopAdvice.ts";
 import { SHOP_ADVISOR_SYSTEM_PROMPT } from "./shopPrompt.ts";
+import { W08_SECURITY_LIMITS } from "../security/securityLimits.ts";
 
 export const GEMINI_ORIGIN = "https://generativelanguage.googleapis.com";
-const MAX_RESPONSE_BYTES = 16_384;
+const MAX_RESPONSE_BYTES = W08_SECURITY_LIMITS.agent.providerResponseBytes;
 const MAX_MODEL_TEXT_LENGTH = 4_096;
 const MAX_RETRY_AFTER_MS = 5 * 60_000;
 const GEMMA_MODEL = ADVICE_MODELS[2];

@@ -5,6 +5,7 @@ import {
 import { ProviderFailure, type ProviderResponse } from "../ai/shopAdvice.ts";
 import { AGENT_SYSTEM_PROMPT } from "./prompt.ts";
 import type { AgentStepRequest, AgentTransport } from "./types.ts";
+import { W08_SECURITY_LIMITS } from "../security/securityLimits.ts";
 
 function stripFence(text: string): string {
   const match = /^```(?:json)?\s*([\s\S]*?)\s*```$/.exec(text.trim());
@@ -45,6 +46,9 @@ export function createGoogleAgentTransport(apiKey: string, fetchImpl: typeof fet
     }
     const payload = await readLimitedResponse(response);
     const text = extractCandidateText(payload);
+    if (text.length > W08_SECURITY_LIMITS.agent.modelTextChars) {
+      throw new ProviderFailure("invalid_output", undefined, undefined, "response_too_large");
+    }
     try {
       return { value: JSON.parse(stripFence(text)) as unknown, usage: extractUsage(payload) };
     } catch {

@@ -63,6 +63,37 @@ test("session expiry destroys every game in the expired scope without exposing o
   manager.close();
 });
 
+test("expired owner waits for an active game pin to release before destroying its game", () => {
+  const clock = createFakeClock(3_000);
+  let id = 0;
+  const manager = new GameSessionManager(() => 0, () => `pinned-${++id}`, clock.now);
+  const store = new SessionStore({ now: clock.now, randomBytes: deterministicRandom() });
+  store.setExpiryHandler((scopeId) => manager.destroyOwnedScope(scopeId));
+  const issued = store.create();
+  const game = manager.createOwned(issued.scopeId);
+  const release = manager.pinOwned(game.id, issued.scopeId);
+  clock.advance(30 * 60_000 + 1);
+  assert.equal(store.authorize(issued.token, issued.verifier), null);
+  assert.equal(manager.get(game.id).id, game.id);
+  release();
+  assert.throws(() => manager.get(game.id), /not found/);
+  manager.close();
+});
+
+test("session expiry closes owned WebSocket subscriptions and releases the subscription slot", () => {
+  const manager = new GameSessionManager(() => 0, (() => { let id = 0; return () => `ws-expiry-${++id}`; })());
+  const game = manager.createOwned("scope-ws");
+  let closed = false;
+  let unsubscribe = () => {};
+  unsubscribe = manager.subscribeOwned(game.id, "scope-ws", () => {}, () => { closed = true; unsubscribe(); });
+  assert.equal(manager.subscriptionCount, 1);
+  manager.destroyOwnedScope("scope-ws");
+  assert.equal(closed, true);
+  assert.equal(manager.subscriptionCount, 0);
+  assert.throws(() => manager.get(game.id), /not found/);
+  manager.close();
+});
+
 test("game capacity is three per anonymous owner and foreign scope receives the hidden not-found response", () => {
   const manager = new GameSessionManager(() => 0, (() => { let id = 0; return () => `bounded-${++id}`; })());
   const first = manager.createOwned("scope-a");

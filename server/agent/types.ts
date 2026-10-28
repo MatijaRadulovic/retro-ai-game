@@ -2,6 +2,7 @@ import type { AdviceModel } from "../../src/ai/shopAdvice.ts";
 import type { AgentResult, AgentRunStatus, StopReason, ToolName } from "../../src/ai/shopAgent.ts";
 import type { ProviderErrorClass, ProviderResponse, ProviderUsage } from "../ai/shopAdvice.ts";
 import type { GameSnapshot, RunHistoryEntry } from "../gameSession.ts";
+import { W08_SECURITY_LIMITS } from "../security/securityLimits.ts";
 
 export type AgentLimits = {
   maxAgentSteps: number;
@@ -17,16 +18,16 @@ export type AgentLimits = {
 };
 
 export const DEFAULT_LIMITS: AgentLimits = {
-  maxAgentSteps: 5,
-  maxToolCalls: 4,
-  maxEvaluatorCalls: 2,
+  maxAgentSteps: W08_SECURITY_LIMITS.agent.maxDecisions,
+  maxToolCalls: W08_SECURITY_LIMITS.agent.maxToolCalls,
+  maxEvaluatorCalls: W08_SECURITY_LIMITS.agent.maxEvaluatorCalls,
   maxAttemptsPerStep: 2,
-  maxProviderAttempts: 8,
-  maxProviderFallbacks: 2,
-  perCallTimeoutMs: 10_000,
-  totalDeadlineMs: 45_000,
+  maxProviderAttempts: W08_SECURITY_LIMITS.agent.maxProviderAttempts,
+  maxProviderFallbacks: W08_SECURITY_LIMITS.agent.maxProviderFallbacks,
+  perCallTimeoutMs: W08_SECURITY_LIMITS.agent.providerCallTimeoutMs,
+  totalDeadlineMs: W08_SECURITY_LIMITS.agent.totalDeadlineMs,
   toolTimeoutMs: 200,
-  maxToolResultBytes: 4_096,
+  maxToolResultBytes: W08_SECURITY_LIMITS.agent.toolResultBytes,
 };
 
 export function statusForStop(reason: StopReason): AgentRunStatus {
