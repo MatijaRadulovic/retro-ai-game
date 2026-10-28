@@ -255,18 +255,23 @@ export async function runAgent(input: RunAgentInput): Promise<AgentOutcome> {
       return finish("tool_failed");
     }
     let size = Number.POSITIVE_INFINITY;
+    let normalizedResult: unknown | null = null;
     try {
       size = Buffer.byteLength(JSON.stringify(result) ?? "");
+      normalizedResult = tool.normalizeResult(result);
     } catch {
       size = Number.POSITIVE_INFINITY;
     }
-    if (now() - toolStarted > limits.toolTimeoutMs || size > limits.maxToolResultBytes || !tool.validateResult(result)) {
+    let normalizedSize = Number.POSITIVE_INFINITY;
+    try { if (normalizedResult !== null) normalizedSize = Buffer.byteLength(JSON.stringify(normalizedResult) ?? ""); } catch { /* reject below */ }
+    if (now() - toolStarted > limits.toolTimeoutMs || size > limits.maxToolResultBytes
+      || !tool.validateResult(result) || normalizedResult === null || normalizedSize > limits.maxToolResultBytes) {
       record("tool_request", "rejected", tool.name);
       return finish("tool_failed");
     }
     record("tool_request", "accepted", tool.name);
-    run.transcript.push({ step: stepNo, tool: tool.name, arguments: args.value, result });
-    if (tool.name === "evaluate_perk_plan" && isRecord(result) && result.valid === true) {
+    run.transcript.push({ step: stepNo, tool: tool.name, arguments: args.value, result: normalizedResult });
+    if (tool.name === "evaluate_perk_plan" && isRecord(normalizedResult) && normalizedResult.valid === true) {
       run.validPlans.push([...(args.value.plan as Perk[])]);
     }
   }

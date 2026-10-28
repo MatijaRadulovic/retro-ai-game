@@ -2,6 +2,14 @@
 
 Append one concise entry for each substantive implementation, review, or documentation task. Every entry links the prompt/specification that guided the work and the evidence used or created. If there was no standalone prompt artifact, say so. Keep results factual and do not rewrite history.
 
+## 2026-10-28 — Implement W08 Priority 3 agent/tool assurance
+
+- **Goal:** complete the third selected W08 priority while retaining the anonymous-session and resource-governance boundaries from Priorities 1–2.
+- **Prompt/spec/evidence:** [Priority implementation prompt v1](../prompts/week8/BUILD_PROMPT_SECURE_AGENT_BOUNDARIES_V1.md); [W08 spec/plan/tasks](../../specs/004-secure-agent-boundaries/); [W08 evidence](../week8/EVIDENCE_W08.md).
+- **Outcome:** tool results are rebuilt as bounded discriminated DTOs before the next provider step; final model output cites source/step/fact references resolved into application wording; control, bidi and zero-width display text is rejected; HTTP denials emit allowlisted security events; production preview and API responses receive security headers. Added `npm run test:security` for the offline server/unit/integration suite and updated the priority checklist/evidence.
+- **Verification:** frozen T00/T09/T10 rerun 5/5; typecheck passed; `npm test` 146/146; `npm run test:security` 146/146; production build, security scan and `git diff --check` passed. Preview HTML/JS header smoke returned 200 with CSP, `nosniff`, `no-referrer`.
+- **Limitations / next step:** no in-app browser was available, so T04/T05, browser CSP violation and game/WS/agent preview checks remain open; T14/full sentinel-channel checks are partial. Finish remaining T00–T17/CSRF matrix, audit decision and demo later. No credentials or live provider were used.
+
 ## 2026-09-30 — Make the browser E2E portable and deterministic (PR #1 re-review)
 
 - **Goal:** address the PR #1 re-review: `spawn("npx")` fails on Windows, `stop()` did not wait for the real backend process (EADDRINUSE on 3001 before M6), fixed API port, and M5 skipped in a fresh run.

@@ -1,10 +1,8 @@
 import {
   isPerk, isToolName, MAX_EVIDENCE, MAX_FINDING_CHARS, MAX_PLAN_LENGTH, MAX_SUMMARY_CHARS,
-  type AgentEvidence, type AgentResult, type Perk,
+  isSafeAgentText, type AgentEvidence, type AgentResult, type Perk,
 } from "../../src/ai/shopAgent.ts";
 import type { TranscriptEntry } from "./types.ts";
-
-const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -15,7 +13,7 @@ function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boo
 }
 
 function boundedText(value: unknown, max: number): value is string {
-  return typeof value === "string" && value.trim().length >= 1 && value.length <= max && !CONTROL_CHARACTERS.test(value);
+  return isSafeAgentText(value, max);
 }
 
 function samePlan(first: readonly Perk[], second: readonly Perk[]): boolean {
@@ -33,6 +31,42 @@ function emptyPlanJustified(transcript: readonly TranscriptEntry[]): boolean {
   return costs.every((cost) => cost === null || (cost as number) > points);
 }
 
+type EvidenceFact =
+  | "perk_points" | "extra_xp_state" | "luck_state" | "extra_life_state"
+  | "plan_valid" | "plan_total_cost" | "points_left"
+  | "run_count" | "latest_run_score" | "latest_run_level" | "latest_run_end";
+
+function resolveEvidence(source: unknown, step: unknown, fact: unknown, transcript: readonly TranscriptEntry[]): AgentEvidence | null {
+  if (!isToolName(source) || typeof step !== "number" || !Number.isSafeInteger(step) || step < 1 || typeof fact !== "string") return null;
+  const entry = transcript.find((candidate) => candidate.step === step && candidate.tool === source);
+  if (!entry || !isRecord(entry.result)) return null;
+  const result = entry.result;
+  let finding: string | null = null;
+  if (source === "get_shop_state") {
+    if (fact === "perk_points" && typeof result.perkPoints === "number") finding = `Current perk points: ${result.perkPoints}.`;
+    if (fact === "extra_xp_state" && isRecord(result.extraXp) && typeof result.extraXp.level === "number") finding = `Extra XP level: ${result.extraXp.level}; next cost: ${result.extraXp.nextCost ?? "capped"}.`;
+    if (fact === "luck_state" && isRecord(result.luck) && typeof result.luck.level === "number") finding = `Luck level: ${result.luck.level}; next cost: ${result.luck.nextCost ?? "capped"}.`;
+    if (fact === "extra_life_state" && isRecord(result.extraLife) && typeof result.extraLife.charges === "number") finding = `Extra Life charges: ${result.extraLife.charges}; next cost: ${result.extraLife.nextCost ?? "capped"}.`;
+  }
+  if (source === "evaluate_perk_plan") {
+    if (fact === "plan_valid" && typeof result.valid === "boolean") finding = `Evaluated plan is ${result.valid ? "valid" : "invalid"}.`;
+    if (fact === "plan_total_cost" && typeof result.totalCost === "number") finding = `Evaluated plan total cost: ${result.totalCost} points.`;
+    if (fact === "points_left" && typeof result.pointsLeft === "number") finding = `Points remaining after evaluation: ${result.pointsLeft}.`;
+  }
+  if (source === "get_recent_runs" && Array.isArray(result.runs)) {
+    const runs = result.runs;
+    if (fact === "run_count") finding = `Recent finished runs available: ${runs.length}.`;
+    const latest = runs[0];
+    if (isRecord(latest)) {
+      if (fact === "latest_run_score" && typeof latest.score === "number") finding = `Latest finished run score: ${latest.score}.`;
+      if (fact === "latest_run_level" && typeof latest.level === "number") finding = `Latest finished run level: ${latest.level}.`;
+      if (fact === "latest_run_end" && (latest.endedBy === "game_over" || latest.endedBy === "won" || latest.endedBy === "restart")) finding = `Latest finished run ended by: ${latest.endedBy}.`;
+    }
+  }
+  if (!finding || finding.length > MAX_FINDING_CHARS) return null;
+  return { source, step, finding };
+}
+
 export function validateAgentResult(
   value: unknown,
   transcript: readonly TranscriptEntry[],
@@ -47,13 +81,10 @@ export function validateAgentResult(
 
   const checked: AgentEvidence[] = [];
   for (const item of evidence) {
-    if (!isRecord(item) || !exactKeys(item, ["source", "step", "finding"])) return null;
-    const { source, step, finding } = item;
-    if (!isToolName(source) || typeof step !== "number" || !Number.isSafeInteger(step) || !boundedText(finding, MAX_FINDING_CHARS)) return null;
-    const entry = transcript.find((candidate) => candidate.step === step && candidate.tool === source);
-    if (!entry) return null;
-    if (source === "get_recent_runs" && isRecord(entry.result) && Array.isArray(entry.result.runs) && entry.result.runs.length === 0) return null;
-    checked.push({ source, step, finding });
+    if (!isRecord(item) || !exactKeys(item, ["source", "step", "fact"])) return null;
+    const resolved = resolveEvidence(item.source, item.step, item.fact as EvidenceFact, transcript);
+    if (!resolved) return null;
+    checked.push(resolved);
   }
 
   const checkedPlan = plan as Perk[];
@@ -62,10 +93,17 @@ export function validateAgentResult(
   } else if (!emptyPlanJustified(transcript)) {
     return null;
   }
-  return { summary, plan: checkedPlan, evidence: checked, confidence, completed: true };
+  return { summary: buildSummary(checkedPlan), plan: checkedPlan, evidence: checked, confidence, completed: true };
 }
 
 const PERK_LABELS: Record<Perk, string> = { extra_xp: "EXTRA XP", luck: "LUCK", extra_life: "+1 LIFE" };
+
+/** Never display model-authored prose; derive the player-facing summary from the evaluated plan. */
+function buildSummary(plan: readonly Perk[]): string {
+  return plan.length === 0
+    ? "No purchase is recommended now; save your perk points."
+    : `Recommended order: ${plan.map((perk) => PERK_LABELS[perk]).join(" → ")}.`;
+}
 
 /** Player-facing plan line built by the server from validated facts, never from model prose. */
 export function buildPlanLine(plan: readonly Perk[], transcript: readonly TranscriptEntry[]): string {

@@ -19,14 +19,15 @@ const validPlans: Perk[][] = [["extra_xp"]];
 const good = {
   summary: "Buy Extra XP now.",
   plan: ["extra_xp"],
-  evidence: [{ source: "get_shop_state", step: 1, finding: "3 points available." }],
+  evidence: [{ source: "get_shop_state", step: 1, fact: "perk_points" }],
   confidence: "medium",
   completed: true,
 };
 const check = (value: unknown, transcript = transcriptWith(), plans = validPlans) => validateAgentResult(value, transcript, plans);
 
 test("a well-formed result backed by an evaluated plan is accepted", () => {
-  assert.deepEqual(check(good), good);
+  assert.deepEqual(check(good), { ...good, summary: "Recommended order: EXTRA XP.", evidence: [{ source: "get_shop_state", step: 1, finding: "Current perk points: 3." }] });
+  assert.equal(check({ ...good, summary: "I used a hidden network tool and changed game data." })?.summary, "Recommended order: EXTRA XP.");
 });
 
 test("exact keys, types and bounds are enforced", () => {
@@ -38,7 +39,7 @@ test("exact keys, types and bounds are enforced", () => {
   assert.equal(check({ ...good, plan: ["buy_all"] }), null);
   assert.equal(check({ ...good, evidence: [] }), null);
   assert.equal(check({ ...good, evidence: Array(5).fill(good.evidence[0]) }), null);
-  assert.equal(check({ ...good, evidence: [{ source: "get_shop_state", step: 1, finding: "x".repeat(161) }] }), null);
+  assert.equal(check({ ...good, evidence: [{ source: "get_shop_state", step: 1, fact: "unknown_fact" }] }), null);
   assert.equal(check(null), null);
 });
 
@@ -48,10 +49,10 @@ test("completed must be true", () => {
 });
 
 test("evidence must cite a tool that really ran at that step", () => {
-  assert.equal(check({ ...good, evidence: [{ source: "get_recent_runs", step: 1, finding: "ok" }] }), null);
-  assert.equal(check({ ...good, evidence: [{ source: "get_shop_state", step: 2, finding: "ok" }] }), null);
-  assert.equal(check({ ...good, evidence: [{ source: "get_shop_state", step: 9, finding: "ok" }] }), null);
-  assert.equal(check({ ...good, evidence: [{ source: "delete_database", step: 1, finding: "ok" }] }), null);
+  assert.equal(check({ ...good, evidence: [{ source: "get_recent_runs", step: 1, fact: "latest_run_score" }] }), null);
+  assert.equal(check({ ...good, evidence: [{ source: "get_shop_state", step: 2, fact: "perk_points" }] }), null);
+  assert.equal(check({ ...good, evidence: [{ source: "get_shop_state", step: 9, fact: "perk_points" }] }), null);
+  assert.equal(check({ ...good, evidence: [{ source: "delete_database", step: 1, fact: "perk_points" }] }), null);
 });
 
 test("a non-empty plan must equal a plan the evaluator accepted in this run", () => {
@@ -73,7 +74,7 @@ test("claims about past games need a non-empty history", () => {
     ...transcriptWith(0),
     { step: 3, tool: "get_recent_runs", arguments: { limit: 3 }, result: { runs } },
   ];
-  const empty = { ...good, plan: [], evidence: [{ source: "get_recent_runs", step: 3, finding: "Past games ended early." }] };
+  const empty = { ...good, plan: [], evidence: [{ source: "get_recent_runs", step: 3, fact: "latest_run_end" }] };
   assert.equal(check(empty, withHistory([]), []), null);
   const run = { score: 10, level: 1, perksAtEnd: { extraXp: 0, luck: 0, extraLife: 0 }, endedBy: "game_over" };
   assert.notEqual(check(empty, withHistory([run]), []), null);
@@ -81,7 +82,11 @@ test("claims about past games need a non-empty history", () => {
 
 test("control characters are rejected; HTML-looking text passes validation and is rendered with textContent", () => {
   assert.equal(check({ ...good, summary: "bad\u0007text" }), null);
-  assert.equal(check({ ...good, evidence: [{ source: "get_shop_state", step: 1, finding: "line\nbreak" }] }), null);
+  assert.equal(check({ ...good, summary: "bad\u0085text" }), null);
+  assert.equal(check({ ...good, summary: "hidden\u202etext" }), null);
+  assert.equal(check({ ...good, summary: "zero\u200bwidth" }), null);
+  assert.notEqual(check({ ...good, summary: "a < b — dobra odluka" }), null);
+  assert.equal(check({ ...good, evidence: [{ source: "get_shop_state", step: 1, fact: "perk_points", finding: "attacker supplied prose" }] }), null);
   assert.notEqual(check({ ...good, summary: "<img src=x onerror=alert(1)>" }), null);
 });
 

@@ -9,6 +9,7 @@ import { SessionStore, SessionStoreError } from "./security/sessionStore.ts";
 import { W08_SECURITY_LIMITS } from "./security/securityLimits.ts";
 import { createRequestContext } from "./security/requestContext.ts";
 import { ResourceAdmissionError, ResourceGovernor } from "./security/resourceGovernor.ts";
+import { createSecurityEvent, emitSecurityEvent, type SecurityEventSink, type SecurityOperation } from "./security/securityEvents.ts";
 
 type ApiError = { error: { code: string; message: string } };
 
@@ -28,7 +29,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function sendJson(response: ServerResponse, status: number, value: unknown): void {
-  response.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+  response.writeHead(status, {
+    "content-type": "application/json; charset=utf-8", "cache-control": "no-store",
+    "x-content-type-options": "nosniff", "referrer-policy": "no-referrer",
+  });
   response.end(JSON.stringify(value));
 }
 
@@ -81,7 +85,18 @@ function readCookie(request: IncomingMessage, name: string): string | undefined 
   return undefined;
 }
 
-async function handleRequest(request: IncomingMessage, response: ServerResponse, manager: GameSessionManager, advisor: ShopAdvisor, agent: ShopAgent, sessions: SessionStore, governor: ResourceGovernor, clientOrigin: string): Promise<void> {
+function operationFor(request: IncomingMessage): SecurityOperation {
+  const path = new URL(request.url ?? "/", "http://localhost").pathname;
+  if (path === "/api/session") return "bootstrap";
+  if (path === "/api/games") return request.method === "POST" ? "create_game" : "unknown";
+  if (/^\/api\/games\/[^/]+$/.test(path)) return "read_game";
+  if (/^\/api\/games\/[^/]+\/shop-advice$/.test(path)) return "shop_advice";
+  if (/^\/api\/games\/[^/]+\/shop-agent$/.test(path)) return "shop_agent";
+  if (/^\/api\/games\/[^/]+\/(move|pause|resume|restart|perks)$/.test(path)) return "game_action";
+  return "unknown";
+}
+
+async function handleRequest(request: IncomingMessage, response: ServerResponse, manager: GameSessionManager, advisor: ShopAdvisor, agent: ShopAgent, sessions: SessionStore, governor: ResourceGovernor, clientOrigin: string, securityEventSink: SecurityEventSink): Promise<void> {
   try {
     const url = new URL(request.url ?? "/", "http://localhost");
     const path = url.pathname.split("/").filter(Boolean);
@@ -206,6 +221,8 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
     throw new HttpError(404, "route_not_found", "API route was not found.");
   } catch (error) {
     const apiError = asHttpError(error);
+    const event = createSecurityEvent({ operation: operationFor(request), reason: apiError.code, status: apiError.status });
+    emitSecurityEvent(securityEventSink, event);
     if (error instanceof SessionStoreError && error.code === "session_rate_limited") response.setHeader("retry-after", "60");
     if (error instanceof ResourceAdmissionError && error.code === "agent_rate_limited") response.setHeader("retry-after", "60");
     const body: ApiError = { error: { code: apiError.code, message: apiError.message } };
@@ -217,7 +234,7 @@ export function createGameHttpServer(
   manager: GameSessionManager = new GameSessionManager(),
   advisor: ShopAdvisor = createShopAdvisor(null),
   agent: ShopAgent = createShopAgent(null),
-  options: { sessionStore?: SessionStore; clientOrigin?: string } = {},
+  options: { sessionStore?: SessionStore; clientOrigin?: string; securityEventSink?: SecurityEventSink } = {},
 ): Server {
   const sessions = options.sessionStore ?? new SessionStore();
   const governor = new ResourceGovernor();
@@ -226,8 +243,9 @@ export function createGameHttpServer(
     governor.clearScope(scopeId);
   });
   const clientOrigin = options.clientOrigin ?? process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
+  const securityEventSink = options.securityEventSink ?? ((event) => console.warn(JSON.stringify(event)));
   const server = createServer((request, response) => {
-    void handleRequest(request, response, manager, advisor, agent, sessions, governor, clientOrigin);
+    void handleRequest(request, response, manager, advisor, agent, sessions, governor, clientOrigin, securityEventSink);
   });
   const webSockets = new WebSocketServer({ noServer: true });
   const cleanupTimer = setInterval(() => {

@@ -103,5 +103,6 @@ export type ToolDefinition = {
   validateArgs(value: unknown): { ok: true; value: Record<string, unknown> } | { ok: false };
   execute(args: Record<string, unknown>, context: ToolContext): unknown;
   validateResult(value: unknown): boolean;
+  normalizeResult(value: unknown): unknown | null;
 };
 export type ToolRegistry = Readonly<Record<ToolName, ToolDefinition>>;

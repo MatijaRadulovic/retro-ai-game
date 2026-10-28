@@ -102,19 +102,19 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 
 ### Tests first — User Story 3
 
-- [ ] T033 [P] [US3] Add exact normalized tool DTO, allowed-field/value/size/scope, prototype-property, and synthetic-secret tests in `tests/agentTools.test.ts` (T07, T08, T10).
-- [ ] T034 [P] [US3] Add fabricated fact/source, wrong fact type, application-wording, and ordinary Serbian/`a < b` final-result tests in `tests/agentFinal.test.ts` (T06, T09).
-- [ ] T035 [P] [US3] Add end-to-end fake-provider injection, forbidden/write/network/file tool, repeat, invalid-envelope, and canonical-state-invariance tests in `tests/agentOrchestrator.test.ts` and `tests/agentHttp.test.ts` (T06–T11).
+- [x] T033 [P] [US3] Add exact normalized tool DTO, allowed-field/value/size/scope, prototype-property, and synthetic-secret tests in `tests/agentTools.test.ts` (T07, T08, T10).
+- [x] T034 [P] [US3] Add fabricated fact/source, wrong fact type, application-wording, and ordinary Serbian/`a < b` final-result tests in `tests/agentFinal.test.ts` (T06, T09).
+- [x] T035 [P] [US3] Add end-to-end fake-provider injection, forbidden/write/network/file tool, repeat, invalid-envelope, and canonical-state-invariance tests in `tests/agentOrchestrator.test.ts` and `tests/agentHttp.test.ts` (T06–T11).
 - [ ] T036 [P] [US3] Add exact event schema, safe reason enums, redaction, newline/log-forging and one-record-per-event tests in `tests/securityEvents.test.ts` (T14).
 - [ ] T037 [P] [US3] Add production-preview browser tests for XSS/HTML/URL markers, CSP violation source, headers, normal game/WS/agent flow, and sentinel absence in `scripts/e2e/secureArcade.e2e.ts` (T04, T05, T16).
 - [ ] T038 [US3] Add localStorage/client-state tampering assertions to the browser journey in `scripts/e2e/secureArcade.e2e.ts` (T15).
 
 ### Implementation — User Story 3
 
-- [ ] T039 [US3] Replace raw tool-result forwarding with fresh discriminated normalized DTO parsers and enforce raw/normalized byte bounds in `server/agent/tools.ts` and `server/agent/types.ts`.
-- [ ] T040 [US3] Replace model-authored evidence claims with validated source/step/fact references resolved into application-owned wording in `server/agent/finalResult.ts`, `server/agent/types.ts`, and `server/agent/prompt.ts`.
-- [ ] T041 [US3] Centralize Unicode/plain-text policy for control, bidi, zero-width, HTML, Markdown, and URL-like content while retaining positive Serbian fixtures in `server/agent/finalResult.ts` and `src/ai/shopAgent.ts`.
-- [ ] T042 [US3] Preserve the exact Google model chain and three-tool read-only allowlist; ensure validation, authorization, budgets, repeat detection and deadline decisions remain server-owned in `server/agent/tools.ts`, `server/agent/orchestrator.ts`, and `server/agent/shopAgent.ts`.
+- [x] T039 [US3] Replace raw tool-result forwarding with fresh discriminated normalized DTO parsers and enforce raw/normalized byte bounds in `server/agent/tools.ts` and `server/agent/types.ts`.
+- [x] T040 [US3] Replace model-authored evidence claims with validated source/step/fact references resolved into application-owned wording in `server/agent/finalResult.ts`, `server/agent/types.ts`, and `server/agent/prompt.ts`.
+- [x] T041 [US3] Centralize Unicode/plain-text policy for control, bidi, zero-width, HTML, Markdown, and URL-like content while retaining positive Serbian fixtures in `server/agent/finalResult.ts` and `src/ai/shopAgent.ts`.
+- [x] T042 [US3] Preserve the exact Google model chain and three-tool read-only allowlist; ensure validation, authorization, budgets, repeat detection and deadline decisions remain server-owned in `server/agent/tools.ts`, `server/agent/orchestrator.ts`, and `server/agent/shopAgent.ts`.
 - [ ] T043 [US3] Add an allowlisted security event union, server-generated correlation IDs, enumerated reasons, bounded counters, and a non-interfering sink in `server/security/securityEvents.ts` and `server/httpServer.ts`.
 - [ ] T044 [US3] Route HTTP admission/access/limit denials and agent/tool/provider/completion decisions through the safe event factory without logging raw input or identifiers in `server/httpServer.ts`, `server/agent/shopAgent.ts`, and `server/agent/orchestrator.ts`.
 - [ ] T045 [US3] Add production-preview CSP, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: no-referrer` while keeping game/API/WebSocket flow functional in `vite.config.ts` and `scripts/e2e/secureArcade.e2e.ts`.

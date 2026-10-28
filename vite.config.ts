@@ -11,7 +11,13 @@ const apiProxy = {
   },
 };
 
+const securityHeaders = {
+  "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "no-referrer",
+};
+
 export default defineConfig({
   server: { proxy: apiProxy },
-  preview: { proxy: apiProxy },
+  preview: { proxy: apiProxy, headers: securityHeaders },
 });

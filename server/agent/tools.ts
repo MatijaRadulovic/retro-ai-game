@@ -47,6 +47,49 @@ function isEvaluation(value: unknown): boolean {
       && isPerk(effect.perk) && typeof effect.text === "string" && effect.text.length <= 120);
 }
 
+function effectCode(perk: Perk): "extra_xp_boost" | "luck_chance" | "extra_life_charge" {
+  return perk === "extra_xp" ? "extra_xp_boost" : perk === "luck" ? "luck_chance" : "extra_life_charge";
+}
+
+function normalizeShopState(value: unknown): unknown | null {
+  if (!isShopState(value)) return null;
+  const state = value as {
+    stateVersion: number; score: number; xp: number; level: number; perkPoints: number;
+    extraXp: { level: number; nextCost: number | null };
+    luck: { level: number; nextCost: number | null };
+    extraLife: { charges: number; nextCost: number | null };
+  };
+  return {
+    kind: "shop_state",
+    stateVersion: state.stateVersion,
+    score: state.score,
+    xp: state.xp,
+    level: state.level,
+    perkPoints: state.perkPoints,
+    extraXp: { level: state.extraXp.level, nextCost: state.extraXp.nextCost },
+    luck: { level: state.luck.level, nextCost: state.luck.nextCost },
+    extraLife: { charges: state.extraLife.charges, nextCost: state.extraLife.nextCost },
+  };
+}
+
+function normalizeEvaluation(value: unknown): unknown | null {
+  if (!isEvaluation(value)) return null;
+  const evaluation = value as {
+    stateVersion: number; valid: boolean; steps: Array<{ perk: Perk; cost: number | null; affordable: boolean; capped: boolean; pointsAfter: number }>;
+    totalCost: number; pointsLeft: number; failures: Array<"unaffordable" | "capped">; effects: Array<{ perk: Perk; text: string }>;
+  };
+  return {
+    kind: "perk_plan_evaluation",
+    stateVersion: evaluation.stateVersion,
+    valid: evaluation.valid,
+    steps: evaluation.steps.map((step) => ({ perk: step.perk, cost: step.cost, affordable: step.affordable, capped: step.capped, pointsAfter: step.pointsAfter })),
+    totalCost: evaluation.totalCost,
+    pointsLeft: evaluation.pointsLeft,
+    failures: [...evaluation.failures],
+    effects: evaluation.effects.map((effect) => ({ perk: effect.perk, code: effectCode(effect.perk) })),
+  };
+}
+
 function isRunEntry(value: unknown): boolean {
   return isRecord(value) && exactKeys(value, ["score", "level", "perksAtEnd", "endedBy"])
     && isInt(value.score, 0) && isInt(value.level, 1)
@@ -83,6 +126,7 @@ const getShopState: ToolDefinition = {
     };
   },
   validateResult: isShopState,
+  normalizeResult: normalizeShopState,
 };
 
 const evaluatePerkPlanTool: ToolDefinition = {
@@ -108,6 +152,7 @@ const evaluatePerkPlanTool: ToolDefinition = {
     return { stateVersion: shop.revision, ...evaluation };
   },
   validateResult: isEvaluation,
+  normalizeResult: normalizeEvaluation,
 };
 
 const getRecentRuns: ToolDefinition = {
@@ -130,6 +175,15 @@ const getRecentRuns: ToolDefinition = {
   }),
   validateResult: (value) => isRecord(value) && exactKeys(value, ["runs"])
     && Array.isArray(value.runs) && value.runs.length <= 5 && value.runs.every(isRunEntry),
+  normalizeResult: (value) => isRecord(value) && exactKeys(value, ["runs"])
+    && Array.isArray(value.runs) && value.runs.length <= 5 && value.runs.every(isRunEntry)
+    ? { kind: "recent_runs", runs: value.runs.map((run) => ({
+      score: run.score,
+      level: run.level,
+      perksAtEnd: { extraXp: run.perksAtEnd.extraXp, luck: run.perksAtEnd.luck, extraLife: run.perksAtEnd.extraLife },
+      endedBy: run.endedBy,
+    })) }
+    : null,
 };
 
 export const TOOLS: ToolRegistry = {

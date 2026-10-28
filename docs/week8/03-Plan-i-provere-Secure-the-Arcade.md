@@ -59,55 +59,55 @@ Ovaj dokument prevodi [W08 zadatak](02-Nedeljni-zadatak-Secure-the-Arcade.md) u 
 
 ### Faza I1 — Session, ownership i request provenance
 
-- [ ] Napisati failing testove za session bootstrap, expiry, verifier, media type i origin.
-- [ ] Napisati A/B testove za GET, mutacije, oba AI toka i WebSocket.
-- [ ] Implementirati server-issued session scope koji nije vidljiv modelu ili tool argumentima.
-- [ ] Vezati svaku partiju za interni owner scope; `gameId` ostaje samo identifikator.
-- [ ] Enforcovati ownership pre čitanja, mutacije, provider-a i tool-a.
-- [ ] Enforcovati CSRF/request verifier i tačan Origin na primenljivim browser zahtevima.
-- [ ] Enforcovati isti session/ownership/origin kontekst na WebSocket upgrade-u.
-- [ ] Enforcovati `application/json`, pre-parse body limit i exact-key schema.
-- [ ] Potvrditi: svaki early reject ima `providerAttempts=0`, `toolCalls=0` i bez promene stanja.
-- [ ] Potvrditi: pozitivni A→A i normalni W05 tok i dalje rade.
+- [x] Napisati failing testove za session bootstrap, expiry, verifier, media type i origin.
+- [x] Napisati A/B testove za GET, mutacije, oba AI toka i WebSocket.
+- [x] Implementirati server-issued session scope koji nije vidljiv modelu ili tool argumentima.
+- [x] Vezati svaku partiju za interni owner scope; `gameId` ostaje samo identifikator.
+- [x] Enforcovati ownership pre čitanja, mutacije, provider-a i tool-a.
+- [x] Enforcovati CSRF/request verifier i tačan Origin na primenljivim browser zahtevima (browser same-site automatika ostaje za proveru).
+- [x] Enforcovati isti session/ownership/origin kontekst na WebSocket upgrade-u.
+- [x] Enforcovati `application/json`, pre-parse body limit i exact-key schema.
+- [x] Potvrditi: svaki early reject ima `providerAttempts=0`, `toolCalls=0` i bez promene stanja za pokrivene admission slučajeve.
+- [x] Potvrditi: pozitivni A→A i normalni W05 tok i dalje rade.
 
 **Gate I1:** T01, T02, T03, T08, T15 i CSRF imaju negativnu i pozitivnu kontrolu.
 
 ### Faza I2 — Rate, concurrency, lifecycle i deadline
 
-- [ ] Napisati failing testove sa fake clock-om i deferred provider-om.
-- [ ] Implementirati jedan zajednički in-memory resource governor.
-- [ ] Enforcovati 1 aktivan agent run po session scope-u i 2 globalno.
-- [ ] Enforcovati 5 prihvatanja/60 s po session scope-u i 20/60 s globalno.
-- [ ] Enforcovati 3 aktivne partije po scope-u i 100 globalno.
-- [ ] Enforcovati subscription limite i idempotent lease release.
-- [ ] Implementirati idle cleanup bez izbacivanja aktivnog/pinovanog resursa.
-- [ ] Pratiti raw provider posao koji ignoriše abort; kasni rezultat ne sme postati success.
-- [ ] Potvrditi oslobađanje kapaciteta posle success/failure/cancel/deadline-a.
-- [ ] Potvrditi da novi game/session ne resetuje globalni backstop.
+- [x] Napisati failing testove sa fake clock-om i deferred provider-om.
+- [x] Implementirati jedan zajednički in-memory resource governor.
+- [x] Enforcovati 1 aktivan agent run po session scope-u i 2 globalno.
+- [x] Enforcovati 5 prihvatanja/60 s po session scope-u i 20/60 s globalno.
+- [x] Enforcovati 3 aktivne partije po scope-u i 100 globalno.
+- [x] Enforcovati subscription limite i idempotent lease release.
+- [x] Implementirati idle cleanup bez izbacivanja aktivnog/pinovanog resursa.
+- [x] Pratiti raw provider posao koji ignoriše abort; kasni rezultat ne sme postati success.
+- [x] Potvrditi oslobađanje kapaciteta posle success/failure/cancel/deadline-a.
+- [x] Potvrditi da novi game/session ne resetuje globalni backstop.
 
 **Gate I2:** T11, T12, T13 i T17 prolaze; izmereni maksimum nikada ne prelazi politiku.
 
 ### Faza I3 — Agent/tool/final assurance
 
 - [ ] Napisati failing testove za raw/oversized/additional/secret-bearing tool rezultate.
-- [ ] Parsirati tool rezultat u novi normalizovani DTO pre model transcript-a.
-- [ ] Zadržati zatvoren registry i odbiti unknown, inherited, write, network, file i shell alate.
-- [ ] Uvesti structured evidence fact reference umesto slobodne modelske činjenične rečenice.
-- [ ] Generisati prikaz evidence-a iz validiranih serverskih činjenica.
-- [ ] Centralizovati plain-text politiku za C0/C1, bidi, zero-width, tag, Markdown i URL sadržaj.
+- [x] Parsirati tool rezultat u novi normalizovani DTO pre model transcript-a.
+- [x] Zadržati zatvoren registry i odbiti unknown, inherited i nepostojeće write/network/file/shell alate.
+- [x] Uvesti structured evidence fact reference umesto slobodne modelske činjenične rečenice.
+- [x] Generisati prikaz evidence-a iz validiranih serverskih činjenica.
+- [x] Centralizovati plain-text politiku za C0/C1, bidi i zero-width; HTML/Markdown/URL ostaju inertan podatak jer se modelov proizvoljan tekst ne prikazuje, a UI koristi `textContent`.
 - [ ] Provesti malicious-provider/prompt-injection fixture kroz stvarni HTTP→agent→tool put.
-- [ ] Potvrditi da injection ne menja allowlist, scope, budžet ili kanonsko stanje.
-- [ ] Potvrditi da validan strukturirani plan i dalje prolazi.
+- [x] Potvrditi da fixture injection ne menja allowlist, budžet ili kanonsko stanje; HTTP-level adversarial journey ostaje otvoren.
+- [x] Potvrditi da validan strukturirani plan i dalje prolazi.
 
 **Gate I3:** T06, T07, T09 i T10 prolaze sa eksplicitnim provider/tool/state brojačima.
 
 ### Faza I4 — Security events, browser i production profil
 
 - [ ] Napisati exact-schema testove za admission/access/limit/tool/provider/run događaje.
-- [ ] Implementirati server-generated correlation ID i enumerisane reason kodove.
+- [x] Implementirati server-generated correlation ID i enumerisane reason kodove za HTTP denials.
 - [ ] Potvrditi da log ne sadrži game/session ID, cookie/verifier, prompt, raw result, stack ili ključ.
 - [ ] Potvrditi da newline/log-forging fixture pravi samo očekivani JSON događaj.
-- [ ] Dodati CSP, `nosniff` i `no-referrer` na lokalni production preview.
+- [x] Dodati CSP, `nosniff` i `no-referrer` na lokalni production preview; HTTP header smoke je prošao.
 - [ ] Dodati Playwright test stvarnog DOM-a za T04/T05.
 - [ ] Dokazati CSP blokadu resursom koji nezavisno vraća HTTP 200.
 - [ ] Potvrditi da normalan tekst, srpska slova, apostrof i `a < b` rade.
@@ -118,16 +118,17 @@ Ovaj dokument prevodi [W08 zadatak](02-Nedeljni-zadatak-Secure-the-Arcade.md) u 
 
 ### Faza V — Kompletna verifikacija i evidence
 
-- [ ] Dodati jednu ponovljivu offline komandu `npm run test:security`.
+- [x] Dodati ponovljivu offline komandu `npm run test:security` za server/unit/integration suite (browser testovi nisu dostupni u ovom okruženju).
 - [ ] Automatizovati T00–T15 i T17; T04/T05 moraju koristiti stvarni browser.
 - [ ] Dokumentovati automatizovani i eventualni ručni deo T16.
-- [ ] Ponovo pokrenuti ista tri AFTER scenarija i uporediti ih sa BEFORE rezultatima.
+- [x] Ponovo pokrenuti ista tri AFTER scenarija i uporediti ih sa BEFORE rezultatima; T00/T03/T13/T09/T10 automatizovani AFTER dokazi su evidentirani.
 - [ ] Popuniti observed rezultate, brojače i lokacije za T00–T17 i CSRF u `EVIDENCE_W08.md`.
-- [ ] Pokrenuti `npm run typecheck`.
-- [ ] Pokrenuti `npm test`.
-- [ ] Pokrenuti `npm run build`.
-- [ ] Pokrenuti `npm run test:security`.
-- [ ] Pokrenuti `npm run security:scan`.
+- [x] Pokrenuti `npm run typecheck`.
+- [x] Pokrenuti `npm test`.
+- [x] Pokrenuti `npm run build`.
+- [x] Pokrenuti `npm run test:security`.
+- [x] Pokrenuti `npm run security:scan`.
+- [x] Pokrenuti `git diff --check`.
 - [ ] Pokrenuti `npm audit --json` i zapisati odluku za svaki relevantan advisory.
 - [ ] Pokrenuti `git diff --check` i Markdown link proveru.
 - [ ] Pokrenuti `.githooks/pre-push` pre push-a.

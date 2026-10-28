@@ -6,10 +6,10 @@ import { createGameHttpServer } from "../server/httpServer.ts";
 import { GameSessionManager } from "../server/gameSession.ts";
 import { createShopAdvisor, type ShopAdvisor } from "../server/ai/shopAdvice.ts";
 
-async function startServer(random: () => number = () => 0, advisor: ShopAdvisor = createShopAdvisor(null)) {
+async function startServer(random: () => number = () => 0, advisor: ShopAdvisor = createShopAdvisor(null), serverOptions: { securityEventSink?: (event: any) => void } = {}) {
   let id = 0;
   const manager = new GameSessionManager(random, () => `api-${++id}`);
-  const server = createGameHttpServer(manager, advisor);
+  const server = createGameHttpServer(manager, advisor, undefined, serverOptions);
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
@@ -71,6 +71,8 @@ test("HTTP API creates independent games and exposes server-owned actions", asyn
     const secondResponse = await app.fetch(`${app.baseUrl}/api/games`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
     const second = (await json(secondResponse)).game;
     assert.equal(firstResponse.status, 201);
+    assert.equal(firstResponse.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(firstResponse.headers.get("referrer-policy"), "no-referrer");
     assert.notEqual(first.id, second.id);
     assert.equal(first.players[0].id, "api-2");
 
@@ -96,11 +98,14 @@ test("HTTP API creates independent games and exposes server-owned actions", asyn
 });
 
 test("HTTP API rejects malformed requests and missing game IDs safely", async () => {
-  const app = await startServer();
+  const events: unknown[] = [];
+  const app = await startServer(() => 0, createShopAdvisor(null), { securityEventSink: (event) => events.push(event) });
   try {
     const badJson = await app.fetch(`${app.baseUrl}/api/games`, { method: "POST", body: "{" });
     assert.equal(badJson.status, 400);
     assert.equal((await json(badJson)).error.code, "invalid_json");
+    assert.equal((events[0] as { reason: string }).reason, "invalid_json");
+    assert.deepEqual(Object.keys(events[0] as object).sort(), ["correlationId", "event", "operation", "reason", "status"]);
 
     const created = await app.fetch(`${app.baseUrl}/api/games`, { method: "POST", body: "{}" });
     const { game } = await json(created);

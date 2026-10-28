@@ -10,7 +10,7 @@ const plan = ["extra_xp"];
 const happy = () => [
   SHOP_STATE,
   evalPlan(plan),
-  finalAnswer(validResult({ plan, evidence: [{ source: "evaluate_perk_plan", step: 2, finding: "Extra XP is affordable." }] })),
+  finalAnswer(validResult({ plan, evidence: [{ source: "evaluate_perk_plan", step: 2, fact: "plan_valid" }] })),
 ];
 
 async function runWith(items: Parameters<typeof scripted>[0], options: Record<string, unknown> = {}) {

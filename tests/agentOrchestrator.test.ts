@@ -29,8 +29,8 @@ test("E01 success: two tools between three model steps, validated final", async 
     finalAnswer(validResult({
       plan,
       evidence: [
-        { source: "get_shop_state", step: 1, finding: "3 points available." },
-        { source: "evaluate_perk_plan", step: 2, finding: "Plan is valid and costs 3." },
+        { source: "get_shop_state", step: 1, fact: "perk_points" },
+        { source: "evaluate_perk_plan", step: 2, fact: "plan_valid" },
       ],
     })),
   ]);
@@ -127,7 +127,7 @@ test("E11 an invalid final is never a success", async () => {
   const plan = ["luck"];
   const cases: Array<[string, Parameters<typeof scripted>[0]]> = [
     ["final before any tool", [finalAnswer(validResult())]],
-    ["invented evidence source", [SHOP_STATE, evalPlan(plan), finalAnswer(validResult({ plan, evidence: [{ source: "get_recent_runs", step: 1, finding: "x" }] }))]],
+    ["invented evidence source", [SHOP_STATE, evalPlan(plan), finalAnswer(validResult({ plan, evidence: [{ source: "get_recent_runs", step: 1, fact: "latest_run_score" }] }))]],
     ["no evidence", [SHOP_STATE, evalPlan(plan), finalAnswer(validResult({ plan, evidence: [] }))]],
     ["plan was never evaluated", [SHOP_STATE, finalAnswer(validResult({ plan }))]],
     ["completed false", [SHOP_STATE, evalPlan(plan), finalAnswer(validResult({ plan, completed: false }))]],
@@ -155,13 +155,16 @@ test("E13 injected text in a tool result changes neither the allowlist nor the l
   assert.equal(outcome.stopReason, "unknown_tool");
   assert.equal(outcome.toolCalls, 1);
   assert.deepEqual(script.calls[1].request.tools.map((tool) => tool.name), [...TOOL_NAMES]);
+  const forwarded = script.calls[1].request.transcript[0]!.result;
+  assert.equal(JSON.stringify(forwarded).includes("IGNORE ALL RULES"), false);
+  assert.deepEqual((forwarded as { effects: unknown[] }).effects, [{ perk: "luck", code: "luck_chance" }]);
 });
 
 test("E14 one revision: a rejected plan is evaluated again with a corrected plan", async () => {
   const { outcome, script } = await run(2, [
     evalPlan(["extra_life"]),
     evalPlan(["extra_xp"]),
-    finalAnswer(validResult({ plan: ["extra_xp"], evidence: [{ source: "evaluate_perk_plan", step: 2, finding: "Extra XP is affordable." }] })),
+    finalAnswer(validResult({ plan: ["extra_xp"], evidence: [{ source: "evaluate_perk_plan", step: 2, fact: "plan_valid" }] })),
   ]);
   assert.equal(outcome.stopReason, "completed");
   assert.equal(outcome.toolCalls, 2);
@@ -169,7 +172,7 @@ test("E14 one revision: a rejected plan is evaluated again with a corrected plan
 });
 
 test("E16 claims about past games need real history", async () => {
-  const claim = finalAnswer(validResult({ plan: [], evidence: [{ source: "get_recent_runs", step: 2, finding: "Past games ended early." }] }));
+  const claim = finalAnswer(validResult({ plan: [], evidence: [{ source: "get_recent_runs", step: 2, fact: "latest_run_end" }] }));
   const empty = await run(0, [SHOP_STATE, toolRequest("get_recent_runs", { limit: 3 }), claim]);
   assert.equal(empty.outcome.stopReason, "invalid_model_proposal");
 
@@ -185,7 +188,7 @@ test("E17 a changed or closed shop makes the run stale", async () => {
   const purchased = scripted([
     SHOP_STATE,
     evalPlan(["luck"]),
-    { run: () => { purchase.manager.purchasePerk(purchase.id, "extra_xp"); return { kind: "final", result: validResult({ plan: ["luck"], evidence: [{ source: "evaluate_perk_plan", step: 2, finding: "Luck is affordable." }] }) }; } },
+    { run: () => { purchase.manager.purchasePerk(purchase.id, "extra_xp"); return { kind: "final", result: validResult({ plan: ["luck"], evidence: [{ source: "evaluate_perk_plan", step: 2, fact: "plan_valid" }] }) }; } },
   ]);
   const afterPurchase = await runAgent({ manager: purchase.manager, gameId: purchase.id, transport: purchased.transport, deps: FAST });
   assert.equal(afterPurchase.stopReason, "stale");
@@ -205,7 +208,7 @@ test("E17 a changed or closed shop makes the run stale", async () => {
 });
 
 test("E18/E19 nothing affordable or everything capped completes with an empty plan", async () => {
-  const empty = finalAnswer(validResult({ plan: [], summary: "Nothing to buy yet.", evidence: [{ source: "get_shop_state", step: 1, finding: "No perk is affordable." }] }));
+  const empty = finalAnswer(validResult({ plan: [], summary: "Nothing to buy yet.", evidence: [{ source: "get_shop_state", step: 1, fact: "perk_points" }] }));
   const poor = await run(0, [SHOP_STATE, empty]);
   assert.equal(poor.outcome.stopReason, "completed");
   assert.deepEqual(poor.outcome.result?.plan, []);

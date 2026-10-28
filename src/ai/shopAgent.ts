@@ -44,14 +44,18 @@ function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boo
   return Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 }
 
-function plainText(value: unknown, max: number): value is string {
-  return typeof value === "string" && value.trim().length >= 1 && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value);
+/** Plain, non-directional display text. `<`/`>` remain valid data; the UI renders with textContent. */
+export function isSafeAgentText(value: unknown, max: number): value is string {
+  return typeof value === "string"
+    && value.trim().length >= 1
+    && value.length <= max
+    && !/[\u0000-\u001f\u007f\u0080-\u009f\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/u.test(value);
 }
 
 function validateAgentResultShape(value: unknown): AgentResult | null {
   if (!isRecord(value) || !exactKeys(value, ["summary", "plan", "evidence", "confidence", "completed"])) return null;
   const { summary, plan, evidence, confidence, completed } = value;
-  if (!plainText(summary, MAX_SUMMARY_CHARS) || completed !== true) return null;
+  if (!isSafeAgentText(summary, MAX_SUMMARY_CHARS) || completed !== true) return null;
   if (confidence !== "low" && confidence !== "medium" && confidence !== "high") return null;
   if (!Array.isArray(plan) || plan.length > MAX_PLAN_LENGTH || !plan.every(isPerk)) return null;
   if (!Array.isArray(evidence) || evidence.length < 1 || evidence.length > MAX_EVIDENCE) return null;
@@ -59,7 +63,7 @@ function validateAgentResultShape(value: unknown): AgentResult | null {
   for (const item of evidence) {
     if (!isRecord(item) || !exactKeys(item, ["source", "step", "finding"])) return null;
     if (!isToolName(item.source) || typeof item.step !== "number" || !Number.isSafeInteger(item.step) || item.step < 1
-      || !plainText(item.finding, MAX_FINDING_CHARS)) return null;
+      || !isSafeAgentText(item.finding, MAX_FINDING_CHARS)) return null;
     items.push({ source: item.source, step: item.step, finding: item.finding });
   }
   return { summary, plan: [...plan], evidence: items, confidence, completed: true };
@@ -70,7 +74,7 @@ export function validatePublicAgentRun(value: unknown): PublicAgentRun | null {
   if (typeof value.revision !== "number" || !Number.isSafeInteger(value.revision) || value.revision < 0) return null;
   if (typeof value.steps !== "number" || !Number.isSafeInteger(value.steps) || value.steps < 0
     || typeof value.toolCalls !== "number" || !Number.isSafeInteger(value.toolCalls) || value.toolCalls < 0) return null;
-  if (!plainText(value.message, 200)) return null;
+  if (!isSafeAgentText(value.message, 200)) return null;
   const base = { runId: value.runId, revision: value.revision, steps: value.steps, toolCalls: value.toolCalls, message: value.message };
   if (value.status === "completed") {
     if (!exactKeys(value, ["runId", "status", "revision", "steps", "toolCalls", "result", "message"])) return null;

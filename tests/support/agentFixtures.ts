@@ -70,7 +70,7 @@ export function validResult(overrides: Record<string, unknown> = {}) {
   return {
     summary: "Buy Extra XP twice, then save.",
     plan: ["extra_xp"],
-    evidence: [{ source: "get_shop_state", step: 1, finding: "3 points, Extra XP level 0." }],
+    evidence: [{ source: "get_shop_state", step: 1, fact: "perk_points" }],
     confidence: "medium",
     completed: true,
     ...overrides,
