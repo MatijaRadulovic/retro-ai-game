@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { ADVICE_MODELS, type AdviceModel } from "../../src/ai/shopAdvice.ts";
-import { AGENT_GOAL, type AgentResult, type Perk, type StopReason } from "../../src/ai/shopAgent.ts";
+import { AGENT_GOAL, type AgentResult, type Perk, type StopReason, type ToolName } from "../../src/ai/shopAgent.ts";
 import { ProviderFailure, type ProviderUsage } from "../ai/shopAdvice.ts";
 import type { GameSessionManager, GameSnapshot } from "../gameSession.ts";
 import { runAttempt, waitFor } from "./attempt.ts";
@@ -19,6 +19,7 @@ export type AgentDeps = {
   runId?: () => string;
   backoffScheduleMs?: readonly number[];
   telemetry?: AgentTelemetrySink;
+  correlationId?: string;
 };
 
 export type RunAgentInput = {
@@ -92,7 +93,7 @@ export async function runAgent(input: RunAgentInput): Promise<AgentOutcome> {
 
   function emit(event: Parameters<AgentTelemetrySink>[0]): void {
     try {
-      deps.telemetry?.(event);
+      deps.telemetry?.(event, deps.correlationId);
     } catch {
       // Diagnostics must never change the run.
     }
@@ -110,6 +111,12 @@ export async function runAgent(input: RunAgentInput): Promise<AgentOutcome> {
       providerAttempts: run.providerAttempts, elapsedMs, log: run.log,
       ...(result ? { result, planLine: buildPlanLine(result.plan, run.transcript) } : {}),
     };
+  }
+
+  function rejectTool(reason: Extract<StopReason, "unknown_tool" | "invalid_tool_arguments" | "tool_failed" | "step_limit" | "tool_call_limit" | "repeated_action" | "stale">, step: number, tool?: ToolName): AgentOutcome {
+    emit({ event: "shop_agent_tool_rejected", reason, ...(tool ? { tool } : {}), step,
+      providerAttempts: run.providerAttempts, toolCalls: run.toolCallCount });
+    return finish(reason);
   }
 
   function isCurrent(snapshot: GameSnapshot | null): snapshot is GameSnapshot {
@@ -142,7 +149,8 @@ export async function runAgent(input: RunAgentInput): Promise<AgentOutcome> {
         const latencyMs = Math.max(0, Math.round(now() - attemptStarted));
         emit({
           event: "shop_agent_provider_attempt", runId, step: run.stepCount + 1, attempt: run.providerAttempts,
-          model, status: "success", latencyMs, ...(response.usage ? { usage: response.usage } : {}),
+          model, status: "success", providerAttempts: run.providerAttempts, toolCalls: run.toolCallCount,
+          latencyMs, ...(response.usage ? { usage: response.usage } : {}),
         });
         return { ok: true, value: response.value, model, usage: response.usage, latencyMs };
       } catch (error) {
@@ -151,6 +159,7 @@ export async function runAgent(input: RunAgentInput): Promise<AgentOutcome> {
         emit({
           event: "shop_agent_provider_attempt", runId, step: run.stepCount + 1, attempt: run.providerAttempts, model,
           status: "failure", errorClass: cancelled ? "cancelled" : failure.errorClass,
+          providerAttempts: run.providerAttempts, toolCalls: run.toolCallCount,
           ...(failure.status !== undefined ? { providerStatus: failure.status } : {}),
           latencyMs: Math.max(0, Math.round(now() - attemptStarted)),
         });
@@ -216,32 +225,32 @@ export async function runAgent(input: RunAgentInput): Promise<AgentOutcome> {
     const tool = lookupTool(envelope.tool, tools);
     if (!tool) {
       record("rejected", "rejected");
-      return finish("unknown_tool");
+      return rejectTool("unknown_tool", stepNo);
     }
     const args = tool.validateArgs(envelope.arguments);
     if (!args.ok) {
       record("tool_request", "rejected", tool.name);
-      return finish("invalid_tool_arguments");
+      return rejectTool("invalid_tool_arguments", stepNo, tool.name);
     }
     if (stepNo >= limits.maxAgentSteps) {
       record("tool_request", "rejected", tool.name);
-      return finish("step_limit");
+      return rejectTool("step_limit", stepNo, tool.name);
     }
     if (run.toolCallCount >= limits.maxToolCalls
       || (tool.name === "evaluate_perk_plan" && run.evaluatorCallCount >= limits.maxEvaluatorCalls)) {
       record("tool_request", "rejected", tool.name);
-      return finish("tool_call_limit");
+      return rejectTool("tool_call_limit", stepNo, tool.name);
     }
     const key = `${tool.name}|${JSON.stringify(args.value)}|${stateVersion}`;
     if (run.seen.has(key)) {
       record("tool_request", "rejected", tool.name);
-      return finish("repeated_action");
+      return rejectTool("repeated_action", stepNo, tool.name);
     }
     run.seen.add(key);
     const snapshot = readSnapshot(manager, gameId);
     if (!isCurrent(snapshot)) {
       record("tool_request", "rejected", tool.name);
-      return finish("stale");
+      return rejectTool("stale", stepNo, tool.name);
     }
 
     run.toolCallCount += 1;
@@ -252,7 +261,7 @@ export async function runAgent(input: RunAgentInput): Promise<AgentOutcome> {
       result = tool.execute(args.value, { snapshot, history: manager.getRunHistory(gameId) });
     } catch {
       record("tool_request", "rejected", tool.name);
-      return finish("tool_failed");
+      return rejectTool("tool_failed", stepNo, tool.name);
     }
     let size = Number.POSITIVE_INFINITY;
     let normalizedResult: unknown | null = null;
@@ -267,7 +276,7 @@ export async function runAgent(input: RunAgentInput): Promise<AgentOutcome> {
     if (now() - toolStarted > limits.toolTimeoutMs || size > limits.maxToolResultBytes
       || !tool.validateResult(result) || normalizedResult === null || normalizedSize > limits.maxToolResultBytes) {
       record("tool_request", "rejected", tool.name);
-      return finish("tool_failed");
+      return rejectTool("tool_failed", stepNo, tool.name);
     }
     record("tool_request", "accepted", tool.name);
     run.transcript.push({ step: stepNo, tool: tool.name, arguments: args.value, result: normalizedResult });

@@ -19,7 +19,7 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 - [x] T001 Install project-local dependencies from `package-lock.json` with `npm ci`; record Node/npm versions and verify the lockfile is unchanged.
 - [x] T002 Run `npm run typecheck`, `npm test`, `npm run build`, and `npm run security:scan` separately; record exact output/status in `docs/week8/EVIDENCE_W08.md`.
 - [x] T003 Run the deterministic W05 HTTP success fixture in `tests/agentHttp.test.ts`; record model-step count, allowed-tool count, status, and the actual before/after state assertion in `docs/week8/EVIDENCE_W08.md` (T00 / BEFORE).
-- [x] T004 Run `npm audit --json` using `package-lock.json`; record package/version/advisory/runtime-or-dev/exposure/decision in `docs/week8/EVIDENCE_W08.md` without a forced bulk upgrade. Decision: findings remain open for compatibility/exposure review; no forced upgrade.
+- [x] T004 Run `npm audit --json` using `package-lock.json`; record package/version/advisory/runtime-or-dev/exposure/decision in `docs/week8/EVIDENCE_W08.md`. Baseline high findings were resolved with compatible non-forced patch updates, followed by full regression and a clean audit.
 
 **Gate**: Baseline commands have actual outcomes and the normal W05 fake path is recorded, or a reproducible blocker and next action are documented. No hardened behavior may be credited to this baseline.
 
@@ -50,7 +50,7 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 - [x] T010 [P] [US1] Add HTTP media-type, body-byte-limit, exact JSON shape, privilege-field, origin, verifier, and zero-provider/tool admission tests in `tests/httpServer.test.ts` (T01–T03, CSRF).
 - [x] T011 [US1] Add A-to-A/A-to-B ownership tests for snapshot, mutations, W04/W05 agent routes, and hidden-resource response behavior in `tests/sessionSecurity.test.ts` and `tests/agentHttp.test.ts` (T03, T08).
 - [x] T012 [US1] Add WebSocket origin/session/owner denial and positive subscription tests in `tests/sessionSecurity.test.ts` (T03, CSRF).
-- [ ] T013 [US1] Add client-tampered localStorage/game-state regression and server-authoritative snapshot assertions in `tests/agentHttp.test.ts` (T15).
+- [x] T013 [US1] Add client-tampered localStorage/game-state regression and server-authoritative snapshot assertions in `tests/agentHttp.test.ts` and the Playwright journey (T15).
 
 ### Implementation — User Story 1
 
@@ -59,9 +59,9 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 - [x] T016 [US1] Add ordered request context, exact Content-Type/body parsing, origin/verifier policy, correlation ID, stable safe denial mapping, and bootstrap `429 session_rate_limited` / `503 session_capacity_exhausted` responses in `server/httpServer.ts` and `server/security/requestContext.ts`.
 - [x] T017 [US1] Apply owner/session checks to every game, shop, agent, and event route before state access or provider work in `server/httpServer.ts`.
 - [x] T018 [US1] Enforce WebSocket origin, session, owner and verifier checks before upgrade/subscribe in `server/httpServer.ts` and `server/gameSession.ts`.
-- [ ] T019 [US1] Pass only immutable authorized scope into agent and tool execution, with no cookie/verifier/owner ID in model context, in `server/agent/shopAgent.ts`, `server/agent/orchestrator.ts`, and `server/agent/tools.ts`.
+- [x] T019 [US1] Pass only immutable authorized scope into agent and tool execution, with no cookie/verifier/owner ID in model context, in `server/agent/shopAgent.ts`, `server/agent/orchestrator.ts`, and `server/agent/tools.ts`; assert the model request transcript omits scope/credential fields in `tests/agentHttp.test.ts`.
 - [x] T020 [US1] Bootstrap and send the request verifier from the browser using tab-scoped `sessionStorage` (survives reload, clears on tab close), never `localStorage` or URLs, in `src/api/gameClient.ts` and `src/main.ts`.
-- [ ] T021 [US1] Run `npm test` and the focused session/API command; record T01–T03/T08/T15/CSRF actual results and BEFORE/AFTER T03 state/counters in `docs/week8/EVIDENCE_W08.md`.
+- [x] T021 [US1] Run `npm test`, focused session/API tests and browser regression; record T01–T03/T08/T15/CSRF actual results and BEFORE/AFTER T03 state/counters in `docs/week8/EVIDENCE_W08.md`.
 
 **Checkpoint**: A-to-A normal game and agent requests work; every A-to-B and missing/invalid-context case denies before private data/provider/tool work. The feature remains no-login and single-player.
 
@@ -105,9 +105,9 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 - [x] T033 [P] [US3] Add exact normalized tool DTO, allowed-field/value/size/scope, prototype-property, and synthetic-secret tests in `tests/agentTools.test.ts` (T07, T08, T10).
 - [x] T034 [P] [US3] Add fabricated fact/source, wrong fact type, application-wording, and ordinary Serbian/`a < b` final-result tests in `tests/agentFinal.test.ts` (T06, T09).
 - [x] T035 [P] [US3] Add end-to-end fake-provider injection, forbidden/write/network/file tool, repeat, invalid-envelope, and canonical-state-invariance tests in `tests/agentOrchestrator.test.ts` and `tests/agentHttp.test.ts` (T06–T11).
-- [ ] T036 [P] [US3] Add exact event schema, safe reason enums, redaction, newline/log-forging and one-record-per-event tests in `tests/securityEvents.test.ts` (T14).
-- [ ] T037 [P] [US3] Add production-preview browser tests for XSS/HTML/URL markers, CSP violation source, headers, normal game/WS/agent flow, and sentinel absence in `scripts/e2e/secureArcade.e2e.ts` (T04, T05, T16).
-- [ ] T038 [US3] Add localStorage/client-state tampering assertions to the browser journey in `scripts/e2e/secureArcade.e2e.ts` (T15).
+- [x] T036 [P] [US3] Add exact event schema, safe reason enums, redaction, correlation, bounded counters and newline/log-forging assertions in `tests/securityEvents.test.ts` and the production-preview journey (T14).
+- [x] T037 [P] [US3] Add production-preview browser tests for XSS/HTML/URL markers, CSP violation source, headers, normal game/WS/agent flow, and sentinel absence in `scripts/e2e/secureArcade.e2e.ts` (T04, T05, T16).
+- [x] T038 [US3] Add localStorage/client-state tampering assertions to the browser journey in `scripts/e2e/secureArcade.e2e.ts` (T15).
 
 ### Implementation — User Story 3
 
@@ -115,12 +115,12 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 - [x] T040 [US3] Replace model-authored evidence claims with validated source/step/fact references resolved into application-owned wording in `server/agent/finalResult.ts`, `server/agent/types.ts`, and `server/agent/prompt.ts`.
 - [x] T041 [US3] Centralize Unicode/plain-text policy for control, bidi, zero-width, HTML, Markdown, and URL-like content while retaining positive Serbian fixtures in `server/agent/finalResult.ts` and `src/ai/shopAgent.ts`.
 - [x] T042 [US3] Preserve the exact Google model chain and three-tool read-only allowlist; ensure validation, authorization, budgets, repeat detection and deadline decisions remain server-owned in `server/agent/tools.ts`, `server/agent/orchestrator.ts`, and `server/agent/shopAgent.ts`.
-- [ ] T043 [US3] Add an allowlisted security event union, server-generated correlation IDs, enumerated reasons, bounded counters, and a non-interfering sink in `server/security/securityEvents.ts` and `server/httpServer.ts`.
-- [ ] T044 [US3] Route HTTP admission/access/limit denials and agent/tool/provider/completion decisions through the safe event factory without logging raw input or identifiers in `server/httpServer.ts`, `server/agent/shopAgent.ts`, and `server/agent/orchestrator.ts`.
-- [ ] T045 [US3] Add production-preview CSP, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: no-referrer` while keeping game/API/WebSocket flow functional in `vite.config.ts` and `scripts/e2e/secureArcade.e2e.ts`.
-- [ ] T046 [US3] Extend the offline fake backend to load the synthetic sentinel internally and capture model/tool/response/event channels without printing the marker in `tests/helpers/securityFixtures.ts` and `scripts/e2e/secureArcade.e2e.ts`.
-- [ ] T047 [US3] Add a repeatable offline `npm run test:security` command covering HTTP, ownership, governor, agent/tool, event, sentinel, and browser checks in `package.json` and `scripts/e2e/secureArcade.e2e.ts`.
-- [ ] T048 [US3] Run focused tests, `npm test`, and `npm run test:security`; record T04–T10/T14/T16, secret scan counts, event outputs, and limitations in `docs/week8/EVIDENCE_W08.md`.
+- [x] T043 [US3] Complete one allowlisted security-event union for HTTP/WebSocket and agent decisions, bounded counters, server-generated correlation IDs/reasons and non-interfering sink in `server/security/securityEvents.ts`, `server/httpServer.ts`, and agent telemetry.
+- [x] T044 [US3] Route HTTP/WebSocket denials and agent/tool/provider/completion telemetry through one redacted event schema in `server/httpServer.ts`, `server/agent/shopAgent.ts`, and `server/agent/orchestrator.ts`.
+- [x] T045 [US3] Add production-preview CSP, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: no-referrer` while keeping game/API/WebSocket flow functional in `vite.config.ts` and `scripts/e2e/secureArcade.e2e.ts`.
+- [x] T046 [US3] Extend the offline fake backend to return the synthetic sentinel only in its hostile fake final and capture safe model-transcript/tool/provider metrics, response, and event channels without printing the marker in `scripts/e2e/fakeAdvisorServer.ts` and `scripts/e2e/secureArcade.e2e.ts`.
+- [x] T047 [US3] Add a repeatable offline `npm run test:security` command covering HTTP, ownership, governor, agent/tool, event, sentinel, and browser checks in `package.json` and `scripts/e2e/secureArcade.e2e.ts`.
+- [x] T048 [US3] Run focused tests, `npm test`, and `npm run test:security`; record T04–T10/T14/T16, secret scan counts, event outputs, and limitations in `docs/week8/EVIDENCE_W08.md`.
 
 **Checkpoint**: At least two model decisions and one allowed tool still produce grounded safe advice; malicious proposals/data cannot change scope, limits, or game state; browser security behavior is demonstrated against the production preview.
 
@@ -130,14 +130,14 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 
 **Purpose**: Close every W08 scenario and repeatable handoff gate without overstating what local fake tests establish.
 
-- [ ] T049 [P] Consolidate exact T00–T17 and CSRF test files/commands, dependencies, and automation/manual split in `docs/week8/03-Plan-i-provere-Secure-the-Arcade.md`.
-- [ ] T050 Run all `npm run typecheck`, `npm test`, `npm run build`, `npm run test:security`, and `npm run security:scan` commands separately; put actual output/status in `docs/week8/EVIDENCE_W08.md`.
-- [ ] T051 Run `npm audit --json`, resolve each relevant dependency advisory with exposure/compatibility evidence, and record any remaining finding in `docs/week8/EVIDENCE_W08.md` and `docs/week8/04-Audit-sest-nepravilnosti.md`.
-- [ ] T052 Repeat the exact frozen T03, T13, and T09/T10 fixtures after implementation; compare with their recorded BEFORE values in `docs/week8/EVIDENCE_W08.md`.
+- [x] T049 [P] Consolidate exact T00–T17 and CSRF test files/commands, dependencies, and automation/manual split in `docs/week8/03-Plan-i-provere-Secure-the-Arcade.md` and `docs/week8/EVIDENCE_W08.md`.
+- [x] T050 Run `npm run typecheck`, `npm test`, `npm run build`, `npm run test:security`, `npm run test:e2e`, `npm audit`, and `npm run security:scan` separately; put actual output/status in `docs/week8/EVIDENCE_W08.md`.
+- [x] T051 Run `npm audit`, resolve each relevant dependency advisory with exposure/compatibility evidence, and record outcome in `docs/week8/EVIDENCE_W08.md` and `docs/week8/04-Audit-sest-nepravilnosti.md`.
+- [x] T052 Repeat the exact frozen T03, T13, and T09/T10 fixtures after implementation; compare with their recorded BEFORE values in `docs/week8/EVIDENCE_W08.md`.
 - [ ] T053 Complete checkpoint/final commit, environment, test results, production browser smoke, sentinel scan, dependency decision, limitations, and redacted event example in `docs/week8/EVIDENCE_W08.md`.
 - [ ] T054 Confirm both members' actual contributions and AI-assisted work/review facts, then update `docs/tracking/AI_USAGE_LOG.md` and `docs/week8/EVIDENCE_W08.md` without inventing individual work.
 - [ ] T055 Run Markdown link review, `git diff --check`, and the configured `.githooks/pre-push` guard before any push; record results in `docs/week8/EVIDENCE_W08.md`.
-- [ ] T056 Prepare and rehearse the eight-minute demo outline in `docs/week8/03-Plan-i-provere-Secure-the-Arcade.md`; show normal W05 flow, two distinct abuse attempts, test results, comparisons, and production-build protection.
+- [ ] T056 Prepare and rehearse the eight-minute demo outline; guide prepared in `docs/week8/05-Demo-vodic-Secure-the-Arcade.md` covers normal W05 flow, two abuse attempts, test results, comparisons, and production-build protection. Presenter rehearsal is still pending.
 
 **Final gate**: W08 implementation and evidence satisfy `specs/004-secure-agent-boundaries/spec.md`, every applicable T00–T17/CSRF row has an observed outcome, all automated checks are reproducible offline, and the browser demo retains the normal game and W05 path.
 

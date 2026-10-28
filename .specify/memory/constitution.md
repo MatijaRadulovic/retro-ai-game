@@ -2,7 +2,9 @@
 Sync Impact Report
 - Version change: 1.1.0 → 1.2.0
 - Amended principle V to cover the user-approved three-model Google chain and privacy-safe attempt telemetry.
-- Impacted sources: AGENTS.md, TOOL_CONTRACT.md, AI security instructions, Gemini plan, feature 002.
+- Version change: 1.2.0 → 1.3.0
+- Amended principle V to explicitly cover the existing W04 read-only Shop Advisor and W05 read-only Shop Strategist as the only active AI flows.
+- Impacted sources: AGENTS.md, specs/002-shop-advisor/, specs/003-shop-agent/, specs/004-secure-agent-boundaries/, docs/specs/TOOL_CONTRACT.md, AI security instructions, Gemini plan.
 - Follow-up TODOs: none
 -->
 # RETRO SNAKE Constitution
@@ -41,13 +43,15 @@ be recorded honestly; skipped or unavailable checks MUST include a reason. Compl
 traceable evidence rather than unchecked plan items.
 
 ### V. Narrow Read-Only AI Boundary
-The only active AI behavior is the paused-shop advisor governed by
+The only active AI flows are the paused-shop W04 Shop Advisor governed by
 `specs/002-shop-advisor/`, `docs/specs/TOOL_CONTRACT.md`, and
-`docs/instructions/03-ai-hint-and-security.md`. It MUST remain read-only, allowlisted, sanitized,
-and unable to mutate game state. The current user request approves three server-selected Google models
-within one provider, with bounded retries, provider-specific capability branches, privacy-safe attempt
-telemetry, and safe fallback. No browser-held credential, arbitrary
-model ID, write-capable tool, autonomous loop, or game-state mutation may be introduced. Invalid
+`docs/instructions/03-ai-hint-and-security.md`, and the paused-shop W05 Shop Strategist governed by
+`specs/003-shop-agent/`. Both MUST remain read-only, allowlisted, sanitized, and unable to mutate
+game state. They use only the approved server-selected Google model chain within one provider, with
+bounded retries, provider-specific capability branches, privacy-safe telemetry, and safe fallback.
+The W05 model may propose calls only to its existing application-owned read-only tools; it cannot
+purchase, control gameplay, or otherwise mutate a game. No browser-held credential, arbitrary model
+ID, additional provider, write-capable tool, or unbounded autonomous loop may be introduced. Invalid
 inputs and outputs MUST fail safely without exposing private data or invoking another model after a
 terminal failure.
 
@@ -93,4 +97,4 @@ principle incompatibly, a MINOR version adds or materially expands governance, a
 clarifies wording without changing obligations. Feature planning and final handoff MUST include a
 constitution compliance review; unjustified complexity or exceptions block completion.
 
-**Version**: 1.2.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-09-30
+**Version**: 1.3.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-10-28

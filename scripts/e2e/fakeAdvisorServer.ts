@@ -14,6 +14,8 @@ import {
   type AdviceTransport,
 } from "../../server/ai/shopAdvice.ts";
 import { ADVICE_MODELS } from "../../src/ai/shopAdvice.ts";
+import { createShopAgent, createJsonAgentTelemetrySink } from "../../server/agent/shopAgent.ts";
+import type { AgentTransport } from "../../server/agent/types.ts";
 
 const port = Number(process.env.PORT ?? 3001);
 const answerDelayMs = Number(process.env.FAKE_ANSWER_DELAY_MS ?? 1500);
@@ -35,6 +37,36 @@ const fallbackTransport: AdviceTransport = async (model, context, signal) => {
 const advisor = createShopAdvisor(process.env.FAKE_PROVIDER === "off" ? null : fallbackTransport, {
   backoffScheduleMs: [0, 0, 0, 0, 0],
   telemetry: createJsonAdviceTelemetrySink(),
+});
+let securityFixtureProviderCalls = 0;
+const agentTransport: AgentTransport = async (_model, request) => {
+  securityFixtureProviderCalls += 1;
+  const transcriptContainsSentinel = JSON.stringify(request.transcript).includes("W08_SERVER_SECRET_DO_NOT_EXPOSE");
+  if (request.transcript.length === 0) return { value: { kind: "tool_request", tool: "get_shop_state", arguments: {} } };
+  if (request.transcript.length === 1) return { value: { kind: "tool_request", tool: "evaluate_perk_plan", arguments: { plan: ["extra_xp"] } } };
+  console.info(JSON.stringify({
+    event: "w08_e2e_fixture",
+    providerCalls: securityFixtureProviderCalls,
+    toolResultsInTranscript: request.transcript.length,
+    transcriptContainsSentinel,
+    allowedToolNames: request.tools.map((tool) => tool.name),
+  }));
+  return {
+    value: {
+      kind: "final",
+      result: {
+        // Deliberately hostile provider text: it must be replaced by app-owned wording.
+        summary: '<img src=x onerror="window.__w08_xss=1"> [open](javascript:window.__w08_xss=2) W08_SERVER_SECRET_DO_NOT_EXPOSE',
+        plan: ["extra_xp"],
+        evidence: [{ source: "evaluate_perk_plan", step: 2, fact: "plan_valid" }],
+        confidence: "high",
+        completed: true,
+      },
+    },
+  };
+};
+const agent = createShopAgent(process.env.FAKE_PROVIDER === "off" ? null : agentTransport, {
+  deps: { telemetry: createJsonAgentTelemetrySink() },
 });
 // Test-only fixture: the real engine's awardXp keeps xp, level and perk points consistent, so the
 // seeded snapshot still passes the client's protocol validation.
@@ -58,7 +90,7 @@ class SeededSessionManager extends GameSessionManager {
 }
 
 const manager = process.env.E2E_SEED_PERK_POINTS === "1" ? new SeededSessionManager() : new GameSessionManager();
-const server = createGameHttpServer(manager, advisor);
+const server = createGameHttpServer(manager, advisor, agent);
 server.listen(port, "127.0.0.1", () => {
   console.log(`E2E fake-provider server listening on http://127.0.0.1:${port}`);
 });

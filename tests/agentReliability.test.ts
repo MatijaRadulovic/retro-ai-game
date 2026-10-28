@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { runAgent } from "../server/agent/orchestrator.ts";
 import { ProviderFailure } from "../server/ai/shopAdvice.ts";
-import type { AgentAttemptEvent, AgentRunEvent } from "../server/agent/types.ts";
+import type { AgentAttemptEvent, AgentRunEvent, AgentTelemetryEvent } from "../server/agent/types.ts";
 import { ADVICE_MODELS } from "../src/ai/shopAdvice.ts";
 import { FAST, SHOP_STATE, evalPlan, finalAnswer, pausedGame, scripted, validResult } from "./support/agentFixtures.ts";
 
@@ -109,10 +109,10 @@ test("E12 cancelling aborts the active call and ends the run as cancelled", asyn
 });
 
 test("telemetry has one event per attempt plus one run summary, with no prompts or secrets", async () => {
-  const events: Array<AgentAttemptEvent | AgentRunEvent> = [];
+  const events: AgentTelemetryEvent[] = [];
   const { outcome } = await runWith(
     [{ fail: new ProviderFailure("transient", 429) }, ...happy()],
-    { deps: { ...FAST, telemetry: (event: AgentAttemptEvent | AgentRunEvent) => events.push(event) } },
+    { deps: { ...FAST, telemetry: (event: AgentTelemetryEvent) => events.push(event) } },
   );
   assert.equal(outcome.stopReason, "completed");
   const attempts = events.filter((event) => event.event === "shop_agent_provider_attempt") as AgentAttemptEvent[];

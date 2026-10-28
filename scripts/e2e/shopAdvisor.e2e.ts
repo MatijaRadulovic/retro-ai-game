@@ -62,8 +62,8 @@ async function stop(server: Server | undefined): Promise<void> {
   clearTimeout(timer);
 }
 
-const startApi = (port: number, env: NodeJS.ProcessEnv = {}) =>
-  start("fake API", ["--import", "tsx", "scripts/e2e/fakeAdvisorServer.ts"], { PORT: String(port), ...env }, /listening/);
+const startApi = (port: number, origin: string, env: NodeJS.ProcessEnv = {}) =>
+  start("fake API", ["--import", "tsx", "scripts/e2e/fakeAdvisorServer.ts"], { PORT: String(port), CLIENT_ORIGIN: origin, ...env }, /listening/);
 
 function telemetry(server: Server): Array<Record<string, unknown>> {
   return server.output.filter((line) => line.startsWith("{")).map((line) => JSON.parse(line) as Record<string, unknown>);
@@ -115,7 +115,7 @@ async function main(): Promise<void> {
       { API_PORT: String(apiPort) }, /Local:/);
 
     // Seeded so the first pause of each game has one perk point: M5 is then always runnable.
-    api = await startApi(apiPort, { E2E_SEED_PERK_POINTS: "1" });
+    api = await startApi(apiPort, webUrl, { E2E_SEED_PERK_POINTS: "1" });
     const page = await browser.newPage();
 
     await check("M1", "ASK SHOP AI shows a pending state, then validated advice", async () => {
@@ -161,15 +161,20 @@ async function main(): Promise<void> {
     });
 
     await check("M4b", "A client disconnect aborts the provider call on the backend", async () => {
-      const api_ = `http://127.0.0.1:${apiPort}/api/games`;
-      const post = (path: string, body: unknown = {}, signal?: AbortSignal) => fetch(`${api_}${path}`, {
-        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal,
+      const api_ = `http://127.0.0.1:${apiPort}`;
+      const bootstrap = await fetch(`${api_}/api/session`, {
+        method: "POST", headers: { "content-type": "application/json", origin: webUrl }, body: "{}",
       });
-      const { game } = await (await post("")).json() as { game: { id: string } };
-      await post(`/${game.id}/move`, { direction: "up" });
-      await post(`/${game.id}/pause`);
+      const session = await bootstrap.json() as { requestVerifier: string };
+      const cookie = bootstrap.headers.get("set-cookie")!.split(";")[0]!;
+      const post = (path: string, body: unknown = {}, signal?: AbortSignal) => fetch(`${api_}${path}`, {
+        method: "POST", headers: { "content-type": "application/json", cookie, "x-retro-request": session.requestVerifier, origin: webUrl }, body: JSON.stringify(body), signal,
+      });
+      const { game } = await (await post("/api/games")).json() as { game: { id: string } };
+      await post(`/api/games/${game.id}/move`, { direction: "up" });
+      await post(`/api/games/${game.id}/pause`);
       const attemptsBefore = telemetry(api!).length;
-      await post(`/${game.id}/shop-advice`, {}, AbortSignal.timeout(300)).catch(() => undefined);
+      await post(`/api/games/${game.id}/shop-advice`, {}, AbortSignal.timeout(300)).catch(() => undefined);
       await new Promise((resolve) => setTimeout(resolve, 2500));
       const late = telemetry(api!).slice(attemptsBefore);
       assert.ok(late.length > 0, "provider was called");
@@ -191,7 +196,7 @@ async function main(): Promise<void> {
     });
 
     await stop(api);
-    api = await startApi(apiPort, { FAKE_PROVIDER: "off" });
+    api = await startApi(apiPort, webUrl, { FAKE_PROVIDER: "off" });
 
     await check("M6", "No provider configured: safe unavailable message, game state unchanged", async () => {
       await openFreshShop(page);

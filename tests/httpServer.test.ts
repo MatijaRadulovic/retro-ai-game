@@ -105,7 +105,9 @@ test("HTTP API rejects malformed requests and missing game IDs safely", async ()
     assert.equal(badJson.status, 400);
     assert.equal((await json(badJson)).error.code, "invalid_json");
     assert.equal((events[0] as { reason: string }).reason, "invalid_json");
-    assert.deepEqual(Object.keys(events[0] as object).sort(), ["correlationId", "event", "operation", "reason", "status"]);
+    assert.deepEqual(Object.keys(events[0] as object).sort(), ["correlationId", "event", "kind", "operation", "outcome", "providerAttempts", "reason", "status", "toolCalls"]);
+    assert.equal((events[0] as { kind: string }).kind, "request_denied");
+    assert.equal((events[0] as { providerAttempts: number }).providerAttempts, 0);
 
     const created = await app.fetch(`${app.baseUrl}/api/games`, { method: "POST", body: "{}" });
     const { game } = await json(created);
@@ -175,7 +177,8 @@ test("anonymous session verifier and ownership prevent cross-scope disclosure or
 });
 
 test("WebSocket requires the owning anonymous session, exact Origin, and verifier before upgrade", async () => {
-  const app = await startServer();
+  const securityEvents: Array<{ event: string; kind: string; operation: string; reason: string; correlationId: string }> = [];
+  const app = await startServer(() => 0, createShopAdvisor(null), { securityEventSink: (event) => { if (event.kind === "request_denied") securityEvents.push(event); } });
   let gameSocket: WebSocket | undefined;
   try {
     const game = await app.createGame();
@@ -199,6 +202,10 @@ test("WebSocket requires the owning anonymous session, exact Origin, and verifie
     });
     const [, foreignResponse] = await once(foreignSocket, "unexpected-response");
     assert.equal((foreignResponse as import("node:http").IncomingMessage).statusCode, 404);
+    assert.equal(securityEvents.length, 3);
+    assert.deepEqual(securityEvents.map((event) => event.reason), ["request_forbidden", "request_forbidden", "game_not_found"]);
+    assert.ok(securityEvents.every((event) => event.event === "w08_security_event" && event.operation === "game_events"));
+    assert.equal(new Set(securityEvents.map((event) => event.correlationId)).size, 3);
   } finally {
     if (gameSocket?.readyState === WebSocket.OPEN) gameSocket.close();
     await app.close();

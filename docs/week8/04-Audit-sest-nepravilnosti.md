@@ -124,7 +124,11 @@ R4 i R6 su obavezni W08 hardening/evidence rad, ali ne smeju zameniti prva tri i
 - **Planirana kontrola:** Jedinstven security event schema za admission accepted/denied, access denied, rate/concurrency denied, tool rejected i run completed; server correlation ID; enumerisani reason code; metrički brojači dostupni testu. Za lokalni profil dovoljan je injected sink/ring buffer u testu i single-line stdout u runtime-u; trajna baza nije potrebna. Jasno dokumentovati gubitak state-a na restartu i da se ključ nikada ne čuva u state/logu.
 - **Planirani dokaz:** Svaki negativan fixture proizvodi tačno očekivan događaj bez raw input-a, game/session/token vrednosti ili newline injection-a; rani reject ima nula provider/tool poziva. Restart ograničenje je eksplicitno, ne predstavljeno kao trajna zaštita.
 
+**W08 status posle implementacije:** Glavni runtime jaz je zatvoren za HTTP/WebSocket deny, provider attempt, tool rejection i završetak agent run-a: svi idu kroz `w08_security_event` allowlist factory, sa reason enum-ima, correlation ID-em, capped per-run/request brojačima i non-interfering sink-om. Unit/integration i production-preview testovi pokrivaju tačnu šemu, redakciju, correlation, log-forging i nulti provider/run učinak CSRF denial-a. Preostalo ograničenje: nema trajnog skladišta, reset procesa briše stdout/in-memory kontekst, a brojači nisu cross-process agregati. T14 je PASS za traženu lokalnu/testiranu granicu, ne dokaz trajnog incident-response sistema.
+
 ## Obavezni dependency nalaz van šest prioriteta
+
+Tabela ispod beleži stanje na baseline-u pre popravke. Završna odluka i posle-verifikacija su navedeni odmah ispod nje.
 
 `npm audit --json` je 2026-10-28 prijavio:
 
@@ -133,7 +137,11 @@ R4 i R6 su obavezni W08 hardening/evidence rad, ali ne smeju zameniti prva tri i
 | `vite` | 6.4.3 | Direktna dev zavisnost | Više `launch-editor` command/argument problema, cross-origin custom middleware i path serving nalaz | Otvoreno: proveriti lokalnu izloženost i najnižu bezbednu kompatibilnu verziju; zatim full regression |
 | `source-map-js` | 1.2.1 | Tranzitivna dev/build zavisnost | Event-loop DoS kroz indexed source-map section offsets, GHSA-68fv-2mgg-jv7q | Otvoreno: utvrditi parent paket i da li aplikacija obrađuje napadački source map; nadograditi kroz kompatibilan parent |
 
-Audit je završio exit kodom 1 i prijavio 2 high zbirna nalaza, bez critical nalaza. Ovo nije dokaz da su runtime poslovne granice bezbedne, niti se nalazi smeju automatski zatvoriti samo zato što su paketi razvojni.
+Audit je na baseline-u završio exit kodom 1 i prijavio 2 high zbirna nalaza, bez critical nalaza. Ovo nije dokaz da su runtime poslovne granice bezbedne.
+
+### Posle popravke
+
+`npm audit fix` (bez `--force`) izabrao je kompatibilne patch verzije unutar postojeće Vite semver dozvole: Vite `6.4.3 → 6.4.5` i tranzitivni `source-map-js 1.2.1 → 1.2.2`. Promenjen je lockfile, bez dodavanja novog framework-a ili major migracije. Posle izmene `npm audit` je exit 0, `found 0 vulnerabilities`; `npm run typecheck`, `npm test` (146/146), `npm run build`, `npm run test:security`, `npm run test:e2e` (7/7) i `npm run security:scan` su prošli. Nalaz je zatvoren za trenutno instalirano lockfile stanje; audit treba ponoviti pri novom dependency update-u.
 
 ## Mapa podataka preko granica
 

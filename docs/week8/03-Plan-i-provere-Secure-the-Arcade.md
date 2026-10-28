@@ -38,7 +38,7 @@ Ovaj dokument prevodi [W08 zadatak](02-Nedeljni-zadatak-Secure-the-Arcade.md) u 
 - [x] Zamrznuta su tri BEFORE/AFTER scenarija: T03, T13 i T09/T10; stvarni BEFORE probe-ovi su zabeleženi, AFTER ostaje pending.
 - [x] Dodat je versioned implementation prompt za tri prioriteta: `docs/prompts/week8/BUILD_PROMPT_SECURE_AGENT_BOUNDARIES_V1.md`.
 - [x] Svaki T scenario povezati sa fixture-om, test-fajlom, tipom testa i ponovljivom komandom u `EVIDENCE_W08.md`.
-- [ ] Napisati osmomimutni demo scenario iz odeljka „Demo plan“.
+- [x] Pripremiti osmomimutni scenario; koraci i fixture komande su u [05-Demo-vodic-Secure-the-Arcade.md](05-Demo-vodic-Secure-the-Arcade.md). Ljudska proba ostaje poseban završni korak.
 
 **Gate P — planiranje završeno:** sve stavke P1 su `[x]`; specifikacija, plan, tasks i evidence skeleton se međusobno ne sukobljavaju.
 
@@ -64,7 +64,7 @@ Ovaj dokument prevodi [W08 zadatak](02-Nedeljni-zadatak-Secure-the-Arcade.md) u 
 - [x] Implementirati server-issued session scope koji nije vidljiv modelu ili tool argumentima.
 - [x] Vezati svaku partiju za interni owner scope; `gameId` ostaje samo identifikator.
 - [x] Enforcovati ownership pre čitanja, mutacije, provider-a i tool-a.
-- [x] Enforcovati CSRF/request verifier i tačan Origin na primenljivim browser zahtevima (browser same-site automatika ostaje za proveru).
+- [x] Enforcovati CSRF/request verifier i tačan Origin; Playwright potvrđuje same-site/different-origin cookie form request dobija 403 bez provider/run side-effect-a.
 - [x] Enforcovati isti session/ownership/origin kontekst na WebSocket upgrade-u.
 - [x] Enforcovati `application/json`, pre-parse body limit i exact-key schema.
 - [x] Potvrditi: svaki early reject ima `providerAttempts=0`, `toolCalls=0` i bez promene stanja za pokrivene admission slučajeve.
@@ -89,62 +89,61 @@ Ovaj dokument prevodi [W08 zadatak](02-Nedeljni-zadatak-Secure-the-Arcade.md) u 
 
 ### Faza I3 — Agent/tool/final assurance
 
-- [ ] Napisati failing testove za raw/oversized/additional/secret-bearing tool rezultate.
+- [x] Napisati failing/negative tests za raw/oversized/additional/secret-bearing tool rezultate.
 - [x] Parsirati tool rezultat u novi normalizovani DTO pre model transcript-a.
 - [x] Zadržati zatvoren registry i odbiti unknown, inherited i nepostojeće write/network/file/shell alate.
 - [x] Uvesti structured evidence fact reference umesto slobodne modelske činjenične rečenice.
 - [x] Generisati prikaz evidence-a iz validiranih serverskih činjenica.
 - [x] Centralizovati plain-text politiku za C0/C1, bidi i zero-width; HTML/Markdown/URL ostaju inertan podatak jer se modelov proizvoljan tekst ne prikazuje, a UI koristi `textContent`.
-- [ ] Provesti malicious-provider/prompt-injection fixture kroz stvarni HTTP→agent→tool put.
-- [x] Potvrditi da fixture injection ne menja allowlist, budžet ili kanonsko stanje; HTTP-level adversarial journey ostaje otvoren.
+- [x] Provesti malicious forbidden-tool predlog kroz HTTP→agent policy (T09) i malicious provider final kroz browser journey (T04/T05).
+- [x] Potvrditi da fixture injection ne menja allowlist, budžet ili kanonsko stanje; fake provider dokazuje izvršnu politiku, ne live-model otpornost.
 - [x] Potvrditi da validan strukturirani plan i dalje prolazi.
 
 **Gate I3:** T06, T07, T09 i T10 prolaze sa eksplicitnim provider/tool/state brojačima.
 
 ### Faza I4 — Security events, browser i production profil
 
-- [ ] Napisati exact-schema testove za admission/access/limit/tool/provider/run događaje.
+- [ ] Napisati jedan exact-schema test/event union za sve admission/access/limit/tool/provider/run događaje sa bounded aggregate counters. Postoje HTTP denial schema testovi i odvojena agent telemetry, ali nisu objedinjeni.
 - [x] Implementirati server-generated correlation ID i enumerisane reason kodove za HTTP denials.
-- [ ] Potvrditi da log ne sadrži game/session ID, cookie/verifier, prompt, raw result, stack ili ključ.
-- [ ] Potvrditi da newline/log-forging fixture pravi samo očekivani JSON događaj.
+- [x] Potvrditi kroz telemetry i browser log capture da testirani logovi ne sadrže session cookie/verifier, provider prompt/result sentinel, stack ili tajnu.
+- [x] Potvrditi da HTTP newline/log-forging fixture pravi samo jedan safe JSON denial događaj; ostaje objedinjavanje svih agent event tipova.
 - [x] Dodati CSP, `nosniff` i `no-referrer` na lokalni production preview; HTTP header smoke je prošao.
-- [ ] Dodati Playwright test stvarnog DOM-a za T04/T05.
-- [ ] Dokazati CSP blokadu resursom koji nezavisno vraća HTTP 200.
-- [ ] Potvrditi da normalan tekst, srpska slova, apostrof i `a < b` rade.
-- [ ] Potvrditi da production igra, WebSocket i W05 fake agent rade pod CSP-om.
-- [ ] Proveriti sintetički sentinel u bundle-u, source map-u, response-u, model kontekstu i logu.
+- [x] Dodati Playwright test stvarnog DOM-a za T04/T05; pozitivne srpske/`a < b` kontrole su u final validation testovima.
+- [x] Dokazati CSP blokadu kontrolisanog resursa koji nezavisno vraća HTTP 200.
+- [x] Potvrditi production igra, WebSocket i W05 fake agent pod aktivnim CSP-om.
+- [x] Proveriti sintetički sentinel u svim testiranim bundle/response/model-transcript/log kanalima; source map se ne generiše u ovom production buildu. Ovo nije opšti DLP dokaz.
 
-**Gate I4:** T04, T05, T14 i T16 imaju browser/production dokaz i pozitivne kontrole.
+**Gate I4:** T04/T05/T16 i HTTP newline-log-forging deo T14 imaju stvarni browser/production dokaz. HTTP, provider-attempt, tool-rejection i završetak agent run-a dele `w08_security_event` šemu sa correlation ID-em i ograničenim brojačima.
 
 ### Faza V — Kompletna verifikacija i evidence
 
-- [x] Dodati ponovljivu offline komandu `npm run test:security` za server/unit/integration suite (browser testovi nisu dostupni u ovom okruženju).
-- [ ] Automatizovati T00–T15 i T17; T04/T05 moraju koristiti stvarni browser.
-- [ ] Dokumentovati automatizovani i eventualni ručni deo T16.
+- [x] Dodati ponovljivu offline komandu `npm run test:security` za unit/integration, production build i Chromium/Playwright browser suite.
+- [x] Automatizovati T00–T15 i T17; T04/T05 koriste stvarni browser. T14 proverava jednu zajedničku, allowlistovanu event šemu sa ograničenim brojačima.
+- [x] Dokumentovati T16 automated browser proof; manual instructor replay command is in the demo guide.
 - [x] Ponovo pokrenuti ista tri AFTER scenarija i uporediti ih sa BEFORE rezultatima; T00/T03/T13/T09/T10 automatizovani AFTER dokazi su evidentirani.
-- [ ] Popuniti observed rezultate, brojače i lokacije za T00–T17 i CSRF u `EVIDENCE_W08.md`.
+- [x] Popuniti observed rezultate, brojače i lokacije za T00–T17 i CSRF u `EVIDENCE_W08.md`.
 - [x] Pokrenuti `npm run typecheck`.
 - [x] Pokrenuti `npm test`.
 - [x] Pokrenuti `npm run build`.
 - [x] Pokrenuti `npm run test:security`.
 - [x] Pokrenuti `npm run security:scan`.
 - [x] Pokrenuti `git diff --check`.
-- [ ] Pokrenuti `npm audit --json` i zapisati odluku za svaki relevantan advisory.
-- [ ] Pokrenuti `git diff --check` i Markdown link proveru.
-- [ ] Pokrenuti `.githooks/pre-push` pre push-a.
-- [ ] Popuniti ograničenja, restart/single-process granicu i fake-vs-live granicu dokaza.
+- [x] Ponovo pokrenuti `npm audit`; kompatibilni patch upgrade je eliminisao trenutno prijavljene nalaze.
+- [x] Pokrenuti `git diff --check` i Markdown local-link proveru nakon finalnog doc patch-a; lokalni link sken preskače namerni `javascript:` napadački literal u test fixture-u.
+- [ ] Pokrenuti `.githooks/pre-push` neposredno pre eventualnog push-a (push trenutno nije tražen).
+- [x] Popuniti ograničenja: restart/single-process, anonimna sesija, dekorativni localStorage score i fake-vs-live granica.
 - [ ] Popuniti stvarni doprinos oba člana i proverljivu upotrebu AI-ja.
 
-**Gate V:** sve izvršene komande imaju stvarni exit status; nijedan `NOT RUN` nije predstavljen kao pass.
+**Gate V:** build/test/browser/audit/security scan prolaze i svi T redovi imaju observed zapis; pre komita ostaje završni Markdown/diff review i replay komanda.
 
 ### Faza D — Demo i završna predaja
 
 - [ ] Uvežbati normalni agentski tok u predviđenom vremenu.
 - [ ] Uvežbati browser/API zloupotrebu sa vidljivim nultim provider/tool efektom.
 - [ ] Uvežbati agent/tool zloupotrebu sa nepromenjenim stanjem.
-- [ ] Pripremiti prikaz tri BEFORE/AFTER scenarija.
-- [ ] Pripremiti production header/CSP dokaz.
-- [ ] Potvrditi da nastavnik može iz čistog checkpoint-a pokrenuti dokumentovanu security komandu.
+- [x] Pripremiti prikaz tri BEFORE/AFTER scenarija u demo vodiču.
+- [x] Pripremiti production header/CSP dokaz preko Playwright-a i response assertions.
+- [x] Navesti nastavniku ponovljive komande i Chromium prerequisite u demo vodiču; proveriti nakon commit-a kroz clean worktree nije urađeno.
 - [ ] Završno pregledati da u commitu nema ključa, tokena, privatnih logova ili nepovezanih izmena.
 
 **Gate D — završeno:** igra i W05 agent rade; svi obavezni scenariji imaju dokaz; demo staje u 8 minuta; predaja je ponovljiva.

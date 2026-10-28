@@ -40,31 +40,20 @@ Rules:
 
 ## Security event union
 
-Event kinds:
+Every HTTP/agent/WebSocket denial and every agent telemetry event uses `event: "w08_security_event"` and a `kind` discriminator:
 
-- `request_admission`
-- `access_denied`
-- `limit_denied`
-- `tool_rejected`
-- `provider_attempt`
-- `run_completed`
+- `request_denied`: operation, safe reason, HTTP status, and zero counters (or `null` if work count is not knowable).
+- `provider_attempt`: allowlisted model, outcome/reason, step/attempt, cumulative provider/tool counters, latency, and optional HTTP status.
+- `tool_rejected`: allowlisted rejection reason, allowlisted tool name or `unknown`, step, cumulative provider/tool counters.
+- `agent_run_finished`: outcome, stop reason, bounded steps/provider/tool counters, elapsed time.
 
 Illustrative redacted record:
 
 ```json
-{
-  "event": "tool_rejected",
-  "timestamp": "2026-10-28T10:30:00.000Z",
-  "correlationId": "w08-generated-7f31",
-  "operation": "shop_agent",
-  "outcome": "denied",
-  "reasonCode": "TOOL_NOT_ALLOWED",
-  "providerAttempts": 1,
-  "toolCalls": 0
-}
+{"event":"w08_security_event","kind":"tool_rejected","outcome":"denied","correlationId":"123e4567-e89b-42d3-a456-426614174000","operation":"shop_agent","reason":"unknown_tool","tool":"unknown","step":2,"providerAttempts":1,"toolCalls":0}
 ```
 
-All event objects are constructed from enums/bounded numbers and validated before one `JSON.stringify` write. Unknown tool input is recorded only as `unknown` or omitted. Raw attacker text cannot create a field or newline.
+All event objects are constructed from enums/bounded numbers and validated before one `JSON.stringify` write. Agent events carry the originating HTTP correlation ID; HTTP and WebSocket denials receive an application-generated correlation ID. Unknown tool input is recorded only as `unknown` or omitted. Raw attacker text cannot create a field or newline. Counters are cumulative within the current run/request and capped by fixed W08 limits; they are not durable aggregate analytics.
 
 ## Event minimization
 

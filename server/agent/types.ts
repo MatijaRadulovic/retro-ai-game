@@ -78,10 +78,20 @@ export type AgentAttemptEvent = {
   attempt: number;
   model: AdviceModel;
   status: "success" | "failure";
+  providerAttempts: number;
+  toolCalls: number;
   errorClass?: ProviderErrorClass;
   providerStatus?: number;
   latencyMs: number;
   usage?: ProviderUsage;
+};
+export type AgentToolRejectedEvent = {
+  event: "shop_agent_tool_rejected";
+  reason: "unknown_tool" | "invalid_tool_arguments" | "tool_failed" | "step_limit" | "tool_call_limit" | "repeated_action" | "stale";
+  tool?: ToolName;
+  step: number;
+  providerAttempts: number;
+  toolCalls: number;
 };
 export type AgentRunEvent = {
   event: "shop_agent_run";
@@ -94,7 +104,8 @@ export type AgentRunEvent = {
   elapsedMs: number;
   stepLog: StepLog[];
 };
-export type AgentTelemetrySink = (event: AgentAttemptEvent | AgentRunEvent) => void;
+export type AgentTelemetryEvent = AgentAttemptEvent | AgentToolRejectedEvent | AgentRunEvent;
+export type AgentTelemetrySink = (event: AgentTelemetryEvent, correlationId?: string) => void;
 
 export type ToolContext = { snapshot: GameSnapshot; history: readonly RunHistoryEntry[] };
 export type ToolDefinition = {

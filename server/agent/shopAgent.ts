@@ -4,6 +4,7 @@ import type { GameSessionManager } from "../gameSession.ts";
 import { runAgent, type AgentDeps } from "./orchestrator.ts";
 import type { AgentLimits, AgentOutcome, AgentTelemetrySink, AgentTransport } from "./types.ts";
 import type { ResourceGovernor } from "../security/resourceGovernor.ts";
+import { createAgentSecurityEvent, emitSecurityEvent, type SecurityEvent } from "../security/securityEvents.ts";
 
 export type ShopAgentOptions = { limits?: Partial<AgentLimits>; deps?: AgentDeps };
 
@@ -11,7 +12,10 @@ const SAFE_FAILURE = "ANALYSIS COULD NOT BE COMPLETED SAFELY. NO PURCHASE WAS MA
 const STALE_MESSAGE = "ANALYSIS RESULT IS OUT OF DATE. NO PURCHASE WAS MADE.";
 
 export function createJsonAgentTelemetrySink(write: (line: string) => void = (line) => console.info(line)): AgentTelemetrySink {
-  return (event) => write(JSON.stringify(event));
+  return (event, correlationId) => emitSecurityEvent(
+    (securityEvent: SecurityEvent) => write(JSON.stringify(securityEvent)),
+    createAgentSecurityEvent(event, correlationId),
+  );
 }
 
 function toPublicRun(outcome: AgentOutcome): PublicAgentRun {
@@ -33,7 +37,7 @@ export function createShopAgent(transport: AgentTransport | null, options: ShopA
     runId: (options.deps?.runId ?? randomUUID)(), status: "failed", revision, steps: 0, toolCalls: 0, stopReason, message: SAFE_FAILURE,
   });
   return {
-    async run(manager: GameSessionManager, gameId: string, signal?: AbortSignal, scopeId?: string, governor?: ResourceGovernor): Promise<PublicAgentRun> {
+    async run(manager: GameSessionManager, gameId: string, signal?: AbortSignal, scopeId?: string, governor?: ResourceGovernor, correlationId?: string): Promise<PublicAgentRun> {
       const snapshot = manager.get(gameId);
       if (inFlight.has(gameId)) return failed(snapshot.revision, "provider_failed");
       const lease = scopeId && governor ? governor.tryAcquireRun(scopeId) : undefined;
@@ -46,7 +50,8 @@ export function createShopAgent(transport: AgentTransport | null, options: ShopA
         const trackedTransport: AgentTransport = lease
           ? (model, request, providerSignal) => lease.trackProviderCall(transport(model, request, providerSignal))
           : transport;
-        return toPublicRun(await runAgent({ manager, gameId, transport: trackedTransport, limits: options.limits, deps: options.deps, signal }));
+        return toPublicRun(await runAgent({ manager, gameId, transport: trackedTransport, limits: options.limits,
+          deps: { ...options.deps, correlationId }, signal }));
       } finally {
         inFlight.delete(gameId);
         lease?.release();

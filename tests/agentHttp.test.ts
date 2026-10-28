@@ -58,6 +58,11 @@ test("a successful run returns the safe public shape and changes nothing", async
     assert.equal(run.message, "PLAN: EXTRA XP · COST 1 PT · 2 PT LEFT.");
     assert.equal(app.manager.get(app.id).revision, before);
     assert.equal(JSON.stringify(run).includes("fixture-1"), false);
+    const modelContext = JSON.stringify(script.calls.map((call) => call.request));
+    assert.equal(modelContext.includes(app.scopeId), false);
+    for (const credentialField of ["retro_session", "x-retro-request", "requestVerifier", "ownerId", "scopeId"]) {
+      assert.equal(modelContext.includes(credentialField), false, `model context must not include ${credentialField}`);
+    }
   } finally { await app.close(); }
 });
 

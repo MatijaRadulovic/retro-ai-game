@@ -181,7 +181,7 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse,
         response.once("close", onClose);
         const releasePin = manager.pinOwned(gameId, scope.scopeId);
         try {
-          const run = await agent.run(manager, gameId, controller.signal, scope.scopeId, governor);
+          const run = await agent.run(manager, gameId, controller.signal, scope.scopeId, governor, context.correlationId);
           if (!response.destroyed) sendJson(response, 200, { run });
         } finally {
           releasePin();
@@ -256,8 +256,15 @@ export function createGameHttpServer(
 
   server.on("upgrade", (request, socket, head) => {
     const url = new URL(request.url ?? "/", "http://localhost");
+    const deny = (status: number, reason: string) => {
+      const context = createRequestContext(request, "anonymous");
+      emitSecurityEvent(securityEventSink, createSecurityEvent({
+        operation: "game_events", reason, status, correlationId: context.correlationId,
+      }));
+    };
     const match = /^\/api\/games\/([^/]+)\/events$/.exec(url.pathname);
     if (!match) {
+      deny(404, "route_not_found");
       socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
       socket.destroy();
       return;
@@ -268,6 +275,7 @@ export function createGameHttpServer(
     const authorization = origin === clientOrigin ? sessions.authorizeDetailed(readCookie(request, "retro_session"), verifier) : { scope: null, failure: "request_forbidden" as const };
     if (!authorization.scope) {
       const status = authorization.failure === "session_required" || authorization.failure === "session_expired" ? 401 : 403;
+      deny(status, authorization.failure);
       socket.write(`HTTP/1.1 ${status} ${status === 401 ? "Unauthorized" : "Forbidden"}\r\n\r\n`);
       socket.destroy();
       return;
@@ -276,6 +284,7 @@ export function createGameHttpServer(
     try {
       manager.getOwned(gameId, scope.scopeId);
     } catch {
+      deny(404, "game_not_found");
       socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
       socket.destroy();
       return;
@@ -283,6 +292,7 @@ export function createGameHttpServer(
     try {
       if (!manager.canSubscribeOwned(gameId, scope.scopeId)) throw new Error("subscription capacity");
     } catch {
+      deny(503, "subscription_limit");
       socket.write("HTTP/1.1 503 Service Unavailable\r\n\r\n");
       socket.destroy();
       return;
