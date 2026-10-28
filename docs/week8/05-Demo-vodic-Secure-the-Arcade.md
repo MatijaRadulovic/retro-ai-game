@@ -16,7 +16,7 @@ Ovaj scenario je napravljen za osmominutni demo prema [W08 zadatku](02-Nedeljni-
 | W05 legacy user-flow regression | `scripts/e2e/shopAdvisor.e2e.ts` (`npm run test:e2e`) |
 | AI-assisted changes and human review facts | [AI usage log](../tracking/AI_USAGE_LOG.md); individual contributions need the pair to confirm |
 
-**Završni status (pre finalnom rerunu):** raniji `npm run test:security` i `npm run test:e2e` prolazili su; T14 je sada objedinjena kroz zajedničku allowlistovanu šemu sa korelacijom i ograničenim brojačima. Ljudska demo-proba i potvrda doprinosa oba člana i dalje čekaju.
+**Završni status:** `npm run test:security` = PASS (148/148 + production Chromium); `npm run test:e2e` = PASS (7/7); typecheck/build/security scan = PASS; `npm audit` = 0 findings. T14 uses one allowlisted HTTP/WebSocket/agent event schema with correlation and capped counters. Human demo rehearsal and confirmation of each member's contribution remain outstanding.
 
 ## Pre demo-a
 
@@ -56,7 +56,7 @@ Otvoriti `http://127.0.0.1:5173`. Fake server daje jedan perk point pri prvom pa
 | 4:25–5:35 | BEFORE/AFTER tri prioriteta: (1) T03 tuđ `gameId`: BEFORE bez session ownership mogao je da vrati 200; AFTER uniformni deny. (2) T13 različiti game ID-jevi: BEFORE dva paralelna provider poziva; AFTER jedan po scope-u/dva globalno uz reject pre provider-a. (3) T09/T10 tool result injection: BEFORE marker je stigao u sledeći model transcript; AFTER DTO normalizacija uklanja marker i zabranjeni alat se ne izvršava. | [Frozen comparisons](EVIDENCE_W08.md#7-zamrznuti-beforeafter-scenariji) |
 | 5:35–6:30 | Production zaštita: otvori test output. Pokажи stvarna CSP/`nosniff`/`no-referrer` zaglavlja; unrelated local script endpoint je zasebno potvrđen kao HTTP 200, ali browser ga je blokirao konkretnim `script-src` pravilom. Igra, WebSocket i W05 ostaju funkcionalni. | `PASS T16` iz `npm run test:security`; `vite.config.ts`; `scripts/e2e/secureArcade.e2e.ts` |
 | 6:30–7:20 | Ograničenja: `localStorage` može lažirati dekorativni best-score broj; ne postaje serverski rezultat niti pravo. Session/kvote/history su process-local i resetuju se restartom. Fake provider dokazuje enforcement, ne ponašanje svakog live modela. | T15/T16 observed redovi i ograničenja u `EVIDENCE_W08.md` |
-| 7:20–8:00 | Pokreni ili pokaži poslednji `npm run test:security` summary: 146/146, Playwright browser PASS, production build PASS. Navedi gde su SpecKit i evidence, pa prepusti individualna pitanja. | `specs/004-secure-agent-boundaries/{spec,plan,tasks}.md`; ovaj vodič; `EVIDENCE_W08.md` |
+| 7:20–8:00 | Pokreni ili pokaži poslednji `npm run test:security` summary: 148/148, Playwright browser PASS, production build PASS. Navedi gde su SpecKit i evidence, pa prepusti individualna pitanja. | `specs/004-secure-agent-boundaries/{spec,plan,tasks}.md`; ovaj vodič; `EVIDENCE_W08.md` |
 
 ## Ručne probe i rezervni plan
 

@@ -373,3 +373,9 @@ Append one concise entry for each substantive implementation, review, or documen
 - **Outcome:** updated constitution principle V to explicitly preserve both existing read-only AI flows; unified HTTP/WebSocket denial, provider-attempt, rejected-tool and agent-run events as `w08_security_event`, with bounded counters, safe enums, request correlation and a non-interfering JSON-line sink. Added schema/redaction/counter and WebSocket-denial tests plus production Chromium correlation/log-forging assertions; synchronized contract, tasks, audit and evidence.
 - **Verification:** focused agent/telemetry/security tests passed 39/39; full suite passed 148/148 including WebSocket-denial integration; `npm run test:security` passed 148/148 plus Chromium; W05 E2E passed 7/7; typecheck, production build, security scan, `npm audit` (0 vulnerabilities), and `git diff --check` passed. SpecKit Analyze prerequisite check found the feature artifacts and no extension hooks; reviewed spec/plan/tasks against the amended constitution without a remaining critical conflict.
 - **Limitations / next step:** T14 counters are capped per request/run, not durable or cross-process aggregates. Human demo rehearsal and contribution confirmation remain outstanding. Finish Markdown link/diff review, update commit evidence, and commit the closeout.
+
+## 2026-10-28 — Commit W08 security-event closeout
+
+- **Outcome:** committed the implementation, SpecKit alignment, browser test journey, demo guide, and evidence refresh as `4f3d5d3` (`security(w08): unify bounded assurance events and close evidence`).
+- **Verification:** before commit, `npm run test:security` passed 148/148 plus Chromium; `npm run test:e2e` 7/7; security scan and npm audit passed; Markdown local links and staged diff check passed.
+- **Remaining:** presenter rehearsal and the pair's individual contribution confirmation are deliberately unchecked; no push was performed, so the pre-push hook was not run.

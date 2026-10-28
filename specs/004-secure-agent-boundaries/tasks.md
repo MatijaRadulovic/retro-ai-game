@@ -134,7 +134,7 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 - [x] T050 Run `npm run typecheck`, `npm test`, `npm run build`, `npm run test:security`, `npm run test:e2e`, `npm audit`, and `npm run security:scan` separately; put actual output/status in `docs/week8/EVIDENCE_W08.md`.
 - [x] T051 Run `npm audit`, resolve each relevant dependency advisory with exposure/compatibility evidence, and record outcome in `docs/week8/EVIDENCE_W08.md` and `docs/week8/04-Audit-sest-nepravilnosti.md`.
 - [x] T052 Repeat the exact frozen T03, T13, and T09/T10 fixtures after implementation; compare with their recorded BEFORE values in `docs/week8/EVIDENCE_W08.md`.
-- [ ] T053 Complete checkpoint/final commit, environment, test results, production browser smoke, sentinel scan, dependency decision, limitations, and redacted event example in `docs/week8/EVIDENCE_W08.md`.
+- [x] T053 Complete checkpoint/final commit, environment, test results, production browser smoke, sentinel scan, dependency decision, limitations, and redacted event example in `docs/week8/EVIDENCE_W08.md` (closeout commit `4f3d5d3`).
 - [ ] T054 Confirm both members' actual contributions and AI-assisted work/review facts, then update `docs/tracking/AI_USAGE_LOG.md` and `docs/week8/EVIDENCE_W08.md` without inventing individual work.
 - [ ] T055 Run Markdown link review, `git diff --check`, and the configured `.githooks/pre-push` guard before any push; record results in `docs/week8/EVIDENCE_W08.md`.
 - [ ] T056 Prepare and rehearse the eight-minute demo outline; guide prepared in `docs/week8/05-Demo-vodic-Secure-the-Arcade.md` covers normal W05 flow, two abuse attempts, test results, comparisons, and production-build protection. Presenter rehearsal is still pending.
