@@ -46,21 +46,21 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 
 ### Tests first — User Story 1
 
-- [ ] T009 [US1] Add session bootstrap, cookie/verifier, malformed/expired session, constant-time verifier, 101st active session, and 21st issuance within 60 seconds tests in `tests/sessionSecurity.test.ts` (T03, T17, CSRF).
-- [ ] T010 [P] [US1] Add HTTP media-type, body-byte-limit, exact JSON shape, privilege-field, origin, verifier, and zero-provider/tool admission tests in `tests/httpServer.test.ts` (T01–T03, CSRF).
-- [ ] T011 [US1] Add A-to-A/A-to-B ownership tests for snapshot, mutations, W04/W05 agent routes, and hidden-resource response behavior in `tests/sessionSecurity.test.ts` and `tests/agentHttp.test.ts` (T03, T08).
-- [ ] T012 [US1] Add WebSocket origin/session/owner denial and positive subscription tests in `tests/sessionSecurity.test.ts` (T03, CSRF).
+- [x] T009 [US1] Add session bootstrap, cookie/verifier, malformed/expired session, constant-time verifier, 101st active session, and 21st issuance within 60 seconds tests in `tests/sessionSecurity.test.ts` (T03, T17, CSRF).
+- [x] T010 [P] [US1] Add HTTP media-type, body-byte-limit, exact JSON shape, privilege-field, origin, verifier, and zero-provider/tool admission tests in `tests/httpServer.test.ts` (T01–T03, CSRF).
+- [x] T011 [US1] Add A-to-A/A-to-B ownership tests for snapshot, mutations, W04/W05 agent routes, and hidden-resource response behavior in `tests/sessionSecurity.test.ts` and `tests/agentHttp.test.ts` (T03, T08).
+- [x] T012 [US1] Add WebSocket origin/session/owner denial and positive subscription tests in `tests/sessionSecurity.test.ts` (T03, CSRF).
 - [ ] T013 [US1] Add client-tampered localStorage/game-state regression and server-authoritative snapshot assertions in `tests/agentHttp.test.ts` (T15).
 
 ### Implementation — User Story 1
 
-- [ ] T014 [P] [US1] Implement opaque server-issued session records, token hashing, verifier lifecycle, expiry, 100-record capacity, 20-successful-issuance rolling 60-second rate, and injectable clock/random source in `server/security/sessionStore.ts` per `specs/004-secure-agent-boundaries/data-model.md`.
-- [ ] T015 [US1] Bind each game to exactly one internal owner scope and add owner-checked lookup/destruction without serializing scope data in `server/gameSession.ts`.
-- [ ] T016 [US1] Add ordered request context, exact Content-Type/body parsing, origin/verifier policy, correlation ID, stable safe denial mapping, and bootstrap `429 session_rate_limited` / `503 session_capacity_exhausted` responses in `server/httpServer.ts` and `server/security/requestContext.ts`.
-- [ ] T017 [US1] Apply owner/session checks to every game, shop, agent, and event route before state access or provider work in `server/httpServer.ts`.
-- [ ] T018 [US1] Enforce WebSocket origin, session, owner and verifier checks before upgrade/subscribe in `server/httpServer.ts` and `server/gameSession.ts`.
+- [x] T014 [P] [US1] Implement opaque server-issued session records, token hashing, verifier lifecycle, expiry, 100-record capacity, 20-successful-issuance rolling 60-second rate, and injectable clock/random source in `server/security/sessionStore.ts` per `specs/004-secure-agent-boundaries/data-model.md`.
+- [x] T015 [US1] Bind each game to exactly one internal owner scope and add owner-checked lookup/destruction without serializing scope data in `server/gameSession.ts`.
+- [x] T016 [US1] Add ordered request context, exact Content-Type/body parsing, origin/verifier policy, correlation ID, stable safe denial mapping, and bootstrap `429 session_rate_limited` / `503 session_capacity_exhausted` responses in `server/httpServer.ts` and `server/security/requestContext.ts`.
+- [x] T017 [US1] Apply owner/session checks to every game, shop, agent, and event route before state access or provider work in `server/httpServer.ts`.
+- [x] T018 [US1] Enforce WebSocket origin, session, owner and verifier checks before upgrade/subscribe in `server/httpServer.ts` and `server/gameSession.ts`.
 - [ ] T019 [US1] Pass only immutable authorized scope into agent and tool execution, with no cookie/verifier/owner ID in model context, in `server/agent/shopAgent.ts`, `server/agent/orchestrator.ts`, and `server/agent/tools.ts`.
-- [ ] T020 [US1] Bootstrap and send the request verifier from the browser using tab-scoped `sessionStorage` (survives reload, clears on tab close), never `localStorage` or URLs, in `src/api/gameClient.ts` and `src/main.ts`.
+- [x] T020 [US1] Bootstrap and send the request verifier from the browser using tab-scoped `sessionStorage` (survives reload, clears on tab close), never `localStorage` or URLs, in `src/api/gameClient.ts` and `src/main.ts`.
 - [ ] T021 [US1] Run `npm test` and the focused session/API command; record T01–T03/T08/T15/CSRF actual results and BEFORE/AFTER T03 state/counters in `docs/week8/EVIDENCE_W08.md`.
 
 **Checkpoint**: A-to-A normal game and agent requests work; every A-to-B and missing/invalid-context case denies before private data/provider/tool work. The feature remains no-login and single-player.

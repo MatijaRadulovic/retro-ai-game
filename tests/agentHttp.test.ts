@@ -8,8 +8,8 @@ import type { AgentTransport } from "../server/agent/types.ts";
 import { FAST, SHOP_STATE, evalPlan, finalAnswer, pausedGame, scripted, validResult } from "./support/agentFixtures.ts";
 
 async function start(transport: AgentTransport | null, points = 3) {
-  const { manager, id } = pausedGame(points);
-  const server = createGameHttpServer(manager, createShopAdvisor(null), createShopAgent(transport, { deps: FAST }));
+  const { manager, id, sessions, cookie, verifier } = pausedGame(points);
+  const server = createGameHttpServer(manager, createShopAdvisor(null), createShopAgent(transport, { deps: FAST }), { sessionStore: sessions });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
@@ -19,12 +19,11 @@ async function start(transport: AgentTransport | null, points = 3) {
     id,
     url: `http://127.0.0.1:${address.port}/api/games/${id}/shop-agent`,
     base: `http://127.0.0.1:${address.port}`,
+    post: (url: string, body: unknown, signal?: AbortSignal) => fetch(url, { method: "POST", headers: { "content-type": "application/json", cookie: `retro_session=${cookie}`, "x-retro-request": verifier, origin: "http://localhost:5173" }, body: JSON.stringify(body), signal }),
     close: () => new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve()))),
   };
 }
 
-const post = (url: string, body: unknown, signal?: AbortSignal) =>
-  fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal });
 const GOAL = { goal: "plan_next_purchases" };
 const plan = ["extra_xp"];
 const happy = () => [
@@ -38,7 +37,7 @@ test("a successful run returns the safe public shape and changes nothing", async
   const app = await start(script.transport);
   try {
     const before = app.manager.get(app.id).revision;
-    const response = await post(app.url, GOAL);
+    const response = await app.post(app.url, GOAL);
     assert.equal(response.status, 200);
     const { run } = await response.json() as { run: Record<string, unknown> };
     assert.deepEqual(Object.keys(run).sort(), ["message", "result", "revision", "runId", "status", "steps", "toolCalls"]);
@@ -54,7 +53,7 @@ test("a successful run returns the safe public shape and changes nothing", async
 test("a stopped run exposes only a stop reason and a safe message", async () => {
   const app = await start(scripted([{ value: { kind: "tool_request", tool: "delete_database", arguments: {} } }]).transport);
   try {
-    const { run } = await (await post(app.url, GOAL)).json() as { run: Record<string, unknown> };
+    const { run } = await (await app.post(app.url, GOAL)).json() as { run: Record<string, unknown> };
     assert.equal(run.status, "stopped");
     assert.equal(run.stopReason, "unknown_tool");
     assert.equal("result" in run, false);
@@ -66,12 +65,12 @@ test("E20 preflight rejects bad requests before any provider call", async () => 
   const script = scripted(happy());
   const app = await start(script.transport);
   try {
-    assert.equal((await post(app.url, {})).status, 400);
-    assert.equal((await post(app.url, { goal: "something else" })).status, 400);
-    assert.equal((await post(app.url, { ...GOAL, model: "gemini-evil" })).status, 400);
-    assert.equal((await post(`${app.base}/api/games/unknown/shop-agent`, GOAL)).status, 404);
+    assert.equal((await app.post(app.url, {})).status, 400);
+    assert.equal((await app.post(app.url, { goal: "something else" })).status, 400);
+    assert.equal((await app.post(app.url, { ...GOAL, model: "gemini-evil" })).status, 400);
+    assert.equal((await app.post(`${app.base}/api/games/unknown/shop-agent`, GOAL)).status, 404);
     app.manager.resume(app.id);
-    assert.equal((await post(app.url, GOAL)).status, 409);
+    assert.equal((await app.post(app.url, GOAL)).status, 409);
     assert.equal(script.calls.length, 0);
   } finally { await app.close(); }
 });
@@ -79,7 +78,7 @@ test("E20 preflight rejects bad requests before any provider call", async () => 
 test("without a configured provider the run fails safely with no provider call", async () => {
   const app = await start(null);
   try {
-    const { run } = await (await post(app.url, GOAL)).json() as { run: Record<string, unknown> };
+    const { run } = await (await app.post(app.url, GOAL)).json() as { run: Record<string, unknown> };
     assert.equal(run.status, "failed");
     assert.equal(run.stopReason, "provider_failed");
     assert.equal(run.steps, 0);
@@ -91,10 +90,10 @@ test("a second request while a run is active is busy and makes no second provide
   const app = await start(script.transport);
   const first = new AbortController();
   try {
-    const pending = post(app.url, GOAL, first.signal).catch(() => null);
+    const pending = app.post(app.url, GOAL, first.signal).catch(() => null);
     for (let index = 0; index < 100 && script.calls.length === 0; index += 1) await new Promise((resolve) => setTimeout(resolve, 5));
     assert.equal(script.calls.length, 1);
-    const { run } = await (await post(app.url, GOAL)).json() as { run: Record<string, unknown> };
+    const { run } = await (await app.post(app.url, GOAL)).json() as { run: Record<string, unknown> };
     assert.equal(run.status, "failed");
     assert.equal(run.steps, 0);
     assert.equal(script.calls.length, 1);

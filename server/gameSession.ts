@@ -17,6 +17,7 @@ export type { GameSnapshot, PlayerState } from "../src/game/gameProtocol.ts";
 
 type Session = {
   id: string;
+  ownerScopeId?: string;
   revision: number;
   config: GameConfig;
   configError: string | null;
@@ -28,7 +29,7 @@ type Session = {
   runRecorded: boolean;
 };
 
-export type SessionErrorCode = "game_not_found" | "invalid_status" | "insufficient_perk_points" | "perk_at_cap";
+export type SessionErrorCode = "game_not_found" | "invalid_status" | "insufficient_perk_points" | "perk_at_cap" | "game_limit_reached";
 
 export class SessionError extends Error {
   readonly code: SessionErrorCode;
@@ -53,6 +54,7 @@ function cloneSnapshot(snapshot: GameSnapshot): GameSnapshot {
 
 export class GameSessionManager {
   private readonly sessions = new Map<string, Session>();
+  private readonly ownedGameIds = new Map<string, Set<string>>();
   private readonly random: () => number;
   private readonly makeId: () => string;
 
@@ -62,9 +64,44 @@ export class GameSessionManager {
   }
 
   create(configInput: unknown = DEFAULT_CONFIG): GameSnapshot {
+    return this.createInternal(configInput);
+  }
+
+  createOwned(scopeId: string, configInput: unknown = DEFAULT_CONFIG): GameSnapshot {
+    const owned = this.ownedGameIds.get(scopeId) ?? new Set<string>();
+    if (owned.size >= 3) throw new SessionError("game_limit_reached", "Game session limit was reached.");
+    const snapshot = this.createInternal(configInput, scopeId);
+    owned.add(snapshot.id);
+    this.ownedGameIds.set(scopeId, owned);
+    return snapshot;
+  }
+
+  getOwned(id: string, scopeId: string): GameSnapshot { this.assertOwner(id, scopeId); return this.get(id); }
+  getRunHistoryOwned(id: string, scopeId: string): RunHistoryEntry[] { this.assertOwner(id, scopeId); return this.getRunHistory(id); }
+  subscribeOwned(id: string, scopeId: string, listener: (snapshot: GameSnapshot) => void): () => void { this.assertOwner(id, scopeId); return this.subscribe(id, listener); }
+  moveOwned(id: string, scopeId: string, direction: Direction): GameSnapshot { this.assertOwner(id, scopeId); return this.move(id, direction); }
+  pauseOwned(id: string, scopeId: string): GameSnapshot { this.assertOwner(id, scopeId); return this.pause(id); }
+  resumeOwned(id: string, scopeId: string): GameSnapshot { this.assertOwner(id, scopeId); return this.resume(id); }
+  restartOwned(id: string, scopeId: string): GameSnapshot { this.assertOwner(id, scopeId); return this.restart(id); }
+  purchasePerkOwned(id: string, scopeId: string, perk: "extra_xp" | "extra_life" | "luck"): GameSnapshot { this.assertOwner(id, scopeId); return this.purchasePerk(id, perk); }
+  advanceOwned(id: string, scopeId: string): GameSnapshot { this.assertOwner(id, scopeId); return this.advance(id); }
+
+  destroyOwnedScope(scopeId: string): void {
+    const ids = this.ownedGameIds.get(scopeId);
+    if (!ids) return;
+    for (const id of ids) {
+      const session = this.sessions.get(id);
+      if (session) this.clearTimer(session);
+      this.sessions.delete(id);
+    }
+    this.ownedGameIds.delete(scopeId);
+  }
+
+  private createInternal(configInput: unknown, ownerScopeId?: string): GameSnapshot {
     const result = parseGameConfig(configInput);
     const session: Session = {
       id: this.makeId(),
+      ownerScopeId,
       revision: 0,
       config: result.config,
       configError: result.error ?? null,
@@ -76,6 +113,12 @@ export class GameSessionManager {
     };
     this.sessions.set(session.id, session);
     return this.toSnapshot(session);
+  }
+
+  private assertOwner(id: string, scopeId: string): Session {
+    const session = this.sessions.get(id);
+    if (!session || session.ownerScopeId !== scopeId) throw new SessionError("game_not_found", "Game session was not found.");
+    return session;
   }
 
   get(id: string): GameSnapshot {
@@ -171,6 +214,7 @@ export class GameSessionManager {
   close(): void {
     for (const session of this.sessions.values()) this.clearTimer(session);
     this.sessions.clear();
+    this.ownedGameIds.clear();
   }
 
   private requireSession(id: string): Session {

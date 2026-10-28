@@ -3,6 +3,7 @@ import { ProviderFailure } from "../../server/ai/shopAdvice.ts";
 import type { AgentStepRequest, AgentTransport } from "../../server/agent/types.ts";
 import type { AdviceModel } from "../../src/ai/shopAdvice.ts";
 import type { GameState } from "../../src/game/snakeEngine.ts";
+import { SessionStore } from "../../server/security/sessionStore.ts";
 
 type Internals = { sessions: Map<string, { gameState: GameState }> };
 
@@ -10,19 +11,23 @@ type Internals = { sessions: Map<string, { gameState: GameState }> };
 export function pausedGame(points: number, overrides: Partial<GameState> = {}) {
   let counter = 0;
   const manager = new GameSessionManager(() => 0, () => `fixture-${++counter}`);
-  const game = manager.create();
+  const sessions = new SessionStore();
+  const issued = sessions.create();
+  const game = manager.createOwned(issued.scopeId);
   manager.move(game.id, "up");
   manager.pause(game.id);
   const session = (manager as unknown as Internals).sessions.get(game.id)!;
   session.gameState = { ...session.gameState, perkPoints: points, ...overrides };
-  return { manager, id: game.id };
+  return { manager, id: game.id, sessions, cookie: issued.token, verifier: issued.verifier };
 }
 
 /** Same, but the container already has one finished game in its history. */
 export function pausedGameAfterLoss(points: number) {
   let counter = 0;
   const manager = new GameSessionManager(() => 0, () => `fixture-${++counter}`);
-  const game = manager.create();
+  const sessions = new SessionStore();
+  const issued = sessions.create();
+  const game = manager.createOwned(issued.scopeId);
   manager.move(game.id, "up");
   for (let index = 0; index < 40 && manager.get(game.id).state.status === "playing"; index += 1) manager.advance(game.id);
   manager.restart(game.id);
@@ -30,7 +35,7 @@ export function pausedGameAfterLoss(points: number) {
   manager.pause(game.id);
   const session = (manager as unknown as Internals).sessions.get(game.id)!;
   session.gameState = { ...session.gameState, perkPoints: points };
-  return { manager, id: game.id };
+  return { manager, id: game.id, sessions, cookie: issued.token, verifier: issued.verifier };
 }
 
 export type ScriptItem = { value: unknown } | { fail: ProviderFailure } | { hang: true } | { run: () => unknown };

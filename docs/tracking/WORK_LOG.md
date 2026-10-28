@@ -327,6 +327,14 @@ Append one concise entry for each substantive implementation, review, or documen
 - **Verification:** initial test-first run failed as expected because the helper modules did not yet exist. After implementation, focused helpers passed 4/4; `npm run typecheck` passed; full `npm test` passed 123/123. No network provider or credentials used.
 - **Limitations / next step:** event-specific assertions and the full security matrix will be added with their owning scenarios. Next: T009–T021, Priority 1 session lifecycle, request verifier, and owner isolation; preserve exact BEFORE comparisons and commit each completed priority.
 
+## 2026-10-28 — Implement W08 Priority 1 session and ownership boundary
+
+- **Goal:** replace bearer-like `gameId` access with the user-approved no-login anonymous tab/session boundary and prove the frozen T03/T00 outcomes.
+- **Starting state:** preparation commit `99bf1b1`; shared limit/test foundation commit `0e7261d`; T03 BEFORE showed a cookie-free HTTP GET returned game B.
+- **Outcome:** added opaque cookie-backed session scopes with hashed token/verifier storage, expiry/capacity/creation-rate checks, per-scope game ownership and expiry cleanup, authenticated HTTP routes, safe hidden-resource responses, JSON media type/byte checks, correlation metadata, and WebSocket Origin/cookie/verifier/owner admission. Browser transport stores only its verifier in tab-scoped `sessionStorage` and sends it in a header/subprotocol, never a URL. Added session/API/WS and scope cleanup tests; marked T009–T012, T014–T018, and T020 complete. T013, T019, T021 and browser-only verification remain open.
+- **Verification:** focused Priority 1 suite passed 22/22; frozen T03/T00 focused subset passed 3/3. `npm run typecheck` passed; `npm test` passed 134/134; `npm run build` passed (Vite 6.4.3, 10 modules). The normal HTTP W05 fake path still returns 200/completed with 3 steps, 2 tools and unchanged revision. `docs/week8/EVIDENCE_W08.md` records actual T03 AFTER and T00 regression.
+- **Limitations / next step:** browser reload/tab-close and T04/T05 are not yet exercised; no complete T00–T17/CSRF suite exists yet. T13 and T09/T10 AFTER remain open. Next: Priority 2 resource governance across scopes/process, with fake time and delayed fake provider; run the exact T13 comparison and commit that priority separately.
+
 ## 2026-10-28 — SpecKit implementation gate and first-commit checks
 
 - **Goal:** start the user-authorized sequence of commits and priority implementation.
