@@ -29,9 +29,9 @@ Prioritize the three risk areas and their BEFORE/AFTER proof: (1) US1 session/re
 
 **Purpose**: Freeze shared constants, deterministic test dependencies, evidence capture rules, and cross-story integration assumptions.
 
-- [ ] T005 Define fixed server-owned security limit types/constants in `server/security/securityLimits.ts`; match the exact values in `specs/004-secure-agent-boundaries/spec.md` and expose no client-controlled overrides.
-- [ ] T006 [P] Add deterministic fake-clock and fake-provider helpers in `tests/helpers/securityFixtures.ts`; keep live provider credentials and network access out of the helper.
-- [ ] T007 [P] Add shared assertions for provider calls, tool executions, canonical snapshot equality, and event capture in `tests/helpers/securityAssertions.ts`.
+- [x] T005 Define fixed server-owned security limit types/constants in `server/security/securityLimits.ts`; match the exact values in `specs/004-secure-agent-boundaries/spec.md` and expose no client-controlled overrides.
+- [x] T006 [P] Add deterministic fake-clock and fake-provider helpers in `tests/helpers/securityFixtures.ts`; keep live provider credentials and network access out of the helper.
+- [x] T007 [P] Add shared assertions for provider calls, tool executions, canonical snapshot equality, and event capture in `tests/helpers/securityAssertions.ts`.
 - [x] T008 Reconcile exact task/test command ownership for T00–T17 and CSRF in `docs/week8/EVIDENCE_W08.md`; preserve every observed result as `NOT RUN` until executed.
 
 **Gate**: Shared tests can inject time/provider behavior and measure side effects. All limits match the normative spec and the W08 evidence matrix.

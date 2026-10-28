@@ -319,6 +319,14 @@ Append one concise entry for each substantive implementation, review, or documen
 - **Verification:** BEFORE probe commands/output are preserved in `EVIDENCE_W08.md`. Focused orchestrator regressions E02/E05/E13 passed 3/3; prior baseline typecheck, suite 119/119, build, security scan, and W05 success remain recorded in section 2. No application source was changed in this preparation step.
 - **Next step:** begin T005–T008 setup, then T009–T021 / Priority 1. After each priority, run the same W05 and frozen comparison tests and update only observed results.
 
+## 2026-10-28 — Build shared W08 security test foundation
+
+- **Goal:** close foundational tasks T005–T007 before the first application security change.
+- **Starting state:** preparation commit `99bf1b1`; three frozen BEFORE probes are recorded. No application hardening has been applied.
+- **Outcome:** added immutable server-owned limits (16 KiB request/provider payload bounds; anonymous scope/game/subscription and agent capacity/budget bounds), deterministic fake clock, deferred promises, tracked fake provider, and shared provider/side-effect assertions. Marked T005–T007 complete.
+- **Verification:** initial test-first run failed as expected because the helper modules did not yet exist. After implementation, focused helpers passed 4/4; `npm run typecheck` passed; full `npm test` passed 123/123. No network provider or credentials used.
+- **Limitations / next step:** event-specific assertions and the full security matrix will be added with their owning scenarios. Next: T009–T021, Priority 1 session lifecycle, request verifier, and owner isolation; preserve exact BEFORE comparisons and commit each completed priority.
+
 ## 2026-10-28 — SpecKit implementation gate and first-commit checks
 
 - **Goal:** start the user-authorized sequence of commits and priority implementation.
